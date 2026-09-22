@@ -1,5 +1,9 @@
 # RistoManager
 
+[![CI](https://github.com/d4b0mb/progettoIGPE/actions/workflows/ci.yml/badge.svg)](https://github.com/d4b0mb/progettoIGPE/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Java 17](https://img.shields.io/badge/Java-17-orange.svg)](https://openjdk.org/projects/jdk/17/)
+
 Sistema di gestione per ristorante: prenotazioni, piantina della sala modificabile
 e comunicazione in tempo reale fra sala e cucina.
 
@@ -234,3 +238,9 @@ aggiornano da sole leggendo il Model. I test lo usano senza nessuna finestra.
 FlatLaf non cambia il codice: sostituisce il modo in cui i componenti Swing
 standard vengono disegnati. Le classi usate restano `JPanel`, `JButton`,
 `JTable`, `JComboBox`.
+
+---
+
+## Licenza
+
+Distribuito sotto licenza [MIT](LICENSE).
