@@ -7,8 +7,12 @@
 Sistema di gestione per ristorante: prenotazioni, piantina della sala modificabile
 e comunicazione in tempo reale fra sala e cucina.
 
-Progetto scritto per il corso **Interfacce Grafiche e Programmazione ad Eventi**
-(Java, Swing, JDBC/SQLite, thread e socket).
+> **Nota:** questo è un progetto sperimentale, **non** il lavoro che consegno
+> per l'esame. L'ho scritto per vedere concretamente cosa produce
+> un'implementazione assistita da un'AI, prendendo come spunto gli argomenti
+> del corso universitario **Interfacce Grafiche e Programmazione ad Eventi**
+> (Java, Swing, JDBC/SQLite, thread e socket). Il progetto che uso per il
+> corso è un lavoro separato, scritto autonomamente.
 
 ---
 
@@ -207,7 +211,10 @@ L'architettura segue il pattern **MVC**: il `Model` non conosce l'interfaccia e
 si limita a notificare i cambiamenti ai `ModelListener` registrati; le viste si
 aggiornano da sole leggendo il Model. I test lo usano senza nessuna finestra.
 
-### Argomenti del corso toccati
+### Argomenti di programmazione toccati
+
+Per riferimento: come le funzionalità sopra si mappano ai concetti di un tipico
+corso di interfacce grafiche e programmazione a eventi.
 
 | Argomento                     | Dove                                                        |
 |-------------------------------|-------------------------------------------------------------|
