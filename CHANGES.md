@@ -1,5 +1,10 @@
 # What changed in `ristorante-polished`
 
+> **Note:** this is an experimental project, **not** the work submitted for
+> the exam. It was made to see concretely what an AI-assisted implementation
+> produces, starting from the original `ristorante` project as a baseline.
+> The project used for the actual coursework is separate, written independently.
+
 This folder is a copy of `Desktop\ristorante`. The original folder was not modified
 (verified by comparing SHA-256 hashes of every original file before and after).
 Everything below applies to this copy only.
