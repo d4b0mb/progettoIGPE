@@ -4,6 +4,8 @@ import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.event.ActionEvent;
+import java.awt.event.FocusAdapter;
+import java.awt.event.FocusEvent;
 
 import javax.swing.AbstractAction;
 import javax.swing.BorderFactory;
@@ -11,11 +13,14 @@ import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JComponent;
+import javax.swing.JFormattedTextField;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JSeparator;
+import javax.swing.JSpinner;
 import javax.swing.KeyStroke;
 import javax.swing.SwingConstants;
+import javax.swing.SwingUtilities;
 
 /**
  * Piccola libreria di componenti già impostati.
@@ -226,5 +231,32 @@ public final class Ui {
                 action.run();
             }
         });
+    }
+
+    // --- campi numerici / data ----------------------------------------------
+
+    /**
+     * Seleziona tutto il testo quando il campo prende il focus.
+     *
+     * Senza questo, cliccare in un campo che mostra già un valore (una data,
+     * un'ora, un numero) e digitare subito lascia il cursore dov'era: il
+     * nuovo carattere si aggiunge accanto al vecchio invece di sostituirlo.
+     * Selezionare tutto all'ingresso fa sì che la prima battuta ricominci da
+     * zero, come in un vero selettore di data o in un campo numerico.
+     */
+    public static void selectAllOnFocus(JFormattedTextField field) {
+        field.addFocusListener(new FocusAdapter() {
+            @Override
+            public void focusGained(FocusEvent e) {
+                SwingUtilities.invokeLater(field::selectAll);
+            }
+        });
+    }
+
+    /** Come {@link #selectAllOnFocus(JFormattedTextField)}, per il campo di testo di uno spinner. */
+    public static void selectAllOnFocus(JSpinner spinner) {
+        if (spinner.getEditor() instanceof JSpinner.DefaultEditor editor) {
+            selectAllOnFocus(editor.getTextField());
+        }
     }
 }

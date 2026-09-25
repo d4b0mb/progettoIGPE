@@ -43,6 +43,7 @@ to show the bug before and after. "Test" means one of the new JUnit tests.
 | 18 | New reservations could be created on past days. | Validation rule (existing past reservations can still be updated). | Test. |
 | 19 | The login form came **pre-filled with the admin password**. | Fields start empty; clicking a demo user fills them. | Screenshot. |
 | 20 | The loyalty "priority Alta" bump stuck when the waiter switched to another table. | The automatic bump reverts if the waiter didn't change it by hand. | Screenshot. |
+| 21 | **Typing into a date/time/number spinner appended instead of replacing**, and the reservation date field mixed the weekday name into the editable text, so typed digits and `/` landed in the wrong place as the weekday's length changed underneath the cursor. | All spinner fields (date, time, duration, covers, high chairs, strollers, and the floor editor's coordinates/size/rotation/grid/number/seats) now select their text on focus, so the first keystroke replaces the old value. The reservation date field's editable text is now digits-only (`dd/MM/yyyy`); the weekday is shown separately as a caption that updates live. | Manual review. |
 
 ---
 
