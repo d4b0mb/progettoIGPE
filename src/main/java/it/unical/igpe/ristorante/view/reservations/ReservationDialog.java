@@ -7,11 +7,13 @@ import java.awt.GridLayout;
 import java.awt.Window;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.EnumMap;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
@@ -83,9 +85,12 @@ public class ReservationDialog extends JDialog {
     private final JSpinner highChairSpinner = new JSpinner(new SpinnerNumberModel(0, 0, 10, 1));
     private final JSpinner strollerSpinner = new JSpinner(new SpinnerNumberModel(0, 0, 6, 1));
 
+    private static final DateTimeFormatter WEEKDAY = DateTimeFormatter.ofPattern("EEEE", Locale.ITALIAN);
+
     private final JComboBox<Object> tableCombo = new JComboBox<>();
     private final JLabel tableCaption = new JLabel("Tavolo");
     private final JLabel tableHint = new JLabel(" ");
+    private final JLabel dateCaption = new JLabel("Data *");
     private final JComboBox<ReservationStatus> statusCombo =
             new JComboBox<>(ReservationStatus.values());
 
@@ -111,9 +116,24 @@ public class ReservationDialog extends JDialog {
 
         Date initialDate = Date.from(initial.atZone(ZoneId.systemDefault()).toInstant());
         dateSpinner = new JSpinner(new SpinnerDateModel(initialDate, null, null, Calendar.DAY_OF_MONTH));
-        dateSpinner.setEditor(new JSpinner.DateEditor(dateSpinner, "EEEE dd/MM/yyyy"));
+        // Solo cifre e "/" nel campo: il giorno della settimana (variabile in
+        // lunghezza: "lunedì" contro "mercoledì") sposta la posizione delle
+        // cifre e delle "/" mentre si scrive se è dentro il testo digitabile.
+        // Va mostrato a parte, non impastato nel formato di modifica.
+        dateSpinner.setEditor(new JSpinner.DateEditor(dateSpinner, "dd/MM/yyyy"));
         timeSpinner = new JSpinner(new SpinnerDateModel(initialDate, null, null, Calendar.MINUTE));
         timeSpinner.setEditor(new JSpinner.DateEditor(timeSpinner, "HH:mm"));
+
+        // Il primo carattere digitato deve sostituire il valore esistente, non
+        // accodarsi: senza questo, cliccare nel campo e scrivere subito una
+        // nuova data/ora/numero lo appende invece di sostituirlo.
+        Ui.selectAllOnFocus(dateSpinner);
+        Ui.selectAllOnFocus(timeSpinner);
+        Ui.selectAllOnFocus(durationSpinner);
+        Ui.selectAllOnFocus(partySpinner);
+        Ui.selectAllOnFocus(highChairSpinner);
+        Ui.selectAllOnFocus(strollerSpinner);
+        updateDateCaption();
 
         setDefaultCloseOperation(DISPOSE_ON_CLOSE);
         setContentPane(buildContent());
@@ -157,7 +177,7 @@ public class ReservationDialog extends JDialog {
 
         form.add(section("Quando"));
         form.add(threeColumns(
-                labeled("Data *", dateSpinner),
+                dateField(),
                 labeled("Ora *", timeSpinner),
                 labeled("Durata (min)", durationSpinner)));
         form.add(Ui.vGap(18));
@@ -219,11 +239,24 @@ public class ReservationDialog extends JDialog {
 
         // Cambiare data, ora, durata o numero di coperti cambia i tavoli disponibili.
         dateSpinner.addChangeListener(e -> refreshTableCombo());
+        dateSpinner.addChangeListener(e -> updateDateCaption());
         timeSpinner.addChangeListener(e -> refreshTableCombo());
         partySpinner.addChangeListener(e -> refreshTableCombo());
         durationSpinner.addChangeListener(e -> refreshTableCombo());
 
         return root;
+    }
+
+    /** Il campo Data, con etichetta che mostra il giorno della settimana corrispondente. */
+    private JComponent dateField() {
+        JPanel panel = new JPanel(new BorderLayout(0, 4));
+        panel.setOpaque(false);
+        dateCaption.setFont(Theme.regular(11));
+        dateCaption.setForeground(Palette.TEXT_MUTED);
+        dateSpinner.setPreferredSize(new Dimension(180, 34));
+        panel.add(dateCaption, BorderLayout.NORTH);
+        panel.add(dateSpinner, BorderLayout.CENTER);
+        return panel;
     }
 
     /** La tendina dei tavoli, con un'intestazione che dice quanti ce ne sono liberi. */
@@ -387,6 +420,13 @@ public class ReservationDialog extends JDialog {
         } else {
             tableHint.setText(" ");
         }
+    }
+
+    /** Aggiorna l'etichetta del campo Data con il giorno della settimana scelto. */
+    private void updateDateCaption() {
+        Date value = (Date) dateSpinner.getValue();
+        LocalDateTime day = LocalDateTime.ofInstant(value.toInstant(), ZoneId.systemDefault());
+        dateCaption.setText("Data *  ·  " + day.format(WEEKDAY));
     }
 
     private LocalDateTime readDateTime() {

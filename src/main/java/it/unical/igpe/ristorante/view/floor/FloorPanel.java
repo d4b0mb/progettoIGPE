@@ -462,6 +462,7 @@ public class FloorPanel extends JPanel implements ModelListener {
         double step = plan.getGridStepMeters();
         JSpinner grid = new JSpinner(new SpinnerNumberModel(step, Math.min(0.05, step), Math.max(1.0, step), 0.05));
         grid.setEditor(new JSpinner.NumberEditor(grid, "0.00"));
+        Ui.selectAllOnFocus(grid);
         grid.setEnabled(canEdit);
         grid.addChangeListener(e -> applyIfEditing(() -> plan.setGridStepMeters(doubleOf(grid))));
         propertiesBody.add(labeled("Passo della griglia (m)", grid));
@@ -544,6 +545,7 @@ public class FloorPanel extends JPanel implements ModelListener {
         JSpinner rotation = new JSpinner(new SpinnerNumberModel(
                 element.getRotationDegrees(), 0.0, 360.0, 5.0));
         rotation.setEditor(new JSpinner.NumberEditor(rotation, "0.#"));
+        Ui.selectAllOnFocus(rotation);
         rotation.addChangeListener(e ->
                 applyIfEditing(() -> element.setRotationDegrees(doubleOf(rotation))));
         rotationField = rotation;
@@ -749,11 +751,14 @@ public class FloorPanel extends JPanel implements ModelListener {
         JSpinner spinner = new JSpinner(new SpinnerNumberModel(
                 value, Math.min(min, value), Math.max(max, value), 0.05));
         spinner.setEditor(new JSpinner.NumberEditor(spinner, "0.00"));
+        Ui.selectAllOnFocus(spinner);
         return spinner;
     }
 
     private JSpinner intSpinner(int value, int min, int max) {
-        return new JSpinner(new SpinnerNumberModel(value, Math.min(min, value), Math.max(max, value), 1));
+        JSpinner spinner = new JSpinner(new SpinnerNumberModel(value, Math.min(min, value), Math.max(max, value), 1));
+        Ui.selectAllOnFocus(spinner);
+        return spinner;
     }
 
     private static double doubleOf(JSpinner spinner) {
