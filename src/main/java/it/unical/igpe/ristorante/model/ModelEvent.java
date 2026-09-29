@@ -14,7 +14,8 @@ public class ModelEvent {
         RESERVATIONS_CHANGED,
         FLOOR_PLAN_CHANGED,
         TICKETS_CHANGED,
-        CONNECTION_CHANGED
+        CONNECTION_CHANGED,
+        LOYALTY_CHANGED
     }
 
     private final Type type;

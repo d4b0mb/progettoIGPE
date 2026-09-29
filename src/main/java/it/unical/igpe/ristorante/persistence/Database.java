@@ -133,10 +133,35 @@ public class Database implements AutoCloseable {
                 FOREIGN KEY (ticket_id) REFERENCES tickets(id) ON DELETE CASCADE
             );
             """,
+            """
+            CREATE TABLE IF NOT EXISTS loyalty_accounts (
+                id         INTEGER PRIMARY KEY AUTOINCREMENT,
+                code       TEXT NOT NULL UNIQUE,
+                guest_name TEXT NOT NULL,
+                phone      TEXT,
+                email      TEXT,
+                created_by TEXT,
+                created_at TEXT
+            );
+            """,
+            """
+            CREATE TABLE IF NOT EXISTS loyalty_visits (
+                id           INTEGER PRIMARY KEY AUTOINCREMENT,
+                account_id   INTEGER NOT NULL,
+                visit_date   TEXT NOT NULL,
+                total_amount REAL NOT NULL DEFAULT 0,
+                paid_amount  REAL NOT NULL DEFAULT 0,
+                notes        TEXT,
+                created_by   TEXT,
+                created_at   TEXT,
+                FOREIGN KEY (account_id) REFERENCES loyalty_accounts(id) ON DELETE CASCADE
+            );
+            """,
             // Indici sulle colonne usate nei filtri più frequenti.
             "CREATE INDEX IF NOT EXISTS idx_res_datetime ON reservations(date_time);",
             "CREATE INDEX IF NOT EXISTS idx_res_table ON reservations(table_id);",
-            "CREATE INDEX IF NOT EXISTS idx_tickets_status ON tickets(status);"
+            "CREATE INDEX IF NOT EXISTS idx_tickets_status ON tickets(status);",
+            "CREATE INDEX IF NOT EXISTS idx_loyalty_visits_account ON loyalty_visits(account_id);"
         };
 
         try (Statement stmt = connection.createStatement()) {

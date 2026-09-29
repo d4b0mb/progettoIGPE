@@ -11,8 +11,12 @@ import it.unical.igpe.ristorante.model.floor.FloorPlan;
 import it.unical.igpe.ristorante.model.floor.RestaurantTable;
 import it.unical.igpe.ristorante.model.floor.TableStatus;
 import it.unical.igpe.ristorante.model.kitchen.Ticket;
+import it.unical.igpe.ristorante.model.loyalty.LoyaltyAccount;
+import it.unical.igpe.ristorante.model.loyalty.LoyaltySummary;
+import it.unical.igpe.ristorante.model.loyalty.LoyaltyVisit;
 import it.unical.igpe.ristorante.persistence.Database;
 import it.unical.igpe.ristorante.persistence.FloorPlanDao;
+import it.unical.igpe.ristorante.persistence.LoyaltyDao;
 import it.unical.igpe.ristorante.persistence.PasswordHasher;
 import it.unical.igpe.ristorante.persistence.ReservationDao;
 import it.unical.igpe.ristorante.persistence.UserDao;
@@ -39,12 +43,14 @@ public class RestaurantModel {
     private final UserDao userDao;
     private final ReservationDao reservationDao;
     private final FloorPlanDao floorPlanDao;
+    private final LoyaltyDao loyaltyDao;
 
     private final List<ModelListener> listeners = new ArrayList<>();
 
     private final List<User> users = new ArrayList<>();
     private final List<Reservation> reservations = new ArrayList<>();
     private final List<Ticket> tickets = new ArrayList<>();
+    private final List<LoyaltyAccount> loyaltyAccounts = new ArrayList<>();
 
     /**
      * La piantina è sempre lo STESSO oggetto per tutta la vita del Model:
@@ -65,6 +71,7 @@ public class RestaurantModel {
         this.userDao = new UserDao(database);
         this.reservationDao = new ReservationDao(database);
         this.floorPlanDao = new FloorPlanDao(database);
+        this.loyaltyDao = new LoyaltyDao(database);
         reloadAll();
     }
 
@@ -103,6 +110,7 @@ public class RestaurantModel {
     public final void reloadAll() {
         reloadUsers();
         reloadReservations();
+        reloadLoyaltyAccounts();
         FloorPlan loaded = floorPlanDao.loadFirst();
         if (loaded != null) {
             floorPlan.restoreFrom(loaded);
@@ -119,6 +127,11 @@ public class RestaurantModel {
     private void reloadReservations() {
         reservations.clear();
         reservations.addAll(reservationDao.findAll());
+    }
+
+    private void reloadLoyaltyAccounts() {
+        loyaltyAccounts.clear();
+        loyaltyAccounts.addAll(loyaltyDao.findAllAccounts());
     }
 
     /**
@@ -145,9 +158,11 @@ public class RestaurantModel {
         knownDataVersion = version;
         reloadReservations();
         reloadUsers();
+        reloadLoyaltyAccounts();
         refreshTableStatuses(LocalDateTime.now());
         fireEvent(ModelEvent.Type.RESERVATIONS_CHANGED, null);
         fireEvent(ModelEvent.Type.USERS_CHANGED, null);
+        fireEvent(ModelEvent.Type.LOYALTY_CHANGED, null);
         return true;
     }
 
@@ -688,6 +703,106 @@ public class RestaurantModel {
             tickets.addAll(incoming);
         }
         fireEvent(ModelEvent.Type.TICKETS_CHANGED, null);
+    }
+
+    // ------------------------------------------------------------------
+    // Fedeltà
+    // ------------------------------------------------------------------
+
+    public List<LoyaltyAccount> getLoyaltyAccounts() {
+        return Collections.unmodifiableList(loyaltyAccounts);
+    }
+
+    public LoyaltyAccount findLoyaltyAccountById(int id) {
+        for (LoyaltyAccount a : loyaltyAccounts) {
+            if (a.getId() == id) {
+                return a;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Genera un nuovo codice fedeltà per un cliente e lo registra.
+     *
+     * Il codice è assegnato dal sistema (FID-00001, FID-00002, ...), non
+     * scelto dall'operatore: evita sia i doppioni sia i codici improvvisati
+     * che poi nessuno si ricorda.
+     */
+    public LoyaltyAccount generateLoyaltyCode(String guestName, String phone, String email)
+            throws ValidationException {
+        require(Permission.MANAGE_LOYALTY);
+        String name = guestName == null ? "" : guestName.trim();
+        if (name.isEmpty()) {
+            throw new ValidationException("Il nominativo è obbligatorio.", "guestName");
+        }
+        LoyaltyAccount account = new LoyaltyAccount(loyaltyDao.nextCode(), name);
+        account.setPhone(phone == null ? "" : phone.trim());
+        account.setEmail(email == null ? "" : email.trim());
+        if (currentUser != null) {
+            account.setCreatedBy(currentUser.getUsername());
+        }
+        loyaltyDao.insertAccount(account);
+        reloadLoyaltyAccounts();
+        fireEvent(ModelEvent.Type.LOYALTY_CHANGED, account);
+        return account;
+    }
+
+    /** Aggiorna i dati di contatto di un cliente fedeltà; il codice non si può cambiare. */
+    public void saveLoyaltyAccount(LoyaltyAccount account) throws ValidationException {
+        require(Permission.MANAGE_LOYALTY);
+        if (account.getGuestName() == null || account.getGuestName().isBlank()) {
+            throw new ValidationException("Il nominativo è obbligatorio.", "guestName");
+        }
+        loyaltyDao.updateAccount(account);
+        reloadLoyaltyAccounts();
+        fireEvent(ModelEvent.Type.LOYALTY_CHANGED, account);
+    }
+
+    public void deleteLoyaltyAccount(LoyaltyAccount account) throws ValidationException {
+        require(Permission.MANAGE_LOYALTY);
+        loyaltyDao.deleteAccount(account.getId());
+        reloadLoyaltyAccounts();
+        fireEvent(ModelEvent.Type.LOYALTY_CHANGED, account);
+    }
+
+    public List<LoyaltyVisit> getLoyaltyVisits(int accountId) {
+        return loyaltyDao.findVisitsForAccount(accountId);
+    }
+
+    /** Visite, spesa totale, pagato totale e ultima visita di un cliente fedeltà. */
+    public LoyaltySummary summarizeLoyaltyAccount(int accountId) {
+        return loyaltyDao.summarize(accountId);
+    }
+
+    /** Registra una visita per un cliente fedeltà già esistente. */
+    public LoyaltyVisit addLoyaltyVisit(int accountId, LocalDate visitDate,
+                                        double totalAmount, double paidAmount, String notes)
+            throws ValidationException {
+        require(Permission.MANAGE_LOYALTY);
+        if (findLoyaltyAccountById(accountId) == null) {
+            throw new ValidationException("Cliente fedeltà non trovato.");
+        }
+        if (visitDate == null) {
+            throw new ValidationException("La data della visita è obbligatoria.", "visitDate");
+        }
+        if (totalAmount < 0 || paidAmount < 0) {
+            throw new ValidationException("Gli importi non possono essere negativi.", "totalAmount");
+        }
+        LoyaltyVisit visit = new LoyaltyVisit(accountId, visitDate, totalAmount, paidAmount);
+        visit.setNotes(notes == null ? "" : notes.trim());
+        if (currentUser != null) {
+            visit.setCreatedBy(currentUser.getUsername());
+        }
+        loyaltyDao.insertVisit(visit);
+        fireEvent(ModelEvent.Type.LOYALTY_CHANGED, visit);
+        return visit;
+    }
+
+    public void deleteLoyaltyVisit(int visitId) throws ValidationException {
+        require(Permission.MANAGE_LOYALTY);
+        loyaltyDao.deleteVisit(visitId);
+        fireEvent(ModelEvent.Type.LOYALTY_CHANGED, null);
     }
 
     public Database getDatabase() {

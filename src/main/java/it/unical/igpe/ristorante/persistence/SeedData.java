@@ -19,6 +19,8 @@ import it.unical.igpe.ristorante.model.floor.Obstacle;
 import it.unical.igpe.ristorante.model.floor.ObstacleType;
 import it.unical.igpe.ristorante.model.floor.RestaurantTable;
 import it.unical.igpe.ristorante.model.floor.TableShape;
+import it.unical.igpe.ristorante.model.loyalty.LoyaltyAccount;
+import it.unical.igpe.ristorante.model.loyalty.LoyaltyVisit;
 
 /**
  * Popolamento iniziale del database.
@@ -49,6 +51,11 @@ public final class SeedData {
         if (reservationDao.count() == 0) {
             createReservations(reservationDao, plan);
         }
+
+        LoyaltyDao loyaltyDao = new LoyaltyDao(db);
+        if (loyaltyDao.findAllAccounts().isEmpty()) {
+            createLoyaltyAccounts(loyaltyDao);
+        }
     }
 
     /**
@@ -73,6 +80,8 @@ public final class SeedData {
                 stmt.executeUpdate("DELETE FROM floor_elements;");
                 stmt.executeUpdate("DELETE FROM floor_plans;");
                 stmt.executeUpdate("DELETE FROM users;");
+                stmt.executeUpdate("DELETE FROM loyalty_visits;");
+                stmt.executeUpdate("DELETE FROM loyalty_accounts;");
             }
             c.commit();
         } catch (SQLException e) {
@@ -227,6 +236,47 @@ public final class SeedData {
                 null, justArrived, 2, 0, 0, 4,
                 ReservationStatus.ARRIVATA, EnumSet.of(Allergen.LATTE, Allergen.GLUTINE),
                 "Arrivati senza prenotazione: comanda ancora da inviare."));
+    }
+
+    /**
+     * Tre clienti fedeltà, con gli stessi codici già usati nelle prenotazioni
+     * di esempio sopra (Marco Bevilacqua, Chiara Ruffolo, Antonio Curcio):
+     * così la demo mostra da subito un codice che torna anche in "Prenotazioni".
+     */
+    private static void createLoyaltyAccounts(LoyaltyDao dao) {
+        LocalDate today = LocalDate.now();
+
+        LoyaltyAccount marco = loyaltyAccount(dao, "FID-00218", "Marco Bevilacqua",
+                "3388765432", "m.bevilacqua@example.it");
+        visit(dao, marco, today.minusDays(60), 46.00, 46.00);
+        visit(dao, marco, today.minusDays(33), 52.50, 52.50);
+        visit(dao, marco, today.minusDays(9), 38.00, 38.00);
+
+        LoyaltyAccount chiara = loyaltyAccount(dao, "FID-00047", "Chiara Ruffolo",
+                "3491234567", "chiara.r@example.it");
+        visit(dao, chiara, today.minusDays(45), 68.50, 68.50);
+        visit(dao, chiara, today.minusDays(12), 74.00, 60.00);   // sconto applicato al conto
+
+        LoyaltyAccount antonio = loyaltyAccount(dao, "FID-00301", "Antonio Curcio",
+                "3356677889", "a.curcio@example.it");
+        visit(dao, antonio, today.minusDays(20), 41.00, 41.00);
+    }
+
+    private static LoyaltyAccount loyaltyAccount(LoyaltyDao dao, String code, String name,
+                                                  String phone, String email) {
+        LoyaltyAccount a = new LoyaltyAccount(code, name);
+        a.setPhone(phone);
+        a.setEmail(email);
+        a.setCreatedBy("admin");
+        dao.insertAccount(a);
+        return a;
+    }
+
+    private static void visit(LoyaltyDao dao, LoyaltyAccount account, LocalDate date,
+                              double total, double paid) {
+        LoyaltyVisit v = new LoyaltyVisit(account.getId(), date, total, paid);
+        v.setCreatedBy("admin");
+        dao.insertVisit(v);
     }
 
     private static Reservation reservation(FloorPlan plan, String name, String phone, String email,

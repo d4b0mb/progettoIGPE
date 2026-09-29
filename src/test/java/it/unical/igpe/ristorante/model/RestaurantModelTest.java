@@ -20,6 +20,9 @@ import org.junit.jupiter.api.Test;
 
 import it.unical.igpe.ristorante.model.floor.RestaurantTable;
 import it.unical.igpe.ristorante.model.floor.TableStatus;
+import it.unical.igpe.ristorante.model.loyalty.LoyaltyAccount;
+import it.unical.igpe.ristorante.model.loyalty.LoyaltySummary;
+import it.unical.igpe.ristorante.model.loyalty.LoyaltyVisit;
 import it.unical.igpe.ristorante.persistence.Database;
 import it.unical.igpe.ristorante.persistence.SeedData;
 
@@ -308,5 +311,77 @@ class RestaurantModelTest {
         spaced.setUsername("mario rossi");
         assertEquals("username",
                 assertThrows(ValidationException.class, () -> model.saveUser(spaced, "password")).getField());
+    }
+
+    // ------------------------------------------------------------------
+    // Fedeltà
+    // ------------------------------------------------------------------
+
+    @Test
+    void generatedLoyaltyCodesAreUniqueAndFollowTheExistingFormat() throws Exception {
+        LoyaltyAccount first = model.generateLoyaltyCode("Cliente Uno", "3331112222", "uno@example.it");
+        LoyaltyAccount second = model.generateLoyaltyCode("Cliente Due", "3332223333", "");
+
+        assertTrue(first.getCode().matches("FID-\\d{5}"), first.getCode());
+        assertTrue(second.getCode().matches("FID-\\d{5}"), second.getCode());
+        assertFalse(first.getCode().equals(second.getCode()), "due clienti non condividono lo stesso codice");
+        // I dati di esempio arrivano già con FID-00047, FID-00218 e FID-00301:
+        // il prossimo codice deve tenerne conto e non ripartire da zero.
+        assertTrue(Integer.parseInt(first.getCode().substring(4)) > 301);
+        assertNotNull(model.findLoyaltyAccountById(first.getId()));
+    }
+
+    @Test
+    void onlyAnAdministratorCanManageLoyaltyAccounts() throws Exception {
+        model.logout();
+        assertNotNull(model.authenticate("stage", "stage123"));   // sola lettura
+        assertThrows(ValidationException.class,
+                () -> model.generateLoyaltyCode("Vietato", "3330000000", ""));
+
+        model.logout();
+        assertNotNull(model.authenticate("mrossi", "mario123"));  // operatore
+        assertThrows(ValidationException.class,
+                () -> model.generateLoyaltyCode("Vietato", "3330000000", ""));
+    }
+
+    @Test
+    void blankGuestNameIsRejected() {
+        assertEquals("guestName", assertThrows(ValidationException.class,
+                () -> model.generateLoyaltyCode("  ", "3330000000", "")).getField());
+    }
+
+    @Test
+    void visitsAreRecordedAndSummarized() throws Exception {
+        LoyaltyAccount account = model.generateLoyaltyCode("Cliente Fedele", "3339998877", "");
+
+        model.addLoyaltyVisit(account.getId(), day.minusDays(10), 50.0, 50.0, "Prima visita");
+        model.addLoyaltyVisit(account.getId(), day, 30.0, 25.0, "Sconto fedeltà");
+
+        List<LoyaltyVisit> visits = model.getLoyaltyVisits(account.getId());
+        assertEquals(2, visits.size());
+
+        LoyaltySummary summary = model.summarizeLoyaltyAccount(account.getId());
+        assertEquals(2, summary.getVisitCount());
+        assertEquals(80.0, summary.getTotalSpent(), 0.001);
+        assertEquals(75.0, summary.getTotalPaid(), 0.001);
+        assertEquals(day, summary.getLastVisit());
+    }
+
+    @Test
+    void negativeAmountsAreRejected() throws Exception {
+        LoyaltyAccount account = model.generateLoyaltyCode("Cliente Fedele", "3339998877", "");
+        assertThrows(ValidationException.class,
+                () -> model.addLoyaltyVisit(account.getId(), day, -10.0, 0.0, ""));
+    }
+
+    @Test
+    void deletingAnAccountRemovesItsVisitsToo() throws Exception {
+        LoyaltyAccount account = model.generateLoyaltyCode("Cliente Fedele", "3339998877", "");
+        model.addLoyaltyVisit(account.getId(), day, 20.0, 20.0, "");
+
+        model.deleteLoyaltyAccount(account);
+
+        assertNull(model.findLoyaltyAccountById(account.getId()));
+        assertTrue(model.getLoyaltyVisits(account.getId()).isEmpty());
     }
 }

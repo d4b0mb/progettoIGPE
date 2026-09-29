@@ -60,12 +60,13 @@ to show the bug before and after. "Test" means one of the new JUnit tests.
 - **Server window:** shows the LAN address to type on other machines; start/stop toggle.
 - **Global error dialog** for unexpected exceptions instead of a silent console trace.
 - `java -jar ristomanager.jar server 8422` now accepts a port (the old `server host port` form still works).
+- **Loyalty program (new, not in the original):** admins (Tier 1) can generate a loyalty code for a customer (`FID-00001`, sequential, never reused) and log their visits — date, total bill, amount actually paid (kept separate: a discount or a partial payment makes them diverge). The customer card shows a summary computed straight from the database (visit count, total spent, total paid, last visit), meant as the numeric base a real points/tiers/discounts program would be built on later — this iteration only collects the data. New tables `loyalty_accounts` and `loyalty_visits`, `LoyaltyDao`, `Permission.MANAGE_LOYALTY`, and a `Fedeltà` screen next to `Utenti`. The existing free-text `loyaltyId` field on a reservation is left as is; wiring it to this table is a natural next step, not done here.
 
 ---
 
 ## 3. Engineering
 
-- **Tests:** 43 JUnit 5 tests in `src/test/java` (model rules, permissions, floor geometry and snapshots, allergies, persistence and migration, real sockets with concurrent clients and reconnection). They use temporary databases and port 0, so they never touch `ristorante.db` or a running server.
+- **Tests:** 49 JUnit 5 tests in `src/test/java` (model rules, permissions, floor geometry and snapshots, allergies, persistence and migration, real sockets with concurrent clients and reconnection, loyalty codes and visit summaries). They use temporary databases and port 0, so they never touch `ristorante.db` or a running server.
 - **`pom.xml`:** added `junit-jupiter` 5.14.4 (test scope) and pinned `maven-surefire-plugin` 3.5.4 (headless); removed `flatlaf-extras`, which nothing used.
 - **Schema migration:** `Database` adds missing columns to databases created by the old version.
 - **Dead code removed:** `LoginFrame.centered()`, `FloorPanel.toolSeparator()`, `Reservation.getRequiredSeats()`, and the empty `controller` package.

@@ -17,7 +17,8 @@ public enum Permission {
     EDIT_FLOOR_PLAN("Modificare la piantina della sala"),
     SEND_TICKETS("Inviare comande alla cucina"),
     MANAGE_KITCHEN("Gestire lo stato delle comande in cucina"),
-    MANAGE_USERS("Gestire gli utenti del sistema");
+    MANAGE_USERS("Gestire gli utenti del sistema"),
+    MANAGE_LOYALTY("Generare codici fedeltà e registrare le visite dei clienti");
 
     private final String label;
 

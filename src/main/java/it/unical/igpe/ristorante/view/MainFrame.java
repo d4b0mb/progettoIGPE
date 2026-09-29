@@ -54,6 +54,7 @@ import it.unical.igpe.ristorante.view.common.Ui;
 import it.unical.igpe.ristorante.view.floor.FloorPanel;
 import it.unical.igpe.ristorante.view.kitchen.KitchenPanel;
 import it.unical.igpe.ristorante.view.kitchen.ServicePanel;
+import it.unical.igpe.ristorante.view.loyalty.LoyaltyPanel;
 import it.unical.igpe.ristorante.view.reservations.ReservationsPanel;
 import it.unical.igpe.ristorante.view.users.UsersPanel;
 
@@ -83,6 +84,7 @@ public class MainFrame extends JFrame implements ModelListener {
     public static final String VIEW_SERVICE = "servizio";
     public static final String VIEW_KITCHEN = "cucina";
     public static final String VIEW_USERS = "utenti";
+    public static final String VIEW_LOYALTY = "fedelta";
 
     private static final DateTimeFormatter CLOCK = DateTimeFormatter.ofPattern("HH:mm:ss");
 
@@ -107,6 +109,7 @@ public class MainFrame extends JFrame implements ModelListener {
     private ServicePanel servicePanel;
     private KitchenPanel kitchenPanel;
     private UsersPanel usersPanel;
+    private LoyaltyPanel loyaltyPanel;
 
     public MainFrame(RestaurantModel model) {
         this(model, null, null);
@@ -322,9 +325,14 @@ public class MainFrame extends JFrame implements ModelListener {
         if (model.can(Permission.MANAGE_KITCHEN)) {
             nav.addItem(VIEW_KITCHEN, "Monitor cucina", Palette.VIP);
         }
-        if (model.can(Permission.MANAGE_USERS)) {
+        if (model.can(Permission.MANAGE_USERS) || model.can(Permission.MANAGE_LOYALTY)) {
             nav.addSection("Amministrazione");
+        }
+        if (model.can(Permission.MANAGE_USERS)) {
             nav.addItem(VIEW_USERS, "Utenti", Palette.DANGER);
+        }
+        if (model.can(Permission.MANAGE_LOYALTY)) {
+            nav.addItem(VIEW_LOYALTY, "Fedeltà", Palette.OK);
         }
         nav.addFiller();
 
@@ -364,6 +372,10 @@ public class MainFrame extends JFrame implements ModelListener {
         if (model.can(Permission.MANAGE_USERS)) {
             usersPanel = new UsersPanel(model);
             content.add(usersPanel, VIEW_USERS);
+        }
+        if (model.can(Permission.MANAGE_LOYALTY)) {
+            loyaltyPanel = new LoyaltyPanel(model);
+            content.add(loyaltyPanel, VIEW_LOYALTY);
         }
         return content;
     }
@@ -414,6 +426,7 @@ public class MainFrame extends JFrame implements ModelListener {
             case VIEW_SERVICE -> "Invio comande";
             case VIEW_KITCHEN -> "Monitor cucina";
             case VIEW_USERS -> "Gestione utenti";
+            case VIEW_LOYALTY -> "Programma fedeltà";
             default -> "";
         });
     }
@@ -509,6 +522,9 @@ public class MainFrame extends JFrame implements ModelListener {
         }
         if (usersPanel != null) {
             usersPanel.detach();
+        }
+        if (loyaltyPanel != null) {
+            loyaltyPanel.detach();
         }
         dispose();
     }

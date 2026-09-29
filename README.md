@@ -148,6 +148,24 @@ sala.
 - Riconnessione automatica al server; il server segnala subito se la sua porta
   è già occupata e può essere fermato e riavviato dalla sua finestra.
 
+### Programma fedeltà
+Sezione riservata agli amministratori (`Permission.MANAGE_LOYALTY`, Tier 1).
+
+- **Genera un codice fedeltà** per un cliente (`FID-00001`, `FID-00002`, ...):
+  il codice è assegnato dal sistema in sequenza, non scelto a mano, e non
+  ripete mai un codice già usato anche se un cliente viene eliminato.
+- **Registra le visite** del cliente: quando è venuto, il totale del conto e
+  quanto ha effettivamente pagato (i due importi sono separati apposta: uno
+  sconto o un pagamento parziale li fa divergere).
+- La scheda del cliente mostra un riepilogo calcolato dal database (numero di
+  visite, spesa totale, pagato totale, ultima visita): è la base numerica su
+  cui costruire in seguito un programma fedeltà vero e proprio (punti, soglie,
+  sconti). Per ora si limita a raccogliere questi dati, senza applicarci
+  nessuna regola.
+- Il campo "codice fedeltà" già presente nella prenotazione (facoltativo, in
+  chiaro) resta indipendente da questa tabella: collegarli è un miglioramento
+  naturale, non ancora fatto.
+
 ### Livelli di accesso
 Tier 1 amministratore, Tier 2 operatore, Tier 3 sola lettura. I permessi sono
 definiti una sola volta in `Role`; l'interfaccia nasconde o disabilita i comandi
@@ -180,7 +198,9 @@ aprire finestre, ognuno su un database temporaneo:
   dei dati di esempio;
 - sala e cucina collegate da socket veri: andata e ritorno di una comanda,
   60 comande inviate in parallelo da quattro postazioni, porta occupata,
-  riconnessione automatica.
+  riconnessione automatica;
+- programma fedeltà: unicità e formato dei codici generati, permessi (solo
+  Tier 1), validazione, riepilogo delle visite, cancellazione a cascata.
 
 Da Eclipse: tasto destro su `src/test/java` → `Run As → JUnit Test`.
 Da riga di comando: `mvn test`.
@@ -194,7 +214,8 @@ it.unical.igpe.ristorante
 ├── Main, AppConfig              avvio e configurazione della postazione
 ├── model/                       dati e regole di dominio (nessuna classe Swing)
 │   ├── floor/                   piantina: FloorElement astratta, tavoli, ostacoli
-│   └── kitchen/                 comande, righe, priorità, stati
+│   ├── kitchen/                 comande, righe, priorità, stati
+│   └── loyalty/                 cliente fedeltà, visita, riepilogo
 ├── persistence/                 SQLite via JDBC: Database, DAO, hashing password
 ├── net/                         protocollo, KitchenServer, KitchenClient
 └── view/                        Swing
@@ -202,7 +223,8 @@ it.unical.igpe.ristorante
     ├── reservations/            elenco, dettaglio e finestra di inserimento
     ├── floor/                   tela di disegno e pannello proprietà
     ├── kitchen/                 invio comande e monitor di cucina
-    └── users/                   gestione degli utenti
+    ├── users/                   gestione degli utenti
+    └── loyalty/                 codici fedeltà e registro delle visite
 
 src/test/java                    test JUnit 5 di model, persistence e net
 ```
