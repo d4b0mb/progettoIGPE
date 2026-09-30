@@ -149,7 +149,8 @@ sala.
   è già occupata e può essere fermato e riavviato dalla sua finestra.
 
 ### Programma fedeltà
-Sezione riservata agli amministratori (`Permission.MANAGE_LOYALTY`, Tier 1).
+Sezione riservata a chi ha il permesso `Permission.MANAGE_LOYALTY`: amministratori
+(Tier 1) e operatori (Tier 2), non alla sola lettura (Tier 3).
 
 - **Genera un codice fedeltà** per un cliente (`FID-00001`, `FID-00002`, ...):
   il codice è assegnato dal sistema in sequenza, non scelto a mano, e non
@@ -199,8 +200,8 @@ aprire finestre, ognuno su un database temporaneo:
 - sala e cucina collegate da socket veri: andata e ritorno di una comanda,
   60 comande inviate in parallelo da quattro postazioni, porta occupata,
   riconnessione automatica;
-- programma fedeltà: unicità e formato dei codici generati, permessi (solo
-  Tier 1), validazione, riepilogo delle visite, cancellazione a cascata.
+- programma fedeltà: unicità e formato dei codici generati, permessi (Tier 1
+  e 2 sì, Tier 3 no), validazione, riepilogo delle visite, cancellazione a cascata.
 
 Da Eclipse: tasto destro su `src/test/java` → `Run As → JUnit Test`.
 Da riga di comando: `mvn test`.

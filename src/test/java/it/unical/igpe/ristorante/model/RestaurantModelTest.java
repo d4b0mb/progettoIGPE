@@ -332,7 +332,7 @@ class RestaurantModelTest {
     }
 
     @Test
-    void onlyAnAdministratorCanManageLoyaltyAccounts() throws Exception {
+    void viewersCannotManageLoyaltyAccountsButOperatorsCan() throws Exception {
         model.logout();
         assertNotNull(model.authenticate("stage", "stage123"));   // sola lettura
         assertThrows(ValidationException.class,
@@ -340,8 +340,7 @@ class RestaurantModelTest {
 
         model.logout();
         assertNotNull(model.authenticate("mrossi", "mario123"));  // operatore
-        assertThrows(ValidationException.class,
-                () -> model.generateLoyaltyCode("Vietato", "3330000000", ""));
+        assertDoesNotThrow(() -> model.generateLoyaltyCode("Consentito", "3330000000", ""));
     }
 
     @Test

@@ -318,6 +318,9 @@ public class MainFrame extends JFrame implements ModelListener {
         if (model.can(Permission.VIEW_FLOOR_PLAN)) {
             nav.addItem(VIEW_FLOOR, "Piantina sala", Palette.TEAL);
         }
+        if (model.can(Permission.MANAGE_LOYALTY)) {
+            nav.addItem(VIEW_LOYALTY, "Fedeltà", Palette.OK);
+        }
         nav.addSection("Cucina");
         if (model.can(Permission.SEND_TICKETS)) {
             nav.addItem(VIEW_SERVICE, "Invio comande", Palette.INFO);
@@ -325,14 +328,9 @@ public class MainFrame extends JFrame implements ModelListener {
         if (model.can(Permission.MANAGE_KITCHEN)) {
             nav.addItem(VIEW_KITCHEN, "Monitor cucina", Palette.VIP);
         }
-        if (model.can(Permission.MANAGE_USERS) || model.can(Permission.MANAGE_LOYALTY)) {
-            nav.addSection("Amministrazione");
-        }
         if (model.can(Permission.MANAGE_USERS)) {
+            nav.addSection("Amministrazione");
             nav.addItem(VIEW_USERS, "Utenti", Palette.DANGER);
-        }
-        if (model.can(Permission.MANAGE_LOYALTY)) {
-            nav.addItem(VIEW_LOYALTY, "Fedeltà", Palette.OK);
         }
         nav.addFiller();
 

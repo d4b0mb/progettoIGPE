@@ -45,8 +45,8 @@ import it.unical.igpe.ristorante.view.common.Ui;
 /**
  * Programma fedeltà: generazione dei codici e registrazione delle visite.
  *
- * Visibile solo a chi ha il permesso MANAGE_LOYALTY, cioè agli amministratori
- * di primo livello (vedi Role.ADMIN).
+ * Visibile solo a chi ha il permesso MANAGE_LOYALTY: amministratori (Tier 1)
+ * e operatori (Tier 2), non alla sola lettura (Tier 3).
  *
  * È volutamente la base soltanto: genera un codice per cliente e ne registra
  * lo storico delle visite (quando è venuto, quanto ha speso, quanto ha

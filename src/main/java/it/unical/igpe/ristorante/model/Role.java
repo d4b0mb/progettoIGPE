@@ -15,13 +15,14 @@ public enum Role {
     /** Tier 1: accesso completo, può modificare qualsiasi cosa. */
     ADMIN(1, "Amministratore", EnumSet.allOf(Permission.class)),
 
-    /** Tier 2: può inserire e modificare prenotazioni e usare la cucina. */
+    /** Tier 2: può inserire e modificare prenotazioni, usare la cucina e il programma fedeltà. */
     OPERATOR(2, "Operatore", EnumSet.of(
             Permission.VIEW_RESERVATIONS,
             Permission.EDIT_RESERVATIONS,
             Permission.VIEW_FLOOR_PLAN,
             Permission.SEND_TICKETS,
-            Permission.MANAGE_KITCHEN)),
+            Permission.MANAGE_KITCHEN,
+            Permission.MANAGE_LOYALTY)),
 
     /** Tier 3: sola lettura. */
     VIEWER(3, "Sola lettura", EnumSet.of(
