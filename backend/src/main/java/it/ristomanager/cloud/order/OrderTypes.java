@@ -1,5 +1,6 @@
 package it.ristomanager.cloud.order;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import it.ristomanager.cloud.common.Allergen;
 import it.ristomanager.cloud.menu.MenuTypes.Course;
 import it.ristomanager.cloud.user.Role;
@@ -63,7 +64,7 @@ public final class OrderTypes {
     public record OrderRequest(UUID tableId, UUID reservationId, Priority priority, String note, List<LineRequest> items) {
     }
 
-    public record ItemView(UUID id, UUID menuItemId, String name, int quantity, Course course,
+    public record ItemView(UUID id, @Schema(nullable = true) UUID menuItemId, String name, int quantity, Course course,
                            List<Allergen> allergens, List<Allergen> conflicts, String note) {
     }
 
@@ -71,10 +72,12 @@ public final class OrderTypes {
      * An order as the kitchen sees it. {@code conflicts} on a line are the allergens
      * the dish contains that the guest declared they cannot eat: the real alarm.
      */
-    public record TicketView(UUID id, String code, UUID tableId, Integer tableNumber, UUID reservationId,
+    public record TicketView(UUID id, String code, @Schema(nullable = true) UUID tableId,
+                             @Schema(nullable = true) Integer tableNumber, @Schema(nullable = true) UUID reservationId,
                              String guestName, List<Allergen> guestAllergens, Priority priority, Status status,
                              String note, boolean hasAllergyConflicts, List<ItemView> items,
-                             Instant createdAt, Instant acknowledgedAt, Instant readyAt, Instant servedAt) {
+                             Instant createdAt, @Schema(nullable = true) Instant acknowledgedAt,
+                             @Schema(nullable = true) Instant readyAt, @Schema(nullable = true) Instant servedAt) {
     }
 
     /** Allergens of a dish that the guest cannot eat. */

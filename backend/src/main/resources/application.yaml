@@ -21,6 +21,14 @@ app:
     refresh-ttl: 14d
     cookie-secure: ${COOKIE_SECURE:false}
 
+springdoc:
+  # The machine-readable API description. Off unless asked for: it lists every
+  # endpoint, which is useful to developers and not something to publish by default.
+  api-docs:
+    enabled: ${API_DOCS_ENABLED:false}
+  swagger-ui:
+    enabled: false
+
 management:
   endpoints:
     web:

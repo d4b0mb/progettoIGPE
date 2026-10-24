@@ -1,0 +1,71 @@
+{
+  "common": {
+    "appName": "RistoManager",
+    "loading": "Caricamento...",
+    "save": "Salva",
+    "cancel": "Annulla",
+    "delete": "Elimina",
+    "retry": "Riprova",
+    "language": "Lingua",
+    "signOut": "Esci",
+    "somethingWentWrong": "Qualcosa è andato storto. Riprova."
+  },
+  "nav": {
+    "reservations": "Prenotazioni",
+    "floor": "Piantina",
+    "orders": "Comande",
+    "kitchen": "Cucina",
+    "menu": "Menù",
+    "staff": "Personale",
+    "main": "Navigazione principale"
+  },
+  "roles": {
+    "OWNER": "Titolare",
+    "MANAGER": "Responsabile",
+    "WAITER": "Cameriere",
+    "KITCHEN": "Cucina"
+  },
+  "auth": {
+    "signIn": "Accedi",
+    "signInSubtitle": "Titolare, responsabile, cameriere o cucina.",
+    "email": "Email",
+    "password": "Password",
+    "passwordHint": "Almeno 10 caratteri",
+    "submitSignIn": "Accedi",
+    "noAccount": "Nuovo ristorante?",
+    "createAccount": "Crea un account",
+    "signUp": "Crea il tuo ristorante",
+    "signUpSubtitle": "Sarai il titolare e potrai aggiungere il personale subito dopo.",
+    "restaurantName": "Nome del ristorante",
+    "ownerName": "Il tuo nome",
+    "submitSignUp": "Crea account",
+    "haveAccount": "Hai già un account?",
+    "heroTitle": "Gestisci la sala. Guarda la cucina.",
+    "heroText": "Prenotazioni, piantina e comande in un unico posto. Ogni comanda arriva in cucina nel momento in cui viene inviata.",
+    "heroPoint1": "Piantina e prenotazioni",
+    "heroPoint2": "Comande in tempo reale, allergie evidenziate",
+    "heroPoint3": "Account del personale per ruolo",
+    "heroFooter": "Ogni ristorante vede solo i propri dati. L'accesso è verificato dal server a ogni richiesta.",
+    "invalidCredentials": "Email o password non valide",
+    "emailTaken": "Esiste già un account con questa email"
+  },
+  "staff": {
+    "title": "Personale",
+    "subtitle": "Gli account delle persone che usano RistoManager in questo ristorante.",
+    "add": "Aggiungi una persona",
+    "name": "Nome",
+    "role": "Ruolo",
+    "status": "Stato",
+    "active": "Attivo",
+    "inactive": "Disattivato",
+    "deactivate": "Disattiva",
+    "deactivateConfirm": "Disattivare {name}? Verrà disconnesso e non potrà più accedere.",
+    "created": "{name} è stato aggiunto.",
+    "ownerOnly": "Solo il titolare può gestire il personale.",
+    "empty": "Ancora nessuna persona."
+  },
+  "home": {
+    "welcome": "Benvenuto, {name}",
+    "intro": "Prenotazioni, piantina e schermo della cucina arrivano nei prossimi passaggi."
+  }
+}

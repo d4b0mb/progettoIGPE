@@ -1,5 +1,8 @@
 package it.ristomanager.cloud.order;
 
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import it.ristomanager.cloud.order.OrderTypes.OrderRequest;
 import it.ristomanager.cloud.order.OrderTypes.Status;
 import it.ristomanager.cloud.order.OrderTypes.TicketView;
@@ -68,6 +71,8 @@ class OrderController {
      * reconnects, which also re-checks that the login is still valid.
      */
     @GetMapping(value = "/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    @ApiResponse(responseCode = "200", description = "Server-sent events: ready, ticket-created, ticket-updated",
+            content = @Content(mediaType = "text/event-stream", schema = @Schema(type = "string")))
     SseEmitter stream(@AuthenticationPrincipal Jwt jwt) {
         return events.subscribe(CurrentUser.from(jwt).restaurantId());
     }

@@ -1,5 +1,6 @@
 package it.ristomanager.cloud.menu;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import it.ristomanager.cloud.common.Allergen;
 import java.util.List;
 import java.util.UUID;
@@ -24,7 +25,7 @@ public final class MenuTypes {
         }
     }
 
-    public record MenuItem(UUID id, String name, String description, Course course, Integer priceCents,
+    public record MenuItem(UUID id, String name, String description, Course course, @Schema(nullable = true) Integer priceCents,
                            List<Allergen> allergens, boolean available) {
     }
 }

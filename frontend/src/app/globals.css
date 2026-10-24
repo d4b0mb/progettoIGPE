@@ -1,0 +1,48 @@
+@import "tailwindcss";
+@import "@fontsource-variable/manrope";
+
+/* Design tokens, taken from the screen mockups. One place to change the look. */
+@theme {
+  --font-sans: "Manrope Variable", system-ui, sans-serif;
+
+  --color-canvas: #f3f5f4;
+  --color-surface: #ffffff;
+  --color-ink: #14211c;
+  --color-muted: #4a5a53;
+  --color-line: #dce3e0;
+  --color-line-strong: #b8c4bf;
+
+  --color-primary: #0f6b5c;
+  --color-primary-strong: #0a4f44;
+  --color-primary-soft: #e3f1ee;
+  --color-accent: #34b39b;
+
+  --color-sidebar: #0f2a24;
+  --color-sidebar-active: #1c4a40;
+  --color-sidebar-text: #e6f1ee;
+  --color-sidebar-muted: #a9c7bf;
+
+  --color-danger: #b42318;
+  --color-danger-soft: #fee4e2;
+  --color-danger-ink: #912018;
+  --color-warn-soft: #fef3c7;
+  --color-warn-ink: #7c2d12;
+  --color-info-soft: #dbeafe;
+  --color-info-ink: #1e3a8a;
+}
+
+html {
+  background: var(--color-canvas);
+  color: var(--color-ink);
+}
+
+body {
+  font-family: var(--font-sans);
+  min-height: 100dvh;
+}
+
+/* Keyboard focus must always be visible. */
+:focus-visible {
+  outline: 3px solid var(--color-primary);
+  outline-offset: 2px;
+}

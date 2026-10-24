@@ -1,0 +1,1802 @@
+{
+  "openapi" : "3.1.0",
+  "info" : {
+    "title" : "RistoManager Cloud API",
+    "version" : "v1"
+  },
+  "servers" : [ {
+    "url" : "http://localhost",
+    "description" : "Generated server url"
+  } ],
+  "paths" : {
+    "/api/v1/tables/{id}" : {
+      "put" : {
+        "tags" : [ "floor-controller" ],
+        "operationId" : "updateTable",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/TableRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/DiningTable"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete" : {
+        "tags" : [ "floor-controller" ],
+        "operationId" : "deleteTable",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/rooms/{id}" : {
+      "put" : {
+        "tags" : [ "floor-controller" ],
+        "operationId" : "updateRoom",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/RoomRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Room"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete" : {
+        "tags" : [ "floor-controller" ],
+        "operationId" : "deleteRoom",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/reservations/{id}" : {
+      "get" : {
+        "tags" : [ "reservation-controller" ],
+        "operationId" : "get",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Reservation"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put" : {
+        "tags" : [ "reservation-controller" ],
+        "operationId" : "update",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/Draft"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Reservation"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete" : {
+        "tags" : [ "reservation-controller" ],
+        "operationId" : "delete",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/obstacles/{id}" : {
+      "put" : {
+        "tags" : [ "floor-controller" ],
+        "operationId" : "updateObstacle",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ObstacleRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Obstacle"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete" : {
+        "tags" : [ "floor-controller" ],
+        "operationId" : "deleteObstacle",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/menu/items/{id}" : {
+      "put" : {
+        "tags" : [ "menu-controller" ],
+        "operationId" : "update_1",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/MenuItemRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/MenuItem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete" : {
+        "tags" : [ "menu-controller" ],
+        "operationId" : "delete_1",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/staff" : {
+      "get" : {
+        "tags" : [ "staff-controller" ],
+        "operationId" : "list",
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/UserView"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post" : {
+        "tags" : [ "staff-controller" ],
+        "operationId" : "create",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/CreateStaffRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UserView"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/rooms" : {
+      "get" : {
+        "tags" : [ "floor-controller" ],
+        "operationId" : "rooms",
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/Room"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post" : {
+        "tags" : [ "floor-controller" ],
+        "operationId" : "createRoom",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/RoomRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Room"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/rooms/{roomId}/tables" : {
+      "post" : {
+        "tags" : [ "floor-controller" ],
+        "operationId" : "createTable",
+        "parameters" : [ {
+          "name" : "roomId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/TableRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/DiningTable"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/rooms/{roomId}/obstacles" : {
+      "post" : {
+        "tags" : [ "floor-controller" ],
+        "operationId" : "createObstacle",
+        "parameters" : [ {
+          "name" : "roomId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ObstacleRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Obstacle"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/reservations" : {
+      "get" : {
+        "tags" : [ "reservation-controller" ],
+        "operationId" : "list_1",
+        "parameters" : [ {
+          "name" : "date",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "date"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/Reservation"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post" : {
+        "tags" : [ "reservation-controller" ],
+        "operationId" : "create_1",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/Draft"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Reservation"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/orders" : {
+      "post" : {
+        "tags" : [ "order-controller" ],
+        "operationId" : "create_2",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/OrderRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/TicketView"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/menu/items" : {
+      "get" : {
+        "tags" : [ "menu-controller" ],
+        "operationId" : "list_2",
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/MenuItem"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post" : {
+        "tags" : [ "menu-controller" ],
+        "operationId" : "create_3",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/MenuItemRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/MenuItem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/signup" : {
+      "post" : {
+        "tags" : [ "auth-controller" ],
+        "operationId" : "signup",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/SignupRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/TokenResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/refresh" : {
+      "post" : {
+        "tags" : [ "auth-controller" ],
+        "operationId" : "refresh",
+        "parameters" : [ {
+          "name" : "rm_refresh",
+          "in" : "cookie",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/TokenResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/logout" : {
+      "post" : {
+        "tags" : [ "auth-controller" ],
+        "operationId" : "logout",
+        "parameters" : [ {
+          "name" : "rm_refresh",
+          "in" : "cookie",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/auth/login" : {
+      "post" : {
+        "tags" : [ "auth-controller" ],
+        "operationId" : "login",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/LoginRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/TokenResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/tables/{id}/service-status" : {
+      "patch" : {
+        "tags" : [ "floor-controller" ],
+        "operationId" : "setServiceStatus",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ServiceStatusRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/DiningTable"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/reservations/{id}/status" : {
+      "patch" : {
+        "tags" : [ "reservation-controller" ],
+        "operationId" : "changeStatus",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/StatusChange"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Reservation"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/orders/{id}/status" : {
+      "patch" : {
+        "tags" : [ "order-controller" ],
+        "operationId" : "changeStatus_1",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/StatusChange"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/TicketView"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/status" : {
+      "get" : {
+        "tags" : [ "status-controller" ],
+        "operationId" : "status",
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/StatusResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/rooms/{id}/layout" : {
+      "get" : {
+        "tags" : [ "floor-controller" ],
+        "operationId" : "layout",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Layout"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/reservations/available-tables" : {
+      "get" : {
+        "tags" : [ "reservation-controller" ],
+        "operationId" : "availableTables",
+        "parameters" : [ {
+          "name" : "startsAt",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        }, {
+          "name" : "durationMinutes",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        }, {
+          "name" : "partySize",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        }, {
+          "name" : "excludeReservationId",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/DiningTable"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/orders/{id}" : {
+      "get" : {
+        "tags" : [ "order-controller" ],
+        "operationId" : "get_1",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/TicketView"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/orders/stream" : {
+      "get" : {
+        "tags" : [ "order-controller" ],
+        "operationId" : "stream",
+        "responses" : {
+          "200" : {
+            "description" : "Server-sent events: ready, ticket-created, ticket-updated",
+            "content" : {
+              "text/event-stream" : {
+                "schema" : {
+                  "type" : "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/orders/active" : {
+      "get" : {
+        "tags" : [ "order-controller" ],
+        "operationId" : "active",
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/TicketView"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/me" : {
+      "get" : {
+        "tags" : [ "auth-controller" ],
+        "operationId" : "me",
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UserView"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/staff/{id}" : {
+      "delete" : {
+        "tags" : [ "staff-controller" ],
+        "operationId" : "deactivate",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK"
+          }
+        }
+      }
+    }
+  },
+  "components" : {
+    "schemas" : {
+      "TableRequest" : {
+        "type" : "object",
+        "properties" : {
+          "number" : {
+            "type" : "integer",
+            "format" : "int32",
+            "minimum" : 1
+          },
+          "name" : {
+            "type" : "string",
+            "maxLength" : 40,
+            "minLength" : 0
+          },
+          "xMeters" : {
+            "type" : "number",
+            "format" : "double",
+            "maximum" : 1000,
+            "minimum" : -1000
+          },
+          "yMeters" : {
+            "type" : "number",
+            "format" : "double",
+            "maximum" : 1000,
+            "minimum" : -1000
+          },
+          "widthMeters" : {
+            "type" : "number",
+            "format" : "double",
+            "maximum" : 50,
+            "minimum" : 0.2
+          },
+          "heightMeters" : {
+            "type" : "number",
+            "format" : "double",
+            "maximum" : 50,
+            "minimum" : 0.2
+          },
+          "rotationDegrees" : {
+            "type" : "number",
+            "format" : "double",
+            "maximum" : 360,
+            "minimum" : -360
+          },
+          "seats" : {
+            "type" : "integer",
+            "format" : "int32",
+            "maximum" : 100,
+            "minimum" : 1
+          },
+          "shape" : {
+            "type" : "string",
+            "enum" : [ "ROUND", "SQUARE", "RECTANGLE" ]
+          },
+          "accessible" : {
+            "type" : "boolean"
+          }
+        },
+        "required" : [ "heightMeters", "shape", "widthMeters", "xMeters", "yMeters" ]
+      },
+      "DiningTable" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "roomId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "number" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "xMeters" : {
+            "type" : "number",
+            "format" : "double"
+          },
+          "yMeters" : {
+            "type" : "number",
+            "format" : "double"
+          },
+          "widthMeters" : {
+            "type" : "number",
+            "format" : "double"
+          },
+          "heightMeters" : {
+            "type" : "number",
+            "format" : "double"
+          },
+          "rotationDegrees" : {
+            "type" : "number",
+            "format" : "double"
+          },
+          "seats" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "shape" : {
+            "type" : "string",
+            "enum" : [ "ROUND", "SQUARE", "RECTANGLE" ]
+          },
+          "accessible" : {
+            "type" : "boolean"
+          },
+          "serviceStatus" : {
+            "type" : "string",
+            "enum" : [ "FREE", "TO_CLEAN", "OUT_OF_SERVICE" ]
+          }
+        },
+        "required" : [ "accessible", "heightMeters", "id", "name", "number", "roomId", "rotationDegrees", "seats", "serviceStatus", "shape", "widthMeters", "xMeters", "yMeters" ]
+      },
+      "RoomRequest" : {
+        "type" : "object",
+        "properties" : {
+          "name" : {
+            "type" : "string",
+            "maxLength" : 80,
+            "minLength" : 0
+          },
+          "widthMeters" : {
+            "type" : "number",
+            "format" : "double",
+            "maximum" : 200,
+            "minimum" : 1
+          },
+          "heightMeters" : {
+            "type" : "number",
+            "format" : "double",
+            "maximum" : 200,
+            "minimum" : 1
+          },
+          "gridStepMeters" : {
+            "type" : "number",
+            "format" : "double",
+            "maximum" : 5,
+            "minimum" : 0.05
+          }
+        },
+        "required" : [ "heightMeters", "name", "widthMeters" ]
+      },
+      "Room" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "widthMeters" : {
+            "type" : "number",
+            "format" : "double"
+          },
+          "heightMeters" : {
+            "type" : "number",
+            "format" : "double"
+          },
+          "gridStepMeters" : {
+            "type" : "number",
+            "format" : "double"
+          }
+        },
+        "required" : [ "gridStepMeters", "heightMeters", "id", "name", "widthMeters" ]
+      },
+      "Draft" : {
+        "type" : "object",
+        "properties" : {
+          "guestName" : {
+            "type" : "string"
+          },
+          "phone" : {
+            "type" : "string"
+          },
+          "email" : {
+            "type" : "string"
+          },
+          "startsAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "durationMinutes" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "partySize" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "highChairs" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "strollerSpaces" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "tableId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "status" : {
+            "type" : "string",
+            "enum" : [ "PENDING", "CONFIRMED", "ARRIVED", "COMPLETED", "CANCELLED", "NO_SHOW" ]
+          },
+          "allergens" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string",
+              "enum" : [ "GLUTEN", "CRUSTACEANS", "EGGS", "FISH", "PEANUTS", "SOYBEANS", "MILK", "TREE_NUTS", "CELERY", "MUSTARD", "SESAME", "SULPHITES", "LUPIN", "MOLLUSCS" ]
+            }
+          },
+          "notes" : {
+            "type" : "string"
+          }
+        }
+      },
+      "Reservation" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "tableId" : {
+            "type" : [ "string", "null" ],
+            "format" : "uuid"
+          },
+          "guestName" : {
+            "type" : "string"
+          },
+          "phone" : {
+            "type" : "string"
+          },
+          "email" : {
+            "type" : [ "string", "null" ]
+          },
+          "startsAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "durationMinutes" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "partySize" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "highChairs" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "strollerSpaces" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "status" : {
+            "type" : "string",
+            "enum" : [ "PENDING", "CONFIRMED", "ARRIVED", "COMPLETED", "CANCELLED", "NO_SHOW" ]
+          },
+          "allergens" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string",
+              "enum" : [ "GLUTEN", "CRUSTACEANS", "EGGS", "FISH", "PEANUTS", "SOYBEANS", "MILK", "TREE_NUTS", "CELERY", "MUSTARD", "SESAME", "SULPHITES", "LUPIN", "MOLLUSCS" ]
+            }
+          },
+          "notes" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "allergens", "durationMinutes", "guestName", "highChairs", "id", "notes", "partySize", "phone", "startsAt", "status", "strollerSpaces" ]
+      },
+      "ObstacleRequest" : {
+        "type" : "object",
+        "properties" : {
+          "type" : {
+            "type" : "string",
+            "enum" : [ "WALL", "COLUMN", "DOOR", "WINDOW", "STAIRS", "KITCHEN", "TOILETS", "BAR", "ENTRANCE", "STORAGE" ]
+          },
+          "name" : {
+            "type" : "string",
+            "maxLength" : 40,
+            "minLength" : 0
+          },
+          "xMeters" : {
+            "type" : "number",
+            "format" : "double",
+            "maximum" : 1000,
+            "minimum" : -1000
+          },
+          "yMeters" : {
+            "type" : "number",
+            "format" : "double",
+            "maximum" : 1000,
+            "minimum" : -1000
+          },
+          "widthMeters" : {
+            "type" : "number",
+            "format" : "double",
+            "maximum" : 200,
+            "minimum" : 0.05
+          },
+          "heightMeters" : {
+            "type" : "number",
+            "format" : "double",
+            "maximum" : 200,
+            "minimum" : 0.05
+          },
+          "rotationDegrees" : {
+            "type" : "number",
+            "format" : "double",
+            "maximum" : 360,
+            "minimum" : -360
+          }
+        },
+        "required" : [ "heightMeters", "type", "widthMeters", "xMeters", "yMeters" ]
+      },
+      "Obstacle" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "roomId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "type" : {
+            "type" : "string",
+            "enum" : [ "WALL", "COLUMN", "DOOR", "WINDOW", "STAIRS", "KITCHEN", "TOILETS", "BAR", "ENTRANCE", "STORAGE" ]
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "xMeters" : {
+            "type" : "number",
+            "format" : "double"
+          },
+          "yMeters" : {
+            "type" : "number",
+            "format" : "double"
+          },
+          "widthMeters" : {
+            "type" : "number",
+            "format" : "double"
+          },
+          "heightMeters" : {
+            "type" : "number",
+            "format" : "double"
+          },
+          "rotationDegrees" : {
+            "type" : "number",
+            "format" : "double"
+          }
+        },
+        "required" : [ "heightMeters", "id", "name", "roomId", "rotationDegrees", "type", "widthMeters", "xMeters", "yMeters" ]
+      },
+      "MenuItemRequest" : {
+        "type" : "object",
+        "properties" : {
+          "name" : {
+            "type" : "string",
+            "maxLength" : 120,
+            "minLength" : 0
+          },
+          "description" : {
+            "type" : "string",
+            "maxLength" : 500,
+            "minLength" : 0
+          },
+          "course" : {
+            "type" : "string",
+            "enum" : [ "DRINK", "STARTER", "FIRST", "SECOND", "SIDE", "DESSERT" ]
+          },
+          "priceCents" : {
+            "type" : "integer",
+            "format" : "int32",
+            "maximum" : 1000000,
+            "minimum" : 0
+          },
+          "allergens" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string",
+              "enum" : [ "GLUTEN", "CRUSTACEANS", "EGGS", "FISH", "PEANUTS", "SOYBEANS", "MILK", "TREE_NUTS", "CELERY", "MUSTARD", "SESAME", "SULPHITES", "LUPIN", "MOLLUSCS" ]
+            }
+          },
+          "available" : {
+            "type" : "boolean"
+          }
+        },
+        "required" : [ "course", "name" ]
+      },
+      "MenuItem" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "description" : {
+            "type" : "string"
+          },
+          "course" : {
+            "type" : "string",
+            "enum" : [ "DRINK", "STARTER", "FIRST", "SECOND", "SIDE", "DESSERT" ]
+          },
+          "priceCents" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int32"
+          },
+          "allergens" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string",
+              "enum" : [ "GLUTEN", "CRUSTACEANS", "EGGS", "FISH", "PEANUTS", "SOYBEANS", "MILK", "TREE_NUTS", "CELERY", "MUSTARD", "SESAME", "SULPHITES", "LUPIN", "MOLLUSCS" ]
+            }
+          },
+          "available" : {
+            "type" : "boolean"
+          }
+        },
+        "required" : [ "allergens", "available", "course", "description", "id", "name" ]
+      },
+      "CreateStaffRequest" : {
+        "type" : "object",
+        "properties" : {
+          "displayName" : {
+            "type" : "string",
+            "maxLength" : 120,
+            "minLength" : 0
+          },
+          "email" : {
+            "type" : "string",
+            "format" : "email",
+            "maxLength" : 254,
+            "minLength" : 0
+          },
+          "password" : {
+            "type" : "string",
+            "maxLength" : 72,
+            "minLength" : 10
+          },
+          "role" : {
+            "type" : "string",
+            "enum" : [ "OWNER", "MANAGER", "WAITER", "KITCHEN" ]
+          }
+        },
+        "required" : [ "displayName", "email", "password", "role" ]
+      },
+      "UserView" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "restaurantId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "email" : {
+            "type" : "string"
+          },
+          "displayName" : {
+            "type" : "string"
+          },
+          "role" : {
+            "type" : "string",
+            "enum" : [ "OWNER", "MANAGER", "WAITER", "KITCHEN" ]
+          },
+          "active" : {
+            "type" : "boolean"
+          }
+        },
+        "required" : [ "active", "displayName", "email", "id", "restaurantId", "role" ]
+      },
+      "LineRequest" : {
+        "type" : "object",
+        "properties" : {
+          "menuItemId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "quantity" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "note" : {
+            "type" : "string"
+          }
+        }
+      },
+      "OrderRequest" : {
+        "type" : "object",
+        "properties" : {
+          "tableId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "reservationId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "priority" : {
+            "type" : "string",
+            "enum" : [ "NORMAL", "HIGH", "URGENT", "VIP" ]
+          },
+          "note" : {
+            "type" : "string"
+          },
+          "items" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/LineRequest"
+            }
+          }
+        }
+      },
+      "ItemView" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "menuItemId" : {
+            "type" : [ "string", "null" ],
+            "format" : "uuid"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "quantity" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "course" : {
+            "type" : "string",
+            "enum" : [ "DRINK", "STARTER", "FIRST", "SECOND", "SIDE", "DESSERT" ]
+          },
+          "allergens" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string",
+              "enum" : [ "GLUTEN", "CRUSTACEANS", "EGGS", "FISH", "PEANUTS", "SOYBEANS", "MILK", "TREE_NUTS", "CELERY", "MUSTARD", "SESAME", "SULPHITES", "LUPIN", "MOLLUSCS" ]
+            }
+          },
+          "conflicts" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string",
+              "enum" : [ "GLUTEN", "CRUSTACEANS", "EGGS", "FISH", "PEANUTS", "SOYBEANS", "MILK", "TREE_NUTS", "CELERY", "MUSTARD", "SESAME", "SULPHITES", "LUPIN", "MOLLUSCS" ]
+            }
+          },
+          "note" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "allergens", "conflicts", "course", "id", "name", "note", "quantity" ]
+      },
+      "TicketView" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "code" : {
+            "type" : "string"
+          },
+          "tableId" : {
+            "type" : [ "string", "null" ],
+            "format" : "uuid"
+          },
+          "tableNumber" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int32"
+          },
+          "reservationId" : {
+            "type" : [ "string", "null" ],
+            "format" : "uuid"
+          },
+          "guestName" : {
+            "type" : "string"
+          },
+          "guestAllergens" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string",
+              "enum" : [ "GLUTEN", "CRUSTACEANS", "EGGS", "FISH", "PEANUTS", "SOYBEANS", "MILK", "TREE_NUTS", "CELERY", "MUSTARD", "SESAME", "SULPHITES", "LUPIN", "MOLLUSCS" ]
+            }
+          },
+          "priority" : {
+            "type" : "string",
+            "enum" : [ "NORMAL", "HIGH", "URGENT", "VIP" ]
+          },
+          "status" : {
+            "type" : "string",
+            "enum" : [ "NEW", "PREPARING", "READY", "SERVED", "CANCELLED" ]
+          },
+          "note" : {
+            "type" : "string"
+          },
+          "hasAllergyConflicts" : {
+            "type" : "boolean"
+          },
+          "items" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/ItemView"
+            }
+          },
+          "createdAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "acknowledgedAt" : {
+            "type" : [ "string", "null" ],
+            "format" : "date-time"
+          },
+          "readyAt" : {
+            "type" : [ "string", "null" ],
+            "format" : "date-time"
+          },
+          "servedAt" : {
+            "type" : [ "string", "null" ],
+            "format" : "date-time"
+          }
+        },
+        "required" : [ "code", "createdAt", "guestAllergens", "guestName", "hasAllergyConflicts", "id", "items", "note", "priority", "status" ]
+      },
+      "SignupRequest" : {
+        "type" : "object",
+        "properties" : {
+          "restaurantName" : {
+            "type" : "string",
+            "maxLength" : 120,
+            "minLength" : 0
+          },
+          "ownerName" : {
+            "type" : "string",
+            "maxLength" : 120,
+            "minLength" : 0
+          },
+          "email" : {
+            "type" : "string",
+            "format" : "email",
+            "maxLength" : 254,
+            "minLength" : 0
+          },
+          "password" : {
+            "type" : "string",
+            "maxLength" : 72,
+            "minLength" : 10
+          }
+        },
+        "required" : [ "email", "ownerName", "password", "restaurantName" ]
+      },
+      "TokenResponse" : {
+        "type" : "object",
+        "properties" : {
+          "accessToken" : {
+            "type" : "string"
+          },
+          "tokenType" : {
+            "type" : "string"
+          },
+          "expiresInSeconds" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "user" : {
+            "$ref" : "#/components/schemas/UserView"
+          }
+        },
+        "required" : [ "accessToken", "expiresInSeconds", "tokenType", "user" ]
+      },
+      "LoginRequest" : {
+        "type" : "object",
+        "properties" : {
+          "email" : {
+            "type" : "string",
+            "format" : "email",
+            "minLength" : 1
+          },
+          "password" : {
+            "type" : "string",
+            "minLength" : 1
+          }
+        },
+        "required" : [ "email", "password" ]
+      },
+      "ServiceStatusRequest" : {
+        "type" : "object",
+        "properties" : {
+          "serviceStatus" : {
+            "type" : "string",
+            "enum" : [ "FREE", "TO_CLEAN", "OUT_OF_SERVICE" ]
+          }
+        },
+        "required" : [ "serviceStatus" ]
+      },
+      "StatusChange" : {
+        "type" : "object",
+        "properties" : {
+          "status" : {
+            "type" : "string",
+            "enum" : [ "PENDING", "CONFIRMED", "ARRIVED", "COMPLETED", "CANCELLED", "NO_SHOW" ]
+          }
+        }
+      },
+      "StatusResponse" : {
+        "type" : "object",
+        "properties" : {
+          "application" : {
+            "type" : "string"
+          },
+          "version" : {
+            "type" : "string"
+          },
+          "database" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "application", "database", "version" ]
+      },
+      "Layout" : {
+        "type" : "object",
+        "properties" : {
+          "room" : {
+            "$ref" : "#/components/schemas/Room"
+          },
+          "tables" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/TableView"
+            }
+          },
+          "obstacles" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/Obstacle"
+            }
+          }
+        },
+        "required" : [ "obstacles", "room", "tables" ]
+      },
+      "TableView" : {
+        "type" : "object",
+        "properties" : {
+          "table" : {
+            "$ref" : "#/components/schemas/DiningTable"
+          },
+          "liveStatus" : {
+            "type" : "string",
+            "enum" : [ "FREE", "RESERVED", "OCCUPIED", "TO_CLEAN", "OUT_OF_SERVICE" ]
+          }
+        },
+        "required" : [ "liveStatus", "table" ]
+      }
+    }
+  }
+}

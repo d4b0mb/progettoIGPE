@@ -1,0 +1,71 @@
+{
+  "common": {
+    "appName": "RistoManager",
+    "loading": "Loading...",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "retry": "Try again",
+    "language": "Language",
+    "signOut": "Sign out",
+    "somethingWentWrong": "Something went wrong. Please try again."
+  },
+  "nav": {
+    "reservations": "Reservations",
+    "floor": "Floor plan",
+    "orders": "Orders",
+    "kitchen": "Kitchen",
+    "menu": "Menu",
+    "staff": "Staff",
+    "main": "Main navigation"
+  },
+  "roles": {
+    "OWNER": "Owner",
+    "MANAGER": "Manager",
+    "WAITER": "Waiter",
+    "KITCHEN": "Kitchen"
+  },
+  "auth": {
+    "signIn": "Sign in",
+    "signInSubtitle": "Owner, manager, waiter or kitchen.",
+    "email": "Email",
+    "password": "Password",
+    "passwordHint": "At least 10 characters",
+    "submitSignIn": "Sign in",
+    "noAccount": "New restaurant?",
+    "createAccount": "Create an account",
+    "signUp": "Create your restaurant",
+    "signUpSubtitle": "You will be the owner and can add your staff next.",
+    "restaurantName": "Restaurant name",
+    "ownerName": "Your name",
+    "submitSignUp": "Create account",
+    "haveAccount": "Already have an account?",
+    "heroTitle": "Run the room. See the kitchen.",
+    "heroText": "Reservations, floor plan and orders in one place. Every order reaches the kitchen the moment it is sent.",
+    "heroPoint1": "Floor plan and reservations",
+    "heroPoint2": "Live orders, allergies highlighted",
+    "heroPoint3": "Staff accounts by role",
+    "heroFooter": "Each restaurant sees only its own data. Access is checked on the server for every request.",
+    "invalidCredentials": "Invalid email or password",
+    "emailTaken": "An account with this email already exists"
+  },
+  "staff": {
+    "title": "Staff",
+    "subtitle": "Accounts for the people who use this restaurant's RistoManager.",
+    "add": "Add staff member",
+    "name": "Name",
+    "role": "Role",
+    "status": "Status",
+    "active": "Active",
+    "inactive": "Inactive",
+    "deactivate": "Deactivate",
+    "deactivateConfirm": "Deactivate {name}? They will be signed out and unable to log in.",
+    "created": "{name} was added.",
+    "ownerOnly": "Only the owner can manage staff.",
+    "empty": "No staff yet."
+  },
+  "home": {
+    "welcome": "Welcome, {name}",
+    "intro": "Reservations, the floor plan and the kitchen screen arrive in the next steps."
+  }
+}

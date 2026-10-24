@@ -1,5 +1,6 @@
 package it.ristomanager.cloud.reservation;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import it.ristomanager.cloud.common.Allergen;
 import java.time.Instant;
 import java.time.OffsetDateTime;
@@ -30,10 +31,10 @@ public final class ReservationTypes {
     /** A stored reservation. */
     public record Reservation(
             UUID id,
-            UUID tableId,
+            @Schema(nullable = true) UUID tableId,
             String guestName,
             String phone,
-            String email,
+            @Schema(nullable = true) String email,
             Instant startsAt,
             int durationMinutes,
             int partySize,
