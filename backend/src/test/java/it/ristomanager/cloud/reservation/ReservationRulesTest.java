@@ -4,7 +4,7 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import it.ristomanager.cloud.common.ApiException;
-import it.ristomanager.cloud.reservation.ReservationTypes.Draft;
+import it.ristomanager.cloud.reservation.ReservationTypes.ReservationRequest;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
@@ -16,13 +16,13 @@ class ReservationRulesTest {
     private static final ZoneId ROME = ZoneId.of("Europe/Rome");
     private static final Instant NOW = Instant.parse("2026-10-24T18:00:00Z"); // 20:00 in Rome
 
-    private static Draft valid() {
-        return new Draft("Rossi", "+39 333 000 1111", "rossi@example.com",
+    private static ReservationRequest valid() {
+        return new ReservationRequest("Rossi", "+39 333 000 1111", "rossi@example.com",
                 OffsetDateTime.parse("2026-10-24T20:30:00+02:00"), 120, 4, 0, 0, null,
                 ReservationStatus.CONFIRMED, List.of(), "");
     }
 
-    private static Draft with(java.util.function.UnaryOperator<DraftBuilder> change) {
+    private static ReservationRequest with(java.util.function.UnaryOperator<DraftBuilder> change) {
         return change.apply(new DraftBuilder(valid())).build();
     }
 
@@ -33,19 +33,19 @@ class ReservationRulesTest {
         Integer duration, party, chairs, strollers;
         ReservationStatus status;
 
-        DraftBuilder(Draft d) {
+        DraftBuilder(ReservationRequest d) {
             guest = d.guestName(); phone = d.phone(); email = d.email(); notes = d.notes();
             startsAt = d.startsAt(); duration = d.durationMinutes(); party = d.partySize();
             chairs = d.highChairs(); strollers = d.strollerSpaces(); status = d.status();
         }
 
-        Draft build() {
-            return new Draft(guest, phone, email, startsAt, duration, party, chairs, strollers, null, status,
+        ReservationRequest build() {
+            return new ReservationRequest(guest, phone, email, startsAt, duration, party, chairs, strollers, null, status,
                     List.of(), notes);
         }
     }
 
-    private static void assertRejected(Draft d, boolean isNew, String field) {
+    private static void assertRejected(ReservationRequest d, boolean isNew, String field) {
         assertThatThrownBy(() -> ReservationRules.validate(d, ROME, NOW, isNew))
                 .isInstanceOfSatisfying(ApiException.class, e -> org.assertj.core.api.Assertions.assertThat(e.field()).isEqualTo(field));
     }
@@ -63,23 +63,23 @@ class ReservationRulesTest {
 
     @Test
     void newReservationsCannotBeOnAPastDayButTodayEarlierIsFine() {
-        Draft yesterday = with(b -> { b.startsAt = OffsetDateTime.parse("2026-10-23T20:30:00+02:00"); return b; });
+        ReservationRequest yesterday = with(b -> { b.startsAt = OffsetDateTime.parse("2026-10-23T20:30:00+02:00"); return b; });
         assertRejected(yesterday, true, "startsAt");
 
-        Draft earlierToday = with(b -> { b.startsAt = OffsetDateTime.parse("2026-10-24T12:30:00+02:00"); return b; });
+        ReservationRequest earlierToday = with(b -> { b.startsAt = OffsetDateTime.parse("2026-10-24T12:30:00+02:00"); return b; });
         assertThatCode(() -> ReservationRules.validate(earlierToday, ROME, NOW, true)).doesNotThrowAnyException();
     }
 
     @Test
     void anExistingPastReservationCanStillBeUpdated() {
-        Draft yesterday = with(b -> { b.startsAt = OffsetDateTime.parse("2026-10-23T20:30:00+02:00"); return b; });
+        ReservationRequest yesterday = with(b -> { b.startsAt = OffsetDateTime.parse("2026-10-23T20:30:00+02:00"); return b; });
         assertThatCode(() -> ReservationRules.validate(yesterday, ROME, NOW, false)).doesNotThrowAnyException();
     }
 
     @Test
     void theDayIsJudgedInTheRestaurantsTimeZoneNotUtc() {
         // 00:30 on the 25th in Rome is still the 24th in UTC. Now is the evening of the 24th in Rome.
-        Draft afterMidnight = with(b -> { b.startsAt = OffsetDateTime.parse("2026-10-25T00:30:00+02:00"); return b; });
+        ReservationRequest afterMidnight = with(b -> { b.startsAt = OffsetDateTime.parse("2026-10-25T00:30:00+02:00"); return b; });
         assertThatCode(() -> ReservationRules.validate(afterMidnight, ROME, NOW, true)).doesNotThrowAnyException();
     }
 

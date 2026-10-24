@@ -14,7 +14,7 @@ import { useRemote } from "@/lib/useRemote";
 import { dateOf, timeOf, toInstant } from "./time";
 
 type Reservation = components["schemas"]["Reservation"];
-type Draft = components["schemas"]["Draft"];
+type Draft = components["schemas"]["ReservationRequest"];
 
 const num = (value: string, fallback = 0) => (value === "" || Number.isNaN(Number(value)) ? fallback : Number(value));
 

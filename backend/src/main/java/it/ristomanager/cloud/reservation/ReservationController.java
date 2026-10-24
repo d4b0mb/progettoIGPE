@@ -1,7 +1,7 @@
 package it.ristomanager.cloud.reservation;
 
 import it.ristomanager.cloud.floor.FloorTypes.DiningTable;
-import it.ristomanager.cloud.reservation.ReservationTypes.Draft;
+import it.ristomanager.cloud.reservation.ReservationTypes.ReservationRequest;
 import it.ristomanager.cloud.reservation.ReservationTypes.Reservation;
 import it.ristomanager.cloud.security.CurrentUser;
 import java.time.LocalDate;
@@ -31,7 +31,7 @@ import org.springframework.web.bind.annotation.RestController;
 @PreAuthorize("hasAnyRole('OWNER', 'MANAGER', 'WAITER')")
 class ReservationController {
 
-    record StatusChange(ReservationStatus status) {
+    record ReservationStatusChange(ReservationStatus status) {
     }
 
     private final ReservationService service;
@@ -63,20 +63,20 @@ class ReservationController {
 
     @PostMapping
     @PreAuthorize("hasAnyRole('OWNER', 'MANAGER')")
-    ResponseEntity<Reservation> create(@AuthenticationPrincipal Jwt jwt, @RequestBody Draft draft) {
+    ResponseEntity<Reservation> create(@AuthenticationPrincipal Jwt jwt, @RequestBody ReservationRequest draft) {
         CurrentUser me = CurrentUser.from(jwt);
         return ResponseEntity.status(HttpStatus.CREATED).body(service.create(me.restaurantId(), me.userId(), draft));
     }
 
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyRole('OWNER', 'MANAGER')")
-    Reservation update(@AuthenticationPrincipal Jwt jwt, @PathVariable UUID id, @RequestBody Draft draft) {
+    Reservation update(@AuthenticationPrincipal Jwt jwt, @PathVariable UUID id, @RequestBody ReservationRequest draft) {
         return service.update(CurrentUser.from(jwt).restaurantId(), id, draft);
     }
 
     /** A waiter can mark a party as arrived without being able to edit the booking. */
     @PatchMapping("/{id}/status")
-    Reservation changeStatus(@AuthenticationPrincipal Jwt jwt, @PathVariable UUID id, @RequestBody StatusChange body) {
+    Reservation changeStatus(@AuthenticationPrincipal Jwt jwt, @PathVariable UUID id, @RequestBody ReservationStatusChange body) {
         return service.changeStatus(CurrentUser.from(jwt).restaurantId(), id, body.status());
     }
 

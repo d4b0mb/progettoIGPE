@@ -33,6 +33,9 @@ class OpenApiContractIT {
     @Autowired
     MockMvc mvc;
 
+    @Autowired
+    org.springframework.context.ApplicationContext context;
+
     /** Same content, stable key order and indentation, so only real changes show up as differences. */
     private static String normalize(String json) {
         JsonMapper mapper = JsonMapper.builder()
@@ -40,6 +43,38 @@ class OpenApiContractIT {
                 .enable(SerializationFeature.INDENT_OUTPUT)
                 .build();
         return mapper.writeValueAsString(mapper.readTree(json)) + "\n";
+    }
+
+    /**
+     * OpenAPI names a schema after the Java class's simple name, and two different classes with
+     * the same simple name are silently merged into one. That once typed the order-status call with
+     * the reservation statuses. This fails if it ever happens again.
+     */
+    @Test
+    void noTwoApiTypesShareASchemaName() {
+        java.util.Map<String, Class<?>> seen = new java.util.HashMap<>();
+        java.util.List<String> clashes = new java.util.ArrayList<>();
+        String[] holders = {
+                "it.ristomanager.cloud.floor.FloorTypes", "it.ristomanager.cloud.reservation.ReservationTypes",
+                "it.ristomanager.cloud.order.OrderTypes", "it.ristomanager.cloud.menu.MenuTypes"};
+        java.util.List<Class<?>> candidates = new java.util.ArrayList<>();
+        for (String holder : holders) {
+            try {
+                candidates.addAll(java.util.Arrays.asList(Class.forName(holder).getDeclaredClasses()));
+            } catch (ClassNotFoundException e) {
+                throw new IllegalStateException(e);
+            }
+        }
+        context.getBeansWithAnnotation(org.springframework.web.bind.annotation.RestController.class).values()
+                .forEach(bean -> candidates.addAll(java.util.Arrays.asList(
+                        org.springframework.util.ClassUtils.getUserClass(bean).getDeclaredClasses())));
+        for (Class<?> type : candidates) {
+            Class<?> other = seen.put(type.getSimpleName(), type);
+            if (other != null && !other.equals(type)) {
+                clashes.add(type.getSimpleName() + ": " + other.getName() + " and " + type.getName());
+            }
+        }
+        assertThat(clashes).as("API types that would merge into one OpenAPI schema").isEmpty();
     }
 
     @Test

@@ -2,7 +2,7 @@ package it.ristomanager.cloud.reservation;
 
 import static it.ristomanager.cloud.common.ApiException.invalid;
 
-import it.ristomanager.cloud.reservation.ReservationTypes.Draft;
+import it.ristomanager.cloud.reservation.ReservationTypes.ReservationRequest;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -30,7 +30,7 @@ public final class ReservationRules {
      * @param isNew a new reservation cannot be on a past day; an existing one can
      *              still be updated (marked completed or no-show) the day after.
      */
-    public static void validate(Draft d, ZoneId zone, Instant now, boolean isNew) {
+    public static void validate(ReservationRequest d, ZoneId zone, Instant now, boolean isNew) {
         if (d.guestName() == null || d.guestName().isBlank()) {
             throw invalid("guestName", "The guest name is required");
         }
@@ -75,11 +75,11 @@ public final class ReservationRules {
         }
     }
 
-    public static int durationOf(Draft d) {
+    public static int durationOf(ReservationRequest d) {
         return d.durationMinutes() == null ? DEFAULT_DURATION_MINUTES : d.durationMinutes();
     }
 
-    public static ReservationStatus statusOf(Draft d) {
+    public static ReservationStatus statusOf(ReservationRequest d) {
         return d.status() == null ? ReservationStatus.PENDING : d.status();
     }
 }

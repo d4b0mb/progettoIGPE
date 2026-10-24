@@ -29,7 +29,7 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 @RequestMapping("/api/v1/orders")
 class OrderController {
 
-    record StatusChange(Status status) {
+    record OrderStatusChange(Status status) {
     }
 
     private final OrderService service;
@@ -59,7 +59,7 @@ class OrderController {
     }
 
     @PatchMapping("/{id}/status")
-    TicketView changeStatus(@AuthenticationPrincipal Jwt jwt, @PathVariable UUID id, @RequestBody StatusChange body) {
+    TicketView changeStatus(@AuthenticationPrincipal Jwt jwt, @PathVariable UUID id, @RequestBody OrderStatusChange body) {
         CurrentUser me = CurrentUser.from(jwt);
         return service.changeStatus(me.restaurantId(), id, me.role(), body.status());
     }

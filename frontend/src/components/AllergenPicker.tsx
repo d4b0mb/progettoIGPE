@@ -3,7 +3,7 @@
 import { useTranslations } from "next-intl";
 import type { components } from "@/api/schema";
 
-export type Allergen = components["schemas"]["Draft"]["allergens"] extends (infer A)[] | undefined ? A : never;
+export type Allergen = components["schemas"]["ReservationRequest"]["allergens"] extends (infer A)[] | undefined ? A : never;
 
 /** The 14 allergens EU food law requires restaurants to declare. */
 export const ALLERGENS: Allergen[] = [

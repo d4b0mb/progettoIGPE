@@ -161,7 +161,7 @@
           "content" : {
             "application/json" : {
               "schema" : {
-                "$ref" : "#/components/schemas/Draft"
+                "$ref" : "#/components/schemas/ReservationRequest"
               }
             }
           },
@@ -513,7 +513,7 @@
           "content" : {
             "application/json" : {
               "schema" : {
-                "$ref" : "#/components/schemas/Draft"
+                "$ref" : "#/components/schemas/ReservationRequest"
               }
             }
           },
@@ -763,7 +763,7 @@
           "content" : {
             "application/json" : {
               "schema" : {
-                "$ref" : "#/components/schemas/StatusChange"
+                "$ref" : "#/components/schemas/ReservationStatusChange"
               }
             }
           },
@@ -800,7 +800,7 @@
           "content" : {
             "application/json" : {
               "schema" : {
-                "$ref" : "#/components/schemas/StatusChange"
+                "$ref" : "#/components/schemas/OrderStatusChange"
               }
             }
           },
@@ -1219,7 +1219,7 @@
         },
         "required" : [ "gridStepMeters", "heightMeters", "id", "name", "widthMeters" ]
       },
-      "Draft" : {
+      "ReservationRequest" : {
         "type" : "object",
         "properties" : {
           "guestName" : {
@@ -1766,12 +1766,21 @@
         },
         "required" : [ "serviceStatus" ]
       },
-      "StatusChange" : {
+      "ReservationStatusChange" : {
         "type" : "object",
         "properties" : {
           "status" : {
             "type" : "string",
             "enum" : [ "PENDING", "CONFIRMED", "ARRIVED", "COMPLETED", "CANCELLED", "NO_SHOW" ]
+          }
+        }
+      },
+      "OrderStatusChange" : {
+        "type" : "object",
+        "properties" : {
+          "status" : {
+            "type" : "string",
+            "enum" : [ "NEW", "PREPARING", "READY", "SERVED", "CANCELLED" ]
           }
         }
       },

@@ -13,7 +13,7 @@ public final class ReservationTypes {
     }
 
     /** What a client sends to create or change a reservation. */
-    public record Draft(
+    public record ReservationRequest(
             String guestName,
             String phone,
             String email,
@@ -48,8 +48,8 @@ public final class ReservationTypes {
             return startsAt.plusSeconds(durationMinutes * 60L);
         }
 
-        public Draft toDraft(ReservationStatus newStatus) {
-            return new Draft(guestName, phone, email, startsAt.atOffset(java.time.ZoneOffset.UTC), durationMinutes,
+        public ReservationRequest toRequest(ReservationStatus newStatus) {
+            return new ReservationRequest(guestName, phone, email, startsAt.atOffset(java.time.ZoneOffset.UTC), durationMinutes,
                     partySize, highChairs, strollerSpaces, tableId, newStatus, allergens, notes);
         }
     }

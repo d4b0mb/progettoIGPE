@@ -531,7 +531,7 @@ export interface components {
             /** Format: double */
             gridStepMeters: number;
         };
-        Draft: {
+        ReservationRequest: {
             guestName?: string;
             phone?: string;
             email?: string;
@@ -741,9 +741,13 @@ export interface components {
             /** @enum {string} */
             serviceStatus: "FREE" | "TO_CLEAN" | "OUT_OF_SERVICE";
         };
-        StatusChange: {
+        ReservationStatusChange: {
             /** @enum {string} */
             status?: "PENDING" | "CONFIRMED" | "ARRIVED" | "COMPLETED" | "CANCELLED" | "NO_SHOW";
+        };
+        OrderStatusChange: {
+            /** @enum {string} */
+            status?: "NEW" | "PREPARING" | "READY" | "SERVED" | "CANCELLED";
         };
         StatusResponse: {
             application: string;
@@ -894,7 +898,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["Draft"];
+                "application/json": components["schemas"]["ReservationRequest"];
             };
         };
         responses: {
@@ -1192,7 +1196,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["Draft"];
+                "application/json": components["schemas"]["ReservationRequest"];
             };
         };
         responses: {
@@ -1402,7 +1406,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["StatusChange"];
+                "application/json": components["schemas"]["ReservationStatusChange"];
             };
         };
         responses: {
@@ -1428,7 +1432,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["StatusChange"];
+                "application/json": components["schemas"]["OrderStatusChange"];
             };
         };
         responses: {

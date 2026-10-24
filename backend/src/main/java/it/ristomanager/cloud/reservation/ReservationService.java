@@ -4,7 +4,7 @@ import it.ristomanager.cloud.common.ApiException;
 import it.ristomanager.cloud.floor.FloorRepository;
 import it.ristomanager.cloud.floor.FloorTypes.DiningTable;
 import it.ristomanager.cloud.floor.FloorTypes.ServiceStatus;
-import it.ristomanager.cloud.reservation.ReservationTypes.Draft;
+import it.ristomanager.cloud.reservation.ReservationTypes.ReservationRequest;
 import it.ristomanager.cloud.reservation.ReservationTypes.Reservation;
 import it.ristomanager.cloud.restaurant.RestaurantRepository;
 import java.time.Instant;
@@ -36,7 +36,7 @@ public class ReservationService {
     }
 
     @Transactional
-    public Reservation create(UUID rid, UUID userId, Draft draft) {
+    public Reservation create(UUID rid, UUID userId, ReservationRequest draft) {
         ZoneId zone = restaurants.timezone(rid);
         ReservationRules.validate(draft, zone, Instant.now(), true);
         Reservation candidate = toReservation(null, draft);
@@ -49,7 +49,7 @@ public class ReservationService {
     }
 
     @Transactional
-    public Reservation update(UUID rid, UUID id, Draft draft) {
+    public Reservation update(UUID rid, UUID id, ReservationRequest draft) {
         reservations.find(rid, id).orElseThrow(() -> ApiException.notFound("No such reservation"));
         ZoneId zone = restaurants.timezone(rid);
         ReservationRules.validate(draft, zone, Instant.now(), false);
@@ -67,7 +67,7 @@ public class ReservationService {
     @Transactional
     public Reservation changeStatus(UUID rid, UUID id, ReservationStatus status) {
         Reservation existing = reservations.find(rid, id).orElseThrow(() -> ApiException.notFound("No such reservation"));
-        return update(rid, id, existing.toDraft(status));
+        return update(rid, id, existing.toRequest(status));
     }
 
     @Transactional
@@ -107,7 +107,7 @@ public class ReservationService {
                 .toList();
     }
 
-    private static Reservation toReservation(UUID id, Draft d) {
+    private static Reservation toReservation(UUID id, ReservationRequest d) {
         return new Reservation(id, d.tableId(), d.guestName(), d.phone(), d.email(),
                 d.startsAt().toInstant(), ReservationRules.durationOf(d), d.partySize(),
                 d.highChairs() == null ? 0 : d.highChairs(),
