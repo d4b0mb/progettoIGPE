@@ -14,3 +14,4 @@ decision changes, a new record supersedes the old one.
 | [0006](0006-deployment-path.md) | Docker Compose first, k3s in Phase 3 | Accepted |
 | [0007](0007-authentication.md) | Short-lived JWT plus rotating refresh cookie | Accepted |
 | [0008](0008-row-level-security-wiring.md) | How row-level security is wired | Accepted |
+| [0009](0009-double-booking-prevention.md) | Preventing double bookings in the database | Accepted |

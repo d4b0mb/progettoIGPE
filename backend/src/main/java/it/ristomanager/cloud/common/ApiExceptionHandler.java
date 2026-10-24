@@ -13,7 +13,11 @@ class ApiExceptionHandler {
 
     @ExceptionHandler(ApiException.class)
     ProblemDetail handleApi(ApiException e) {
-        return ProblemDetail.forStatusAndDetail(e.status(), e.getMessage());
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(e.status(), e.getMessage());
+        if (e.field() != null) {
+            problem.setProperty("fields", Map.of(e.field(), e.getMessage()));
+        }
+        return problem;
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)

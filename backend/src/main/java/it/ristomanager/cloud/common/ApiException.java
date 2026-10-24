@@ -6,10 +6,25 @@ import org.springframework.http.HttpStatus;
 public class ApiException extends RuntimeException {
 
     private final HttpStatus status;
+    private final String field;
 
     public ApiException(HttpStatus status, String message) {
+        this(status, message, null);
+    }
+
+    public ApiException(HttpStatus status, String message, String field) {
         super(message);
         this.status = status;
+        this.field = field;
+    }
+
+    /** The request field the problem is about, if any (lets a form mark the right input). */
+    public String field() {
+        return field;
+    }
+
+    public static ApiException invalid(String field, String message) {
+        return new ApiException(HttpStatus.BAD_REQUEST, message, field);
     }
 
     public HttpStatus status() {

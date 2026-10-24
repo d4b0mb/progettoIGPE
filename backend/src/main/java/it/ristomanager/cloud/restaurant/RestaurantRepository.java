@@ -20,4 +20,11 @@ public class RestaurantRepository {
                 .param("name", name)
                 .update();
     }
+
+    /** The restaurant's time zone, used to decide what "today" means for its reservations. */
+    public java.time.ZoneId timezone(UUID id) {
+        return jdbc.sql("select timezone from restaurant where id = :id")
+                .param("id", id).query(String.class).optional()
+                .map(java.time.ZoneId::of).orElse(java.time.ZoneId.of("Europe/Rome"));
+    }
 }
