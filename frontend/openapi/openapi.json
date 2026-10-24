@@ -1126,11 +1126,13 @@
           },
           "xMeters" : {
             "type" : "number",
-            "format" : "double"
+            "format" : "double",
+            "description" : "Centre of the table, in metres from the room's top-left corner"
           },
           "yMeters" : {
             "type" : "number",
-            "format" : "double"
+            "format" : "double",
+            "description" : "Centre of the table, in metres from the room's top-left corner"
           },
           "widthMeters" : {
             "type" : "number",
@@ -1142,7 +1144,8 @@
           },
           "rotationDegrees" : {
             "type" : "number",
-            "format" : "double"
+            "format" : "double",
+            "description" : "Clockwise rotation around the centre"
           },
           "seats" : {
             "type" : "integer",
@@ -1390,11 +1393,13 @@
           },
           "xMeters" : {
             "type" : "number",
-            "format" : "double"
+            "format" : "double",
+            "description" : "Centre of the element, in metres from the room's top-left corner"
           },
           "yMeters" : {
             "type" : "number",
-            "format" : "double"
+            "format" : "double",
+            "description" : "Centre of the element, in metres from the room's top-left corner"
           },
           "widthMeters" : {
             "type" : "number",
@@ -1406,7 +1411,8 @@
           },
           "rotationDegrees" : {
             "type" : "number",
-            "format" : "double"
+            "format" : "double",
+            "description" : "Clockwise rotation around the centre"
           }
         },
         "required" : [ "heightMeters", "id", "name", "roomId", "rotationDegrees", "type", "widthMeters", "xMeters", "yMeters" ]

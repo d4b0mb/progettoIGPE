@@ -1,5 +1,6 @@
 package it.ristomanager.cloud.floor;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.UUID;
 
 /** Shapes and states of the floor plan, plus the records the API exchanges. */
@@ -23,13 +24,19 @@ public final class FloorTypes {
 
     public record DiningTable(
             UUID id, UUID roomId, int number, String name,
-            double xMeters, double yMeters, double widthMeters, double heightMeters, double rotationDegrees,
+            @Schema(description = "Centre of the table, in metres from the room's top-left corner") double xMeters,
+            @Schema(description = "Centre of the table, in metres from the room's top-left corner") double yMeters,
+            double widthMeters, double heightMeters,
+            @Schema(description = "Clockwise rotation around the centre") double rotationDegrees,
             int seats, TableShape shape, boolean accessible, ServiceStatus serviceStatus) {
     }
 
     public record Obstacle(
             UUID id, UUID roomId, ObstacleType type, String name,
-            double xMeters, double yMeters, double widthMeters, double heightMeters, double rotationDegrees) {
+            @Schema(description = "Centre of the element, in metres from the room's top-left corner") double xMeters,
+            @Schema(description = "Centre of the element, in metres from the room's top-left corner") double yMeters,
+            double widthMeters, double heightMeters,
+            @Schema(description = "Clockwise rotation around the centre") double rotationDegrees) {
     }
 
     /** A table together with its status right now. */

@@ -15,6 +15,8 @@ export interface NavItem {
 /** Every screen of the back-office, and who may open it. Screens are added here as they are built. */
 export const NAV: NavItem[] = [
   { href: "/reservations", key: "reservations", icon: "calendar", roles: ["OWNER", "MANAGER", "WAITER"] },
+  { href: "/floor", key: "floor", icon: "floor", roles: ["OWNER", "MANAGER", "WAITER"] },
+  { href: "/menu", key: "menu", icon: "book", roles: ["OWNER", "MANAGER", "WAITER"] },
   { href: "/staff", key: "staff", icon: "users", roles: ["OWNER"] },
 ];
 

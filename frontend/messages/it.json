@@ -198,7 +198,8 @@
     "save": "Salva modifiche",
     "dragHint": "Trascina per spostare. Le modifiche si salvano quando rilasci.",
     "seatsShort": "{count} posti",
-    "ownerOnlyEdit": "Solo il titolare e i responsabili possono modificare la piantina."
+    "ownerOnlyEdit": "Solo il titolare e i responsabili possono modificare la piantina.",
+    "table": "Tavolo"
   },
   "elements": {
     "WALL": "Muro",

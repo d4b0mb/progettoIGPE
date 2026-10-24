@@ -198,7 +198,8 @@
     "save": "Save changes",
     "dragHint": "Drag to move. Changes are saved when you let go.",
     "seatsShort": "{count} seats",
-    "ownerOnlyEdit": "Only the owner and managers can edit the floor plan."
+    "ownerOnlyEdit": "Only the owner and managers can edit the floor plan.",
+    "table": "Table"
   },
   "elements": {
     "WALL": "Wall",

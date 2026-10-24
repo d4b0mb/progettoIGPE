@@ -484,15 +484,24 @@ export interface components {
             /** Format: int32 */
             number: number;
             name: string;
-            /** Format: double */
+            /**
+             * Format: double
+             * @description Centre of the table, in metres from the room's top-left corner
+             */
             xMeters: number;
-            /** Format: double */
+            /**
+             * Format: double
+             * @description Centre of the table, in metres from the room's top-left corner
+             */
             yMeters: number;
             /** Format: double */
             widthMeters: number;
             /** Format: double */
             heightMeters: number;
-            /** Format: double */
+            /**
+             * Format: double
+             * @description Clockwise rotation around the centre
+             */
             rotationDegrees: number;
             /** Format: int32 */
             seats: number;
@@ -589,15 +598,24 @@ export interface components {
             /** @enum {string} */
             type: "WALL" | "COLUMN" | "DOOR" | "WINDOW" | "STAIRS" | "KITCHEN" | "TOILETS" | "BAR" | "ENTRANCE" | "STORAGE";
             name: string;
-            /** Format: double */
+            /**
+             * Format: double
+             * @description Centre of the element, in metres from the room's top-left corner
+             */
             xMeters: number;
-            /** Format: double */
+            /**
+             * Format: double
+             * @description Centre of the element, in metres from the room's top-left corner
+             */
             yMeters: number;
             /** Format: double */
             widthMeters: number;
             /** Format: double */
             heightMeters: number;
-            /** Format: double */
+            /**
+             * Format: double
+             * @description Clockwise rotation around the centre
+             */
             rotationDegrees: number;
         };
         MenuItemRequest: {
