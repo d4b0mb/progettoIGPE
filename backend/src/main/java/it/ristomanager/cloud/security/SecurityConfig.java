@@ -30,6 +30,8 @@ import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.oauth2.jwt.NimbusJwtEncoder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.oauth2.server.resource.web.authentication.BearerTokenAuthenticationFilter;
+import it.ristomanager.cloud.tenant.TenantFilter;
 
 @Configuration
 @EnableMethodSecurity
@@ -51,7 +53,9 @@ class SecurityConfig {
                                 "/api/v1/auth/signup", "/api/v1/auth/login",
                                 "/api/v1/auth/refresh", "/api/v1/auth/logout").permitAll()
                         .anyRequest().authenticated())
-                .oauth2ResourceServer(o -> o.jwt(j -> j.jwtAuthenticationConverter(roleConverter())));
+                .oauth2ResourceServer(o -> o.jwt(j -> j.jwtAuthenticationConverter(roleConverter())))
+                // Must run after the token is verified: it reads the restaurant from it.
+                .addFilterAfter(new TenantFilter(), BearerTokenAuthenticationFilter.class);
         return http.build();
     }
 

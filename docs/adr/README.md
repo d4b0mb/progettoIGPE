@@ -13,3 +13,4 @@ decision changes, a new record supersedes the old one.
 | [0005](0005-server-sent-events-for-kitchen.md) | Server-Sent Events for the live kitchen screen | Accepted |
 | [0006](0006-deployment-path.md) | Docker Compose first, k3s in Phase 3 | Accepted |
 | [0007](0007-authentication.md) | Short-lived JWT plus rotating refresh cookie | Accepted |
+| [0008](0008-row-level-security-wiring.md) | How row-level security is wired | Accepted |

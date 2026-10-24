@@ -1,12 +1,17 @@
 spring:
   application:
     name: ristomanager-cloud
+  # The API connects as the restricted role so row-level security applies to it.
   datasource:
     url: ${DB_URL:jdbc:postgresql://localhost:5432/ristomanager}
-    username: ${DB_USER:ristomanager}
-    password: ${DB_PASSWORD:ristomanager}
+    username: ${DB_USER:ristomanager_app}
+    password: ${DB_PASSWORD:ristomanager_app}
+  # Migrations connect as the owner, which is allowed to create tables and policies.
   flyway:
     enabled: true
+    url: ${FLYWAY_URL:${DB_URL:jdbc:postgresql://localhost:5432/ristomanager}}
+    user: ${FLYWAY_USER:ristomanager}
+    password: ${FLYWAY_PASSWORD:ristomanager}
 
 app:
   version: "@project.version@"

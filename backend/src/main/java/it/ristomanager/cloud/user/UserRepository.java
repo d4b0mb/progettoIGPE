@@ -17,8 +17,12 @@ public class UserRepository {
         this.jdbc = jdbc;
     }
 
+    /**
+     * Login lookup. There is no restaurant yet, so this goes through a narrow
+     * database function that is allowed to see across restaurants (see V5).
+     */
     public Optional<AppUser> findByEmail(String email) {
-        return jdbc.sql("select " + COLUMNS + " from app_user where email = :email")
+        return jdbc.sql("select " + COLUMNS + " from auth_find_user_by_email(:email)")
                 .param("email", email)
                 .query(UserRepository::map)
                 .optional();
@@ -31,8 +35,9 @@ public class UserRepository {
                 .optional();
     }
 
+    /** Emails are unique across all restaurants, so this too uses the cross-tenant function. */
     public boolean emailExists(String email) {
-        return jdbc.sql("select exists(select 1 from app_user where email = :email)")
+        return jdbc.sql("select auth_email_exists(:email)")
                 .param("email", email)
                 .query(Boolean.class)
                 .single();

@@ -13,10 +13,11 @@ public class RestaurantRepository {
         this.jdbc = jdbc;
     }
 
-    public UUID insert(String name) {
-        return jdbc.sql("insert into restaurant (name) values (:name) returning id")
+    /** The id is chosen by the caller so sign-up can run as the new restaurant (row-level security). */
+    public void insert(UUID id, String name) {
+        jdbc.sql("insert into restaurant (id, name) values (:id, :name)")
+                .param("id", id)
                 .param("name", name)
-                .query(UUID.class)
-                .single();
+                .update();
     }
 }
