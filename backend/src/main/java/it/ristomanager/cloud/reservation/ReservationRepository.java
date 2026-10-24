@@ -113,6 +113,14 @@ public class ReservationRepository {
                 .query(ReservationRepository::map).optional();
     }
 
+    /** The party currently seated at this table (arrived and not yet finished), if any. */
+    public Optional<Reservation> findArrivedAt(UUID rid, UUID tableId, Instant now) {
+        return jdbc.sql("select " + COLS + " from reservation where restaurant_id = :rid and table_id = :table "
+                        + "and status = 'ARRIVED' and starts_at <= :now and ends_at > :now order by starts_at desc limit 1")
+                .param("rid", rid).param("table", tableId).param("now", utc(now))
+                .query(ReservationRepository::map).optional();
+    }
+
     /** Ids of the tables that already hold a live reservation overlapping the given range. */
     public List<UUID> busyTables(UUID rid, Instant start, Instant end, UUID excludeId) {
         return jdbc.sql("select distinct table_id from reservation where restaurant_id = :rid and table_id is not null "
