@@ -73,9 +73,10 @@ public class MenuRepository {
 
     private static MenuItem map(ResultSet rs, int n) throws SQLException {
         String[] allergens = (String[]) rs.getArray("allergens").getArray();
-        int price = rs.getInt("price_cents");
+        // getObject returns null for a missing price. (wasNull() only describes the column read just before it.)
+        Integer price = rs.getObject("price_cents", Integer.class);
         return new MenuItem(rs.getObject("id", UUID.class), rs.getString("name"), rs.getString("description"),
-                Course.valueOf(rs.getString("course")), rs.wasNull() ? null : price,
+                Course.valueOf(rs.getString("course")), price,
                 Arrays.stream(allergens).map(Allergen::valueOf).toList(), rs.getBoolean("available"));
     }
 }

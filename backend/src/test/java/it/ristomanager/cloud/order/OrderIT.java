@@ -205,6 +205,18 @@ class OrderIT {
     }
 
     @Test
+    void aDishWithoutAPriceHasNoPriceNotZero() throws Exception {
+        String free = ApiClient.read(api.post(owner, "/api/v1/menu/items", "{\"name\":\"Bread\",\"course\":\"SIDE\"}")
+                .andExpect(status().isCreated()), "$.id");
+        api.post(owner, "/api/v1/menu/items", "{\"name\":\"Free sample\",\"course\":\"SIDE\",\"priceCents\":0}")
+                .andExpect(status().isCreated()).andExpect(jsonPath("$.priceCents").value(0));
+        api.get(owner, "/api/v1/menu/items").andExpect(status().isOk())
+                .andExpect(jsonPath("$[?(@.name=='Bread')].priceCents").value(org.hamcrest.Matchers.contains((Object) null)))
+                .andExpect(jsonPath("$[?(@.name=='Free sample')].priceCents").value(org.hamcrest.Matchers.contains(0)));
+        assertThat(free).isNotBlank();
+    }
+
+    @Test
     void menuIsReadableByAllStaffButEditableOnlyByOwnerAndManager() throws Exception {
         api.get(kitchen, "/api/v1/menu/items").andExpect(status().isOk());
         api.get(waiter, "/api/v1/menu/items").andExpect(status().isOk());
