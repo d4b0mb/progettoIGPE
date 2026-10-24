@@ -1,0 +1,22 @@
+spring:
+  application:
+    name: ristomanager-cloud
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/ristomanager}
+    username: ${DB_USER:ristomanager}
+    password: ${DB_PASSWORD:ristomanager}
+  flyway:
+    enabled: true
+
+app:
+  version: "@project.version@"
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      probes:
+        enabled: true
