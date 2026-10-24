@@ -12,6 +12,10 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
+# Where the API lives. Next.js bakes the /api forwarding rule in at build time, so it is a build
+# argument. The default fits Docker Compose and a Kubernetes service named "backend".
+ARG BACKEND_URL=http://backend:8080
+ENV BACKEND_URL=$BACKEND_URL
 RUN npm run build
 
 # ---- runtime: only the built server, non-root

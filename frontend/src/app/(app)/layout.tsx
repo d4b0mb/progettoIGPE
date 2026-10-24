@@ -1,15 +1,18 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { useSession } from "@/api/session";
 import { Shell } from "@/components/Shell";
+import { mayOpen } from "@/components/nav";
 
 /** Everything inside (app) needs a signed-in user; anyone else is sent to the sign-in page. */
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { state } = useSession();
   const router = useRouter();
+  const pathname = usePathname();
   const t = useTranslations("common");
 
   useEffect(() => {
@@ -23,5 +26,19 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       </div>
     );
   }
-  return <Shell user={state.user}>{children}</Shell>;
+  const allowed = mayOpen(state.user.role, pathname);
+  return (
+    <Shell user={state.user}>
+      {allowed ? (
+        children
+      ) : (
+        <div role="alert" className="flex max-w-md flex-col gap-3">
+          <p className="text-lg font-bold">{t("noAccess")}</p>
+          <Link href="/" className="font-bold text-primary underline">
+            {t("goHome")}
+          </Link>
+        </div>
+      )}
+    </Shell>
+  );
 }

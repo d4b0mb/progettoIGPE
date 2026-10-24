@@ -1,4 +1,7 @@
-# Local development stack: `docker compose up --build`
+# The whole product on one machine:  docker compose up --build
+#   web app   http://localhost:3000
+#   API       http://localhost:8080
+# A demo restaurant is created on first start (see scripts/seed-demo.sh for the logins).
 services:
   db:
     image: postgres:17
@@ -31,11 +34,35 @@ services:
       FLYWAY_PASSWORD: ${POSTGRES_PASSWORD:-ristomanager}
       # Set a long random value in .env for anything beyond local use.
       JWT_SECRET: ${JWT_SECRET:-}
+      # Plain HTTP on localhost, so the refresh cookie cannot be marked Secure here.
+      COOKIE_SECURE: ${COOKIE_SECURE:-false}
     ports:
       - "8080:8080"
     depends_on:
       db:
         condition: service_healthy
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        BACKEND_URL: http://backend:8080
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+
+  # Runs once, creates the demo restaurant, then exits. Safe to run again.
+  seed:
+    image: curlimages/curl:8.11.1
+    entrypoint: ["sh", "/seed-demo.sh"]
+    environment:
+      API_URL: http://backend:8080
+    volumes:
+      - ./scripts/seed-demo.sh:/seed-demo.sh:ro
+    depends_on:
+      - backend
+    restart: "no"
 
 volumes:
   db-data:

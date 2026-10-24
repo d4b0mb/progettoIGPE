@@ -1,0 +1,65 @@
+# Production on a single server: HTTPS, the published images, and nightly-backup-ready storage.
+# Not Kubernetes: that is Phase 3. See docs/DEPLOY.md for the steps.
+#
+#   cp deploy/.env.prod.example deploy/.env      (then fill it in)
+#   docker compose -f deploy/docker-compose.prod.yml --env-file deploy/.env up -d
+services:
+  db:
+    image: postgres:17
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ristomanager
+      POSTGRES_USER: ristomanager
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in deploy/.env}
+      APP_DB_PASSWORD: ${APP_DB_PASSWORD:?set APP_DB_PASSWORD in deploy/.env}
+    volumes:
+      - db-data:/var/lib/postgresql/data
+      - ../infra/postgres/01-app-role.sh:/docker-entrypoint-initdb.d/01-app-role.sh:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ristomanager -d ristomanager"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    # Not published to the internet: only the other containers can reach the database.
+
+  backend:
+    image: ghcr.io/${GITHUB_OWNER:?set GITHUB_OWNER in deploy/.env}/ristomanager-backend:${IMAGE_TAG:-cloud-latest}
+    restart: unless-stopped
+    environment:
+      DB_URL: jdbc:postgresql://db:5432/ristomanager
+      DB_USER: ristomanager_app
+      DB_PASSWORD: ${APP_DB_PASSWORD}
+      FLYWAY_USER: ristomanager
+      FLYWAY_PASSWORD: ${POSTGRES_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET (at least 32 characters) in deploy/.env}
+      COOKIE_SECURE: "true"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  frontend:
+    image: ghcr.io/${GITHUB_OWNER}/ristomanager-frontend:${IMAGE_TAG:-cloud-latest}
+    restart: unless-stopped
+    depends_on:
+      - backend
+
+  # The only part facing the internet: terminates HTTPS (certificates are automatic) and routes
+  # /api to the backend and everything else to the web app.
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      DOMAIN: ${DOMAIN:?set DOMAIN in deploy/.env}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+    depends_on:
+      - frontend
+      - backend
+
+volumes:
+  db-data:
+  caddy-data:

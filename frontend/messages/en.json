@@ -8,7 +8,9 @@
     "retry": "Try again",
     "language": "Language",
     "signOut": "Sign out",
-    "somethingWentWrong": "Something went wrong. Please try again."
+    "somethingWentWrong": "Something went wrong. Please try again.",
+    "noAccess": "You do not have access to this screen.",
+    "goHome": "Go to the home screen"
   },
   "nav": {
     "reservations": "Reservations",

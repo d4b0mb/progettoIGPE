@@ -1,0 +1,21 @@
+{$DOMAIN} {
+	# The API, including the live kitchen stream: no buffering, so events arrive the moment they are sent.
+	handle /api/* {
+		reverse_proxy backend:8080 {
+			flush_interval -1
+		}
+	}
+
+	# Everything else is the web app.
+	handle {
+		encode zstd gzip
+		reverse_proxy frontend:3000
+	}
+
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		X-Frame-Options "DENY"
+	}
+}

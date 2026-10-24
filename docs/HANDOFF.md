@@ -2,7 +2,7 @@
 
 Read this first when starting a new session or switching models. It says what this
 project is, where it stands, how to run it, and the rules to keep.
-Last updated: 2026-10-24, during Block 7.
+Last updated: 2026-10-24, end of Block 8 (first full pass complete).
 
 ## What this is
 RistoManager Cloud: a multi-tenant web service for restaurants (reservations, floor plan,
@@ -42,15 +42,24 @@ production (Phase 3). GitHub Actions CI. Reasons for each choice: `docs/adr/`.
 4. Menu, orders, live kitchen API: done. Allergy crossing, daily ticket codes, SSE stream.
 5. Frontend foundation: done. Typed client, auth, responsive shell, IT/EN.
 6. Back-office screens: done. Reservations, menu, floor plan (drag/keyboard).
-7. Order entry + kitchen screen: code written, unit tests pass (44), NOT yet browser-tested or committed.
-8. Deploy readiness: not started. Full `docker compose up`, demo data, end-to-end tests, frontend
-   CI is done, image publishing, deploy guide.
+7. Order entry + kitchen screen: done and verified with two real browsers (order reaches the kitchen in ~150 ms).
+8. Deploy readiness: done. `docker compose up --build` runs everything + demo data; 10 browser tests
+   (`e2e/`) run in CI; CI publishes images to ghcr.io; `docs/DEPLOY.md` + `deploy/` for one server.
+   The server setup has NOT been run on a real server yet.
+
+Next phases (not started): Phase 3 Kubernetes (k3s), staging/production, monitoring; Phase 4 public
+booking site (Next.js, SEO, email confirmation).
+
+## Demo logins (after `docker compose up --build`)
+`owner@`, `manager@`, `waiter@`, `kitchen@` + `demo.ristomanager.local`, password `Demo-Password-2026`.
 
 ## How to run and test
 - Backend tests (need Docker running): `cd backend && ./mvnw verify`
 - Update the API contract after changing the API: `UPDATE_OPENAPI=true ./mvnw verify -Dit.test=OpenApiContractIT`,
   then `cd frontend && npm run api:types`, review and commit both.
 - Frontend checks: `cd frontend && npm run lint && npm run typecheck && npm test && npm run build`
+- Browser tests (stack must be up with demo data): `cd e2e && npm ci && npx playwright install chromium && npx playwright test`
+- Whole thing: `docker compose up --build` then open http://localhost:3000
 - Run by hand: start PostgreSQL (`docker compose up -d db`), run the backend jar, then
   `BACKEND_URL=http://localhost:8080 npm run start` in `frontend/`.
 
@@ -65,10 +74,21 @@ Italian is the default UI language; English is available.
 - Order/ticket history by day is not exposed (only the active queue).
 - A deactivated user keeps access up to 15 minutes (access token lifetime).
 - The floor plan on a phone shows the whole room small; no zoom control yet.
-- Frontend Docker image is only built in CI (the author's sandbox is rate-limited by Docker Hub).
+- The Docker images and the full compose stack were first built by CI, not in the author's sandbox (Docker Hub rate limits). If CI e2e fails, start there.
+- Production server setup (deploy/) is untested on a real server.
+- Table labels on the phone floor plan are small (whole room fits the screen).
 - Public booking site (Phase 4) and Kubernetes (Phase 3) are not started.
 
 ## Prompt to start a new session
 "Read docs/HANDOFF.md and docs/adr/README.md in the d4b0mb/progettoIGPE repo, branch
 ristomanager-cloud. Continue from the status list. Follow the rules in the handoff.
 Keep answers short and in plain English."
+
+## Lessons worth remembering
+- A green build can hide skipped tests: always confirm tests actually ran (Failsafe for `*IT`).
+- Rebuilding the backend jar while it runs breaks the running JVM: restart after every rebuild.
+- `pkill -f <text>` kills your own shell if the text is in your command line: kill by process id.
+- OpenAPI merges two Java types with the same simple name into one schema (guarded by a test).
+- `ResultSet.wasNull()` only describes the last column read: use `getObject(col, Integer.class)`.
+- Playwright: `getByRole("alert")` also matches Next.js's route announcer; the orders and kitchen
+  pages hold a live stream open, so "network idle" never happens.

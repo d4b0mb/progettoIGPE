@@ -8,7 +8,9 @@
     "retry": "Riprova",
     "language": "Lingua",
     "signOut": "Esci",
-    "somethingWentWrong": "Qualcosa è andato storto. Riprova."
+    "somethingWentWrong": "Qualcosa è andato storto. Riprova.",
+    "noAccess": "Non hai accesso a questa schermata.",
+    "goHome": "Torna alla schermata iniziale"
   },
   "nav": {
     "reservations": "Prenotazioni",

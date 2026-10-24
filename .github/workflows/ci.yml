@@ -62,15 +62,98 @@ jobs:
       - run: npm test
       - run: npm run build
 
-  docker:
-    name: Docker images
+  e2e:
+    name: End-to-end (the whole stack in a real browser)
     runs-on: ubuntu-latest
     needs: [backend, frontend]
-    strategy:
-      matrix:
-        service: [backend, frontend]
     steps:
       - uses: actions/checkout@v4
 
-      - name: Build ${{ matrix.service }} image (not pushed yet)
-        run: docker build --tag ristomanager-${{ matrix.service }}:ci ${{ matrix.service }}
+      # Builds the backend and frontend images and starts everything, exactly as a user would:
+      # docker compose up. The "seed" service then creates the demo restaurant the tests use.
+      - name: Start the stack
+        run: docker compose up -d --build
+
+      - name: Wait for the web app and the demo data
+        run: |
+          for i in $(seq 1 90); do
+            curl -sf http://localhost:3000/login >/dev/null && break
+            sleep 2
+          done
+          curl -sf http://localhost:3000/login >/dev/null || { echo "web app did not start"; docker compose logs; exit 1; }
+          for i in $(seq 1 60); do
+            state=$(docker inspect -f '{{.State.Status}}' "$(docker compose ps -aq seed)")
+            [ "$state" = "exited" ] && break
+            sleep 2
+          done
+          code=$(docker inspect -f '{{.State.ExitCode}}' "$(docker compose ps -aq seed)")
+          docker compose logs seed
+          [ "$code" = "0" ] || { echo "seeding failed"; exit 1; }
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: e2e/package-lock.json
+
+      - name: Install the test browser
+        working-directory: e2e
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+
+      - name: Run the browser tests
+        working-directory: e2e
+        env:
+          CI: "true"
+        run: npx playwright test
+
+      - name: Keep the report and logs if something failed
+        if: failure()
+        run: docker compose logs --no-color > compose-logs.txt || true
+
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: e2e-failure-details
+          path: |
+            e2e/playwright-report
+            e2e/test-results
+            compose-logs.txt
+
+      - name: Stop the stack
+        if: always()
+        run: docker compose down -v
+
+  publish:
+    name: Publish images to GitHub Container Registry
+    runs-on: ubuntu-latest
+    needs: e2e
+    # Only for real pushes, never for pull requests from forks.
+    if: github.event_name == 'push'
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push both images
+        env:
+          OWNER: ${{ github.repository_owner }}
+        run: |
+          short="sha-${GITHUB_SHA::7}"
+          for service in backend frontend; do
+            image="ghcr.io/${OWNER,,}/ristomanager-${service}"
+            docker build --tag "${image}:${short}" "${service}"
+            docker push "${image}:${short}"
+            if [ "${GITHUB_REF_NAME}" = "ristomanager-cloud" ]; then
+              docker tag "${image}:${short}" "${image}:cloud-latest"
+              docker push "${image}:cloud-latest"
+            fi
+          done

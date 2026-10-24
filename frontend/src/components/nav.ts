@@ -25,3 +25,12 @@ export const NAV: NavItem[] = [
 export function navFor(role: Role): NavItem[] {
   return NAV.filter((item) => item.roles.includes(role));
 }
+
+/**
+ * Whether this role may open a path. A path that is not in the menu (the home page) is open to everyone
+ * signed in. This only decides what to show; the server checks the role on every request regardless.
+ */
+export function mayOpen(role: Role, pathname: string): boolean {
+  const item = NAV.find((n) => pathname === n.href || pathname.startsWith(`${n.href}/`));
+  return item ? item.roles.includes(role) : true;
+}
