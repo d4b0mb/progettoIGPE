@@ -308,6 +308,22 @@ export interface paths {
         patch: operations["changeStatus_1"];
         trace?: never;
     };
+    "/api/v1/tables": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["allTables"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/status": {
         parameters: {
             query?: never;
@@ -1405,6 +1421,26 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["TicketView"];
+                };
+            };
+        };
+    };
+    allTables: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["DiningTable"][];
                 };
             };
         };

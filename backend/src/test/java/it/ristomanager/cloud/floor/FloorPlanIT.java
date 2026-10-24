@@ -61,6 +61,19 @@ class FloorPlanIT {
     }
 
     @Test
+    void allTablesListsEveryRoomsTablesOfThisRestaurantOnly() throws Exception {
+        Actor owner = api.signup("R");
+        String main = createRoom(owner, "Main");
+        String terrace = createRoom(owner, "Terrace");
+        api.post(owner, "/api/v1/rooms/" + main + "/tables", table("")).andExpect(status().isCreated());
+        api.post(owner, "/api/v1/rooms/" + terrace + "/tables", table("")).andExpect(status().isCreated());
+        createRoom(api.signup("Other"), "Main");
+
+        api.get(owner, "/api/v1/tables").andExpect(status().isOk()).andExpect(jsonPath("$.length()").value(2));
+        api.get(api.staff(owner, "KITCHEN"), "/api/v1/tables").andExpect(status().isForbidden());
+    }
+
+    @Test
     void tableNumbersAreAssignedAutomaticallyAndMustBeUnique() throws Exception {
         Actor owner = api.signup("R");
         String room = createRoom(owner, "Main");

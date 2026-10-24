@@ -820,6 +820,27 @@
         }
       }
     },
+    "/api/v1/tables" : {
+      "get" : {
+        "tags" : [ "floor-controller" ],
+        "operationId" : "allTables",
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/DiningTable"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/status" : {
       "get" : {
         "tags" : [ "status-controller" ],

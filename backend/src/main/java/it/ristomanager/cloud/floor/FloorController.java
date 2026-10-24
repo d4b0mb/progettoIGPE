@@ -99,6 +99,12 @@ class FloorController {
         return floor.listRooms(rid(jwt));
     }
 
+    /** Every table of the restaurant, across rooms: lets a reservation show "table 4" without loading each room. */
+    @GetMapping("/tables")
+    List<DiningTable> allTables(@AuthenticationPrincipal Jwt jwt) {
+        return floor.listAllTables(rid(jwt));
+    }
+
     @GetMapping("/rooms/{id}/layout")
     Layout layout(@AuthenticationPrincipal Jwt jwt, @PathVariable UUID id) {
         UUID rid = rid(jwt);
