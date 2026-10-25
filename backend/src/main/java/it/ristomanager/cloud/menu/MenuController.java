@@ -37,6 +37,7 @@ class MenuController {
             @NotBlank @Size(max = 120) String name,
             @Size(max = 500) String description,
             @NotNull Course course,
+            @Size(max = 60) String section,
             @Min(0) @Max(1_000_000) Integer priceCents,
             List<Allergen> allergens,
             Boolean available) {
@@ -85,6 +86,6 @@ class MenuController {
 
     private static MenuItem toItem(MenuItemRequest r) {
         return new MenuItem(null, r.name().trim(), r.description() == null ? "" : r.description().trim(), r.course(),
-                r.priceCents(), r.allergens() == null ? List.of() : r.allergens(), r.available() == null || r.available());
+                r.section() == null ? "" : r.section().trim(), r.priceCents(), r.allergens() == null ? List.of() : r.allergens(), r.available() == null || r.available());
     }
 }

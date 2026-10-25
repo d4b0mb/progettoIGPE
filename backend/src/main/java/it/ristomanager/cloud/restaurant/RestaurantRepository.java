@@ -27,4 +27,16 @@ public class RestaurantRepository {
                 .param("id", id).query(String.class).optional()
                 .map(java.time.ZoneId::of).orElse(java.time.ZoneId.of("Europe/Rome"));
     }
+
+    public java.util.Optional<RestaurantTypes.RestaurantView> view(UUID id) {
+        return jdbc.sql("select name, theme from restaurant where id = :id").param("id", id)
+                .query((rs, n) -> new RestaurantTypes.RestaurantView(rs.getString("name"),
+                        RestaurantTypes.Theme.valueOf(rs.getString("theme").toUpperCase())))
+                .optional();
+    }
+
+    public boolean setTheme(UUID id, RestaurantTypes.Theme theme) {
+        return jdbc.sql("update restaurant set theme = :theme where id = :id")
+                .param("id", id).param("theme", theme.name().toLowerCase()).update() == 1;
+    }
 }

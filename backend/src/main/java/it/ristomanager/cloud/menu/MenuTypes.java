@@ -12,7 +12,7 @@ public final class MenuTypes {
 
     /** The order dishes leave the kitchen in. Drinks go first. */
     public enum Course {
-        DRINK(0), STARTER(1), FIRST(2), SECOND(3), SIDE(4), DESSERT(5);
+        DRINK(0), STARTER(1), PIZZA(2), FIRST(3), SECOND(4), SIDE(5), DESSERT(6);
 
         private final int order;
 
@@ -25,7 +25,8 @@ public final class MenuTypes {
         }
     }
 
-    public record MenuItem(UUID id, String name, String description, Course course, @Schema(nullable = true) Integer priceCents,
-                           List<Allergen> allergens, boolean available) {
+    /** {@code section} groups many items of one course on screen ("Birre", "Vini"); it may be empty. */
+    public record MenuItem(UUID id, String name, String description, Course course, String section,
+                           @Schema(nullable = true) Integer priceCents, List<Allergen> allergens, boolean available) {
     }
 }

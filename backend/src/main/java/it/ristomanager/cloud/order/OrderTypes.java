@@ -58,14 +58,15 @@ public final class OrderTypes {
         }
     }
 
-    public record LineRequest(UUID menuItemId, Integer quantity, String note) {
+    /** {@code serving} is 1 to 9 (blank means 1): lines of serving 2 reach the kitchen after serving 1 is served. */
+    public record LineRequest(UUID menuItemId, Integer quantity, String note, Integer serving) {
     }
 
     public record OrderRequest(UUID tableId, UUID reservationId, Priority priority, String note, List<LineRequest> items) {
     }
 
     public record ItemView(UUID id, @Schema(nullable = true) UUID menuItemId, String name, int quantity, Course course,
-                           List<Allergen> allergens, List<Allergen> conflicts, String note) {
+                           List<Allergen> allergens, List<Allergen> conflicts, String note, int serving) {
     }
 
     /**
@@ -76,6 +77,7 @@ public final class OrderTypes {
                              @Schema(nullable = true) Integer tableNumber, @Schema(nullable = true) UUID reservationId,
                              String guestName, List<Allergen> guestAllergens, Priority priority, Status status,
                              String note, boolean hasAllergyConflicts, List<ItemView> items,
+                             int currentServing, int servingCount, Instant servingSince,
                              Instant createdAt, @Schema(nullable = true) Instant acknowledgedAt,
                              @Schema(nullable = true) Instant readyAt, @Schema(nullable = true) Instant servedAt) {
     }

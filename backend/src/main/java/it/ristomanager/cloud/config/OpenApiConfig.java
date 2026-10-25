@@ -27,7 +27,7 @@ class OpenApiConfig {
     private static final Set<String> RESPONSES = Set.of(
             "Room", "DiningTable", "Obstacle", "TableView", "Layout",
             "Reservation", "MenuItem", "UserView", "ItemView", "TicketView",
-            "TokenResponse", "StatusResponse", "AuditEntry", "RecoveryStatus", "RecoveryQuestionsResponse");
+            "TokenResponse", "StatusResponse", "AuditEntry","RestaurantView", "RecoveryStatus", "RecoveryQuestionsResponse");
 
     @Bean
     @SuppressWarnings({"rawtypes", "unchecked"})

@@ -269,4 +269,101 @@ class OrderIT {
             pool.shutdownNow();
         }
     }
+
+    private String servingOrder(String... idServing) {
+        StringBuilder lines = new StringBuilder();
+        for (int i = 0; i < idServing.length; i += 2) {
+            if (lines.length() > 0) {
+                lines.append(',');
+            }
+            lines.append("{\"menuItemId\":\"").append(idServing[i]).append("\",\"quantity\":1,\"serving\":")
+                    .append(idServing[i + 1]).append('}');
+        }
+        return "{\"tableId\":\"%s\",\"items\":[%s]}".formatted(table, lines);
+    }
+
+    @Test
+    void servingsGoToTheKitchenOneAfterTheOtherWithoutLosingTheRestOfTheOrder() throws Exception {
+        String id = ApiClient.read(api.post(waiter, "/api/v1/orders", servingOrder(water, "1", pesto, "2", steak, "3"))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.currentServing").value(1))
+                .andExpect(jsonPath("$.servingCount").value(3))
+                .andExpect(jsonPath("$.items[0].serving").value(1))
+                .andExpect(jsonPath("$.items[2].serving").value(3)), "$.id");
+        String url = "/api/v1/orders/" + id + "/status";
+
+        // Serving 1 is cooked and served ...
+        api.patch(kitchen, url, "{\"status\":\"PREPARING\"}").andExpect(status().isOk());
+        api.patch(kitchen, url, "{\"status\":\"READY\"}").andExpect(status().isOk());
+        // ... and serving it does not finish the order: serving 2 is now new for the kitchen.
+        api.patch(waiter, url, "{\"status\":\"SERVED\"}").andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("NEW"))
+                .andExpect(jsonPath("$.currentServing").value(2))
+                .andExpect(jsonPath("$.servingCount").value(3))
+                .andExpect(jsonPath("$.acknowledgedAt").doesNotExist())
+                .andExpect(jsonPath("$.items.length()").value(3));
+        api.get(kitchen, "/api/v1/orders/active").andExpect(jsonPath("$.length()").value(1));
+
+        api.patch(kitchen, url, "{\"status\":\"PREPARING\"}").andExpect(status().isOk());
+        api.patch(kitchen, url, "{\"status\":\"READY\"}").andExpect(status().isOk());
+        api.patch(waiter, url, "{\"status\":\"SERVED\"}").andExpect(status().isOk())
+                .andExpect(jsonPath("$.currentServing").value(3)).andExpect(jsonPath("$.status").value("NEW"));
+
+        // The last serving finishes the order.
+        api.patch(kitchen, url, "{\"status\":\"PREPARING\"}").andExpect(status().isOk());
+        api.patch(kitchen, url, "{\"status\":\"READY\"}").andExpect(status().isOk());
+        api.patch(waiter, url, "{\"status\":\"SERVED\"}").andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("SERVED")).andExpect(jsonPath("$.servedAt").exists());
+        api.get(kitchen, "/api/v1/orders/active").andExpect(jsonPath("$.length()").value(0));
+    }
+
+    @Test
+    void servingNumbersMayHaveGapsAndDefaultToOne() throws Exception {
+        // Only servings 2 and 5 are used: the order starts at 2 and then moves to 5.
+        String id = ApiClient.read(api.post(waiter, "/api/v1/orders", servingOrder(pesto, "2", steak, "5"))
+                .andExpect(status().isCreated()).andExpect(jsonPath("$.currentServing").value(2))
+                .andExpect(jsonPath("$.servingCount").value(2)), "$.id");
+        String url = "/api/v1/orders/" + id + "/status";
+        api.patch(kitchen, url, "{\"status\":\"PREPARING\"}").andExpect(status().isOk());
+        api.patch(kitchen, url, "{\"status\":\"READY\"}").andExpect(status().isOk());
+        api.patch(waiter, url, "{\"status\":\"SERVED\"}").andExpect(status().isOk())
+                .andExpect(jsonPath("$.currentServing").value(5));
+
+        // No serving given means serving 1.
+        api.post(waiter, "/api/v1/orders", order(table, "NORMAL", steak)).andExpect(status().isCreated())
+                .andExpect(jsonPath("$.currentServing").value(1)).andExpect(jsonPath("$.servingCount").value(1))
+                .andExpect(jsonPath("$.items[0].serving").value(1));
+    }
+
+    @Test
+    void invalidServingNumbersAreRefusedAndCancellingStopsTheWholeOrder() throws Exception {
+        api.post(waiter, "/api/v1/orders", servingOrder(steak, "0")).andExpect(status().isBadRequest());
+        api.post(waiter, "/api/v1/orders", servingOrder(steak, "10")).andExpect(status().isBadRequest());
+
+        String id = ApiClient.read(api.post(waiter, "/api/v1/orders", servingOrder(pesto, "1", steak, "2"))
+                .andExpect(status().isCreated()), "$.id");
+        api.patch(waiter, "/api/v1/orders/" + id + "/status", "{\"status\":\"CANCELLED\"}")
+                .andExpect(status().isOk()).andExpect(jsonPath("$.status").value("CANCELLED"));
+        api.get(kitchen, "/api/v1/orders/active").andExpect(jsonPath("$.length()").value(0));
+    }
+
+    @Test
+    void pizzasAndMenuSectionsWorkAndTheOwnerPicksTheLook() throws Exception {
+        api.post(owner, "/api/v1/menu/items", """
+                {"name":"Margherita","course":"PIZZA","section":"Pizze classiche","priceCents":700,"allergens":["GLUTEN","MILK"]}
+                """).andExpect(status().isCreated()).andExpect(jsonPath("$.course").value("PIZZA"))
+                .andExpect(jsonPath("$.section").value("Pizze classiche"));
+        api.post(owner, "/api/v1/menu/items", "{\"name\":\"Plain\",\"course\":\"DRINK\"}").andExpect(status().isCreated())
+                .andExpect(jsonPath("$.section").value(""));
+        api.post(owner, "/api/v1/menu/items", "{\"name\":\"Long\",\"course\":\"DRINK\",\"section\":\"" + "x".repeat(61) + "\"}")
+                .andExpect(status().isBadRequest());
+
+        api.get(waiter, "/api/v1/restaurant").andExpect(status().isOk()).andExpect(jsonPath("$.theme").value("CLASSIC"))
+                .andExpect(jsonPath("$.name").value("R"));
+        api.put(waiter, "/api/v1/restaurant/theme", "{\"theme\":\"DUODECIM\"}").andExpect(status().isForbidden());
+        api.put(owner, "/api/v1/restaurant/theme", "{\"theme\":\"DUODECIM\"}").andExpect(status().isOk())
+                .andExpect(jsonPath("$.theme").value("DUODECIM"));
+        api.get(kitchen, "/api/v1/restaurant").andExpect(jsonPath("$.theme").value("DUODECIM"));
+        api.put(owner, "/api/v1/restaurant/theme", "{\"theme\":\"NEON\"}").andExpect(status().isBadRequest());
+    }
 }

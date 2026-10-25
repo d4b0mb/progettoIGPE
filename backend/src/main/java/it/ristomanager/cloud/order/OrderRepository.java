@@ -29,14 +29,14 @@ public class OrderRepository {
     /** A ticket row before its lines are attached. */
     private record Row(UUID id, String code, UUID tableId, Integer tableNumber, UUID reservationId, String guestName,
                        List<Allergen> guestAllergens, Priority priority, Status status, String note,
-                       Instant createdAt, Instant acknowledgedAt, Instant readyAt, Instant servedAt) {
+                       int currentServing, Instant servingSince, Instant createdAt, Instant acknowledgedAt, Instant readyAt, Instant servedAt) {
     }
 
     private static final String TICKET_COLS = "id, code, table_id, table_number, reservation_id, guest_name, "
-            + "guest_allergens, priority, status, note, created_at, acknowledged_at, ready_at, served_at";
+            + "guest_allergens, priority, status, note, current_serving, serving_since, created_at, acknowledged_at, ready_at, served_at";
 
     private static final String QUEUE_ORDER = "order by case priority when 'VIP' then 3 when 'URGENT' then 2 "
-            + "when 'HIGH' then 1 else 0 end desc, created_at";
+            + "when 'HIGH' then 1 else 0 end desc, serving_since";
 
     private final JdbcClient jdbc;
 
@@ -67,12 +67,18 @@ public class OrderRepository {
     }
 
     public void insertItem(UUID rid, UUID ticketId, UUID menuItemId, String name, int quantity, Course course,
-                           List<Allergen> allergens, String note) {
-        jdbc.sql("insert into ticket_item (restaurant_id, ticket_id, menu_item_id, name, quantity, course, allergens, note) "
-                        + "values (:rid, :ticket, :menu, :name, :qty, :course, cast(:allergens as text[]), :note)")
+                           List<Allergen> allergens, String note, int serving) {
+        jdbc.sql("insert into ticket_item (restaurant_id, ticket_id, menu_item_id, name, quantity, course, allergens, note, serving) "
+                        + "values (:rid, :ticket, :menu, :name, :qty, :course, cast(:allergens as text[]), :note, :serving)")
                 .param("rid", rid).param("ticket", ticketId).param("menu", menuItemId).param("name", name)
                 .param("qty", quantity).param("course", course.name()).param("allergens", names(allergens))
-                .param("note", note).update();
+                .param("note", note).param("serving", serving).update();
+    }
+
+    /** A new ticket begins at its lowest serving (normally 1), whatever numbers the waiter used. */
+    public void startAtServing(UUID rid, UUID ticketId, int serving) {
+        jdbc.sql("update kitchen_ticket set current_serving = :serving where restaurant_id = :rid and id = :id")
+                .param("rid", rid).param("id", ticketId).param("serving", serving).update();
     }
 
     public Optional<TicketView> find(UUID rid, UUID id) {
@@ -89,8 +95,23 @@ public class OrderRepository {
         return attach(rid, rows);
     }
 
-    /** Moves a ticket only if it is still in the status the caller saw. */
+    /**
+     * Moves a ticket only if it is still in the status the caller saw. Serving the current serving of a
+     * ticket that has more servings does not finish the ticket: the next serving becomes current and is new to the kitchen.
+     */
     public boolean transition(UUID rid, UUID id, Status from, Status to) {
+        if (to == Status.SERVED) {
+            Integer next = jdbc.sql("select min(serving) from ticket_item where restaurant_id = :rid and ticket_id = :id "
+                            + "and serving > (select current_serving from kitchen_ticket where restaurant_id = :rid and id = :id)")
+                    .param("rid", rid).param("id", id).query((rs, n) -> rs.getObject(1, Integer.class)).single();
+            if (next != null) {
+                return jdbc.sql("update kitchen_ticket set status = 'NEW', current_serving = :next, serving_since = now(), "
+                                + "acknowledged_at = null, ready_at = null "
+                                + "where restaurant_id = :rid and id = :id and status = :from")
+                        .param("rid", rid).param("id", id).param("from", from.name()).param("next", next)
+                        .update() == 1;
+            }
+        }
         return jdbc.sql("update kitchen_ticket set status = :to, "
                         + "acknowledged_at = case when :to = 'PREPARING' then coalesce(acknowledged_at, now()) else acknowledged_at end, "
                         + "ready_at = case when :to = 'READY' then now() else ready_at end, "
@@ -108,8 +129,8 @@ public class OrderRepository {
         Map<UUID, List<ItemView>> itemsByTicket = new HashMap<>();
         Map<UUID, Row> byId = new HashMap<>();
         rows.forEach(r -> byId.put(r.id(), r));
-        jdbc.sql("select ticket_id, id, menu_item_id, name, quantity, course, allergens, note from ticket_item "
-                        + "where restaurant_id = :rid and ticket_id = any(:ids) order by name")
+        jdbc.sql("select ticket_id, id, menu_item_id, name, quantity, course, allergens, note, serving from ticket_item "
+                        + "where restaurant_id = :rid and ticket_id = any(:ids) order by serving, name")
                 .param("rid", rid).param("ids", ids)
                 .query((rs, n) -> {
                     UUID ticketId = rs.getObject("ticket_id", UUID.class);
@@ -118,19 +139,20 @@ public class OrderRepository {
                     return Map.entry(ticketId, new ItemView(rs.getObject("id", UUID.class),
                             rs.getObject("menu_item_id", UUID.class), rs.getString("name"), rs.getInt("quantity"),
                             Course.valueOf(rs.getString("course")), dish, OrderTypes.conflictsOf(dish, guest),
-                            rs.getString("note")));
+                            rs.getString("note"), rs.getInt("serving")));
                 }).list()
                 .forEach(e -> itemsByTicket.computeIfAbsent(e.getKey(), k -> new ArrayList<>()).add(e.getValue()));
 
         List<TicketView> views = new ArrayList<>();
         for (Row r : rows) {
             List<ItemView> items = itemsByTicket.getOrDefault(r.id(), List.of()).stream()
-                    .sorted(java.util.Comparator.comparingInt((ItemView i) -> i.course().order()))
+                    .sorted(java.util.Comparator.comparingInt(ItemView::serving).thenComparingInt((ItemView i) -> i.course().order()))
                     .toList();
             boolean conflicts = items.stream().anyMatch(i -> !i.conflicts().isEmpty());
+            int servings = (int) items.stream().map(ItemView::serving).distinct().count();
             views.add(new TicketView(r.id(), r.code(), r.tableId(), r.tableNumber(), r.reservationId(), r.guestName(),
                     r.guestAllergens(), r.priority(), r.status(), r.note(), conflicts, items,
-                    r.createdAt(), r.acknowledgedAt(), r.readyAt(), r.servedAt()));
+                    r.currentServing(), Math.max(servings, 1), r.servingSince(), r.createdAt(), r.acknowledgedAt(), r.readyAt(), r.servedAt()));
         }
         return views;
     }
@@ -160,6 +182,6 @@ public class OrderRepository {
                 tableNumber, rs.getObject("reservation_id", UUID.class), rs.getString("guest_name"),
                 Arrays.stream((String[]) rs.getArray("guest_allergens").getArray()).map(Allergen::valueOf).toList(),
                 Priority.valueOf(rs.getString("priority")), Status.valueOf(rs.getString("status")), rs.getString("note"),
-                instant(rs, "created_at"), instant(rs, "acknowledged_at"), instant(rs, "ready_at"), instant(rs, "served_at"));
+                rs.getInt("current_serving"), instant(rs, "serving_since"), instant(rs, "created_at"), instant(rs, "acknowledged_at"), instant(rs, "ready_at"), instant(rs, "served_at"));
     }
 }

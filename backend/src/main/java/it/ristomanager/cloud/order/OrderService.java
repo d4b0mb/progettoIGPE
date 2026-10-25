@@ -31,6 +31,7 @@ public class OrderService {
 
     static final int MAX_LINES = 50;
     static final int MAX_QUANTITY = 99;
+    static final int MAX_SERVINGS = 9;
 
     private final OrderRepository orders;
     private final MenuRepository menu;
@@ -79,6 +80,9 @@ public class OrderService {
             if (line.quantity() == null || line.quantity() < 1 || line.quantity() > MAX_QUANTITY) {
                 throw ApiException.invalid("items", "Quantity must be between 1 and " + MAX_QUANTITY);
             }
+            if (line.serving() != null && (line.serving() < 1 || line.serving() > MAX_SERVINGS)) {
+                throw ApiException.invalid("items", "A serving number must be between 1 and " + MAX_SERVINGS);
+            }
             if (line.note() != null && line.note().length() > 200) {
                 throw ApiException.invalid("items", "A line note is too long");
             }
@@ -97,19 +101,25 @@ public class OrderService {
         LocalDate day = LocalDate.now(restaurants.timezone(rid));
         String code = "C-%03d".formatted(orders.nextNumber(rid, day));
         Priority priority = req.priority() == null ? Priority.NORMAL : req.priority();
+        int firstServing = lines.stream().mapToInt(OrderService::servingOf).min().orElse(1);
         UUID ticketId = orders.insertTicket(rid, userId, day, code, table.id(), table.number(),
                 party == null ? null : party.id(), party == null ? "" : party.guestName(), guestAllergens,
                 priority, req.note() == null ? "" : req.note().trim());
         for (LineRequest line : lines) {
             MenuItem dish = dishes.get(line.menuItemId());
             orders.insertItem(rid, ticketId, dish.id(), dish.name(), line.quantity(), dish.course(), dish.allergens(),
-                    line.note() == null ? "" : line.note().trim());
+                    line.note() == null ? "" : line.note().trim(), servingOf(line));
         }
+        orders.startAtServing(rid, ticketId, firstServing);
         TicketView view = orders.find(rid, ticketId).orElseThrow();
         events.publish(rid, "ticket-created", view);
         audit.record("ORDER_CREATED", "order", ticketId.toString(),
                 Map.of("code", view.code(), "table", String.valueOf(table.number()), "lines", String.valueOf(lines.size())));
         return view;
+    }
+
+    private static int servingOf(LineRequest line) {
+        return line.serving() == null ? 1 : line.serving();
     }
 
     public List<TicketView> active(UUID rid) {
