@@ -201,7 +201,12 @@
     "dragHint": "Drag to move. Changes are saved when you let go.",
     "seatsShort": "{count} seats",
     "ownerOnlyEdit": "Only the owner and managers can edit the floor plan.",
-    "table": "Table"
+    "table": "Table",
+    "zoomIn": "Zoom in",
+    "zoomOut": "Zoom out",
+    "fit": "Fit to screen",
+    "panHint": "Drag the empty floor to move around. Ctrl + scroll to zoom.",
+    "scale": "{metres} m"
   },
   "elements": {
     "WALL": "Wall",

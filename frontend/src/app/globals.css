@@ -46,3 +46,9 @@ body {
   outline: 3px solid var(--color-primary);
   outline-offset: 2px;
 }
+
+/* Shapes inside the floor plan draw their own focus ring: a browser outline around an SVG group is a big ugly box. */
+svg g:focus-visible,
+svg g:focus {
+  outline: none;
+}

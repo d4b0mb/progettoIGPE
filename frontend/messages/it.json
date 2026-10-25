@@ -201,7 +201,12 @@
     "dragHint": "Trascina per spostare. Le modifiche si salvano quando rilasci.",
     "seatsShort": "{count} posti",
     "ownerOnlyEdit": "Solo il titolare e i responsabili possono modificare la piantina.",
-    "table": "Tavolo"
+    "table": "Tavolo",
+    "zoomIn": "Ingrandisci",
+    "zoomOut": "Riduci",
+    "fit": "Adatta allo schermo",
+    "panHint": "Trascina il pavimento vuoto per spostarti. Ctrl + rotella per ingrandire.",
+    "scale": "{metres} m"
   },
   "elements": {
     "WALL": "Muro",

@@ -280,7 +280,7 @@ function RoomView({ room, canEdit }: { room: Room; canEdit: boolean }) {
               </li>
             ))}
           </ul>
-          {canEdit ? <p className="text-xs text-muted">{t("dragHint")}</p> : null}
+          <p className="text-xs text-muted">{t("panHint")}{canEdit ? ` ${t("dragHint")}` : ""}</p>
         </div>
 
         {selectedTable ? (

@@ -46,3 +46,64 @@ describe("floor plan geometry", () => {
     }
   });
 });
+
+import { constrainView, fitView, panBy, scaleBarMetres, zoomAt, zoomLevel } from "./geometry";
+
+describe("camera: zoom and pan", () => {
+  const W = 12;
+  const H = 9;
+
+  it("starts by showing the whole room with a margin", () => {
+    expect(fitView(W, H)).toEqual({ x: -0.5, y: -0.5, width: 13, height: 10 });
+    expect(zoomLevel(fitView(W, H), W, H)).toBe(1);
+  });
+
+  it("zooms in around the point under the cursor, which stays where it is", () => {
+    const start = fitView(W, H);
+    const next = zoomAt(start, 2, 6, 4.5, W, H); // the room's centre
+    expect(next.width).toBeCloseTo(start.width / 2);
+    // The centre point keeps the same relative position inside the window.
+    expect((6 - next.x) / next.width).toBeCloseTo((6 - start.x) / start.width);
+    expect((4.5 - next.y) / next.height).toBeCloseTo((4.5 - start.y) / start.height);
+  });
+
+  it("keeps the window's shape the same as the room's when zooming", () => {
+    const next = zoomAt(fitView(W, H), 3, 2, 2, W, H);
+    expect(next.width / next.height).toBeCloseTo(13 / 10);
+  });
+
+  it("cannot zoom out past the whole room or in past eight times", () => {
+    const start = fitView(W, H);
+    expect(zoomAt(start, 0.2, 6, 4.5, W, H).width).toBe(start.width);
+    expect(zoomLevel(zoomAt(start, 100, 6, 4.5, W, H), W, H)).toBeCloseTo(8);
+  });
+
+  it("zooming in and back out returns to the same view", () => {
+    const start = fitView(W, H);
+    const back = zoomAt(zoomAt(start, 2, 3, 3, W, H), 0.5, 3, 3, W, H);
+    expect(back.width).toBeCloseTo(start.width);
+    expect(back.x).toBeCloseTo(start.x);
+    expect(back.y).toBeCloseTo(start.y);
+  });
+
+  it("pans by a distance, and dragging right moves the plan right", () => {
+    const zoomed = zoomAt(fitView(W, H), 2, 6, 4.5, W, H);
+    const moved = panBy(zoomed, 1, 0.5, W, H);
+    expect(moved.x).toBeCloseTo(zoomed.x - 1);
+    expect(moved.y).toBeCloseTo(zoomed.y - 0.5);
+  });
+
+  it("will not let the plan be dragged out of sight", () => {
+    const zoomed = zoomAt(fitView(W, H), 2, 6, 4.5, W, H);
+    const far = panBy(zoomed, -500, 500, W, H);
+    expect(far.x).toBeLessThanOrEqual(W);
+    expect(far.x + far.width).toBeGreaterThan(0);
+    expect(constrainView(far, W, H)).toEqual(far);
+  });
+
+  it("picks a round scale-bar length", () => {
+    expect(scaleBarMetres(13)).toBe(2);
+    expect(scaleBarMetres(40)).toBe(10);
+    expect(scaleBarMetres(1.5)).toBe(0.25);
+  });
+});

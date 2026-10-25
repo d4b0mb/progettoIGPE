@@ -79,3 +79,66 @@ export function defaultObstacleSize(type: ObstacleType): { width: number; height
       return { width: 2, height: 1.5 };
   }
 }
+
+/** What part of the room is on screen, in metres: the top-left corner and the size of the window. */
+export interface View {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+/** Zoom limits, as a share of the room: 100% shows it all, 12.5% is eight times closer. */
+const MIN_SHARE = 0.125;
+const MARGIN = 0.5; // metres of breathing room around the room when fitted
+
+/** The whole room, with a little margin. */
+export function fitView(roomWidth: number, roomHeight: number): View {
+  return { x: -MARGIN, y: -MARGIN, width: roomWidth + 2 * MARGIN, height: roomHeight + 2 * MARGIN };
+}
+
+/** Keeps the window from drifting away from the room: at least a quarter of it must stay in view. */
+export function constrainView(view: View, roomWidth: number, roomHeight: number): View {
+  const slackX = view.width * 0.75;
+  const slackY = view.height * 0.75;
+  return {
+    ...view,
+    x: clamp(view.x, -slackX, roomWidth - view.width + slackX),
+    y: clamp(view.y, -slackY, roomHeight - view.height + slackY),
+  };
+}
+
+/**
+ * Zoom by a factor (above 1 zooms in) while keeping the point under the cursor still,
+ * so the plan grows around what you are looking at. (px, py) is that point in metres.
+ */
+export function zoomAt(view: View, factor: number, px: number, py: number, roomWidth: number, roomHeight: number): View {
+  const full = fitView(roomWidth, roomHeight);
+  const width = clamp(view.width / factor, full.width * MIN_SHARE, full.width);
+  const height = (width / full.width) * full.height;
+  const scale = width / view.width;
+  return constrainView(
+    { x: px - (px - view.x) * scale, y: py - (py - view.y) * scale, width, height },
+    roomWidth,
+    roomHeight,
+  );
+}
+
+/** Slide the window by a distance in metres. */
+export function panBy(view: View, dx: number, dy: number, roomWidth: number, roomHeight: number): View {
+  return constrainView({ ...view, x: view.x - dx, y: view.y - dy }, roomWidth, roomHeight);
+}
+
+/** How zoomed in the view is: 1 means the whole room, 2 means half of it. */
+export function zoomLevel(view: View, roomWidth: number, roomHeight: number): number {
+  return fitView(roomWidth, roomHeight).width / view.width;
+}
+
+/** A nice round length for the scale bar, about a fifth of what is on screen. */
+export function scaleBarMetres(viewWidth: number): number {
+  const target = viewWidth / 5;
+  for (const step of [0.25, 0.5, 1, 2, 5, 10, 20, 50]) {
+    if (step >= target * 0.7) return step;
+  }
+  return 50;
+}
