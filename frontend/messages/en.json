@@ -213,7 +213,7 @@
     "zoomIn": "Zoom in",
     "zoomOut": "Zoom out",
     "fit": "Fit to screen",
-    "panHint": "Drag the empty floor to move around. Ctrl + scroll to zoom.",
+    "panHint": "Drag the empty floor to move around. Click the plan, then Ctrl + scroll to zoom it.",
     "scale": "{metres} m"
   },
   "elements": {

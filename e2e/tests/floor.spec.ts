@@ -59,4 +59,32 @@ test.describe("floor plan", () => {
     await expect(level).toHaveText("100%");
     await context.close();
   });
+
+  test("Ctrl + scroll zooms the plan only after it was clicked, and otherwise leaves the browser's zoom alone", async ({ browser }) => {
+    const { context, page } = await signedIn(browser, demo.owner, { width: 1440, height: 900 });
+    await page.goto("/floor");
+    await expect(page.getByRole("button", { name: /^Table 1,/ })).toBeVisible();
+    const level = page.getByRole("button", { name: "Fit to screen" });
+    const plan = page.getByRole("group", { name: "Main room" });
+
+    // Sends a Ctrl+wheel and reports whether the page stopped the browser's own zoom.
+    const ctrlWheel = () =>
+      plan.evaluate((svg) => {
+        const event = new WheelEvent("wheel", { ctrlKey: true, deltaY: -100, bubbles: true, cancelable: true });
+        svg.dispatchEvent(event);
+        return event.defaultPrevented;
+      });
+
+    expect(await ctrlWheel(), "not clicked yet: the browser zooms as usual").toBe(false);
+    await expect(level).toHaveText("100%");
+
+    const box = (await plan.boundingBox())!;
+    await page.mouse.click(box.x + box.width * 0.5, box.y + box.height * 0.1);
+    expect(await ctrlWheel(), "clicked: the plan takes the scroll").toBe(true);
+    await expect(level).not.toHaveText("100%");
+
+    await page.mouse.click(5, 5); // click somewhere else on the page
+    expect(await ctrlWheel(), "clicked away: the browser zooms again").toBe(false);
+    await context.close();
+  });
 });

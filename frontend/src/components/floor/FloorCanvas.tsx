@@ -1,7 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { useRef, useState, type KeyboardEvent, type PointerEvent as ReactPointerEvent } from "react";
+import { useEffect, useRef, useState, type KeyboardEvent, type PointerEvent as ReactPointerEvent } from "react";
 import type { components } from "@/api/schema";
 import { dragTarget, fitView, moveByKey, panBy, scaleBarMetres, zoomAt, zoomLevel, type View } from "./geometry";
 
@@ -69,6 +69,40 @@ export function FloorCanvas({
   const [view, setView] = useState<View>(() => fitView(W, H));
   const [drag, setDrag] = useState<Drag | null>(null);
   const [pan, setPan] = useState<Pan | null>(null);
+  // Ctrl + scroll zooms the plan only after the plan was clicked; otherwise the browser's own zoom keeps working.
+  const [active, setActive] = useState(false);
+  const activeRef = useRef(false);
+  const zoomRef = useRef<(deltaY: number, clientX: number, clientY: number) => void>(() => {});
+  // Keep the wheel listener (set up once below) pointed at the latest state.
+  useEffect(() => {
+    activeRef.current = active;
+    zoomRef.current = (deltaY, clientX, clientY) => zoomBy(deltaY < 0 ? 1.15 : 1 / 1.15, toMeters(clientX, clientY) ?? undefined);
+  });
+
+  useEffect(() => {
+    const svg = svgRef.current;
+    if (!svg) return;
+    // A native listener: React's onWheel is passive, so it cannot stop the browser from zooming the page.
+    const onWheel = (event: WheelEvent) => {
+      if ((!event.ctrlKey && !event.metaKey) || !activeRef.current) return;
+      event.preventDefault();
+      zoomRef.current(event.deltaY, event.clientX, event.clientY);
+    };
+    const onOutside = (event: PointerEvent) => {
+      if (!svg.contains(event.target as Node)) setActive(false);
+    };
+    const onEscape = (event: globalThis.KeyboardEvent) => {
+      if (event.key === "Escape") setActive(false);
+    };
+    svg.addEventListener("wheel", onWheel, { passive: false });
+    document.addEventListener("pointerdown", onOutside);
+    document.addEventListener("keydown", onEscape);
+    return () => {
+      svg.removeEventListener("wheel", onWheel);
+      document.removeEventListener("pointerdown", onOutside);
+      document.removeEventListener("keydown", onEscape);
+    };
+  }, []);
 
   /** Pixel position on screen to metres in the room, using the SVG's own transform. */
   function toMeters(clientX: number, clientY: number): { x: number; y: number } | null {
@@ -171,16 +205,11 @@ export function FloorCanvas({
         className={`block w-full rounded-2xl border border-line bg-surface select-none ${pan ? "cursor-grabbing" : "cursor-default"}`}
         // Always fits the screen's height; the drawing keeps its shape inside.
         style={{ aspectRatio: `${view.width} / ${view.height}`, maxHeight: "calc(100dvh - 14rem)", minHeight: 280, touchAction: "pan-y" }}
+        onPointerDownCapture={() => setActive(true)}
         onPointerDown={onBackgroundDown}
         onPointerMove={onBackgroundMove}
         onPointerUp={onBackgroundUp}
         onPointerCancel={onBackgroundUp}
-        onWheel={(event) => {
-          // Plain scrolling still scrolls the page. Ctrl (or pinch on a trackpad) zooms the plan.
-          if (!event.ctrlKey && !event.metaKey) return;
-          event.preventDefault();
-          zoomBy(event.deltaY < 0 ? 1.15 : 1 / 1.15, toMeters(event.clientX, event.clientY) ?? undefined);
-        }}
       >
         <defs>
           <pattern id="floor-grid" width={room.gridStepMeters * 4} height={room.gridStepMeters * 4} patternUnits="userSpaceOnUse">

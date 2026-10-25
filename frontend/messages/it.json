@@ -213,7 +213,7 @@
     "zoomIn": "Ingrandisci",
     "zoomOut": "Riduci",
     "fit": "Adatta allo schermo",
-    "panHint": "Trascina il pavimento vuoto per spostarti. Ctrl + rotella per ingrandire.",
+    "panHint": "Trascina il pavimento vuoto per spostarti. Clicca la pianta, poi Ctrl + rotella per ingrandirla.",
     "scale": "{metres} m"
   },
   "elements": {
