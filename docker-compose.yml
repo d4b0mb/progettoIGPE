@@ -1,6 +1,7 @@
 # The whole product on one machine:  docker compose up --build
 #   web app   http://localhost:3000
-#   API       http://localhost:8080
+#   API       http://localhost:8080 (this computer only)
+# Other devices on the network: see docs/LOCAL_SERVER.md
 # A demo restaurant is created on first start (see scripts/seed-demo.sh for the logins).
 services:
   db:
@@ -10,8 +11,10 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-ristomanager}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-ristomanager}
       APP_DB_PASSWORD: ${APP_DB_PASSWORD:-ristomanager_app}
+    restart: unless-stopped
+    # Only this computer can reach the database; other devices go through the web app.
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
     volumes:
       - db-data:/var/lib/postgresql/data
       # Creates the restricted role the API connects as (first start only).
@@ -36,8 +39,9 @@ services:
       JWT_SECRET: ${JWT_SECRET:-}
       # Plain HTTP on localhost, so the refresh cookie cannot be marked Secure here.
       COOKIE_SECURE: ${COOKIE_SECURE:-false}
+    restart: unless-stopped
     ports:
-      - "8080:8080"
+      - "127.0.0.1:8080:8080"
     depends_on:
       db:
         condition: service_healthy
@@ -47,6 +51,8 @@ services:
       context: ./frontend
       args:
         BACKEND_URL: http://backend:8080
+    restart: unless-stopped
+    # The only port other devices on the network need.
     ports:
       - "3000:3000"
     depends_on:

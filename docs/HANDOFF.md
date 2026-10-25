@@ -93,7 +93,7 @@ Keep answers short and in plain English."
 - Rebuilding the backend jar while it runs breaks the running JVM: restart after every rebuild.
 - `pkill -f <text>` kills your own shell if the text is in your command line: kill by process id.
 - A new response type must be added to `OpenApiConfig.RESPONSES` or its fields become optional in the TS types.
-- Phone on the same Wi-Fi: use the PC's LAN IP (`http://192.168.x.x:3000`), not localhost, and allow port 3000 in the PC firewall.
+- Run it for the whole restaurant: `docs/LOCAL_SERVER.md`. Phone on the same Wi-Fi: use the PC's LAN IP (`http://192.168.x.x:3000`), not localhost, and allow port 3000 in the PC firewall.
 - OpenAPI merges two Java types with the same simple name into one schema (guarded by a test).
 - `ResultSet.wasNull()` only describes the last column read: use `getObject(col, Integer.class)`.
 - Playwright: `getByRole("alert")` also matches Next.js's route announcer; the orders and kitchen
