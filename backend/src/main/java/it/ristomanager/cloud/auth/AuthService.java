@@ -1,12 +1,15 @@
 package it.ristomanager.cloud.auth;
 
+import it.ristomanager.cloud.audit.AuditLog;
 import it.ristomanager.cloud.common.ApiException;
 import it.ristomanager.cloud.restaurant.RestaurantRepository;
 import it.ristomanager.cloud.security.JwtService;
+import it.ristomanager.cloud.security.CurrentUser;
 import it.ristomanager.cloud.security.JwtService.IssuedToken;
 import it.ristomanager.cloud.security.SecurityProperties;
 import it.ristomanager.cloud.tenant.TenantContext;
 import it.ristomanager.cloud.user.AppUser;
+import it.ristomanager.cloud.user.PasswordPolicy;
 import it.ristomanager.cloud.user.Role;
 import it.ristomanager.cloud.user.UserRepository;
 import java.nio.charset.StandardCharsets;
@@ -17,6 +20,7 @@ import java.time.Instant;
 import java.util.Base64;
 import java.util.HexFormat;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.dao.DuplicateKeyException;
@@ -46,6 +50,7 @@ public class AuthService {
     private final JwtService jwt;
     private final SecurityProperties props;
     private final TransactionTemplate tx;
+    private final AuditLog audit;
     private final SecureRandom random = new SecureRandom();
 
     /** Compared against when the email is unknown, so "no such user" costs the same time as "wrong password". */
@@ -53,7 +58,7 @@ public class AuthService {
 
     AuthService(UserRepository users, RestaurantRepository restaurants, RefreshTokenRepository refreshTokens,
                 PasswordEncoder encoder, JwtService jwt, SecurityProperties props,
-                PlatformTransactionManager txManager) {
+                PlatformTransactionManager txManager, AuditLog audit) {
         this.users = users;
         this.restaurants = restaurants;
         this.refreshTokens = refreshTokens;
@@ -61,6 +66,7 @@ public class AuthService {
         this.jwt = jwt;
         this.props = props;
         this.tx = new TransactionTemplate(txManager);
+        this.audit = audit;
         this.dummyHash = encoder.encode("not-a-real-password");
     }
 
@@ -77,11 +83,14 @@ public class AuthService {
         UUID restaurantId = UUID.randomUUID();
         try {
             // The new restaurant does not exist yet, so the request runs as the id it is about to get.
-            return TenantContext.callAs(restaurantId, () -> tx.execute(status -> {
+            Session session = TenantContext.callAs(restaurantId, () -> tx.execute(status -> {
                 restaurants.insert(restaurantId, restaurantName.trim());
                 AppUser owner = users.insert(restaurantId, normalized, hash, ownerName.trim(), Role.OWNER);
                 return startSession(owner);
             }));
+            audit.recordFor(restaurantId, session.user().id(), normalized, "SIGNUP", "restaurant", restaurantId.toString(),
+                    "SUCCESS", Map.of("restaurant", restaurantName.trim()));
+            return session;
         } catch (DuplicateKeyException e) {
             // Two signups with the same email racing each other.
             throw ApiException.conflict("An account with this email already exists");
@@ -91,11 +100,22 @@ public class AuthService {
     public Session login(String email, String password) {
         Optional<AppUser> found = users.findByEmail(normalizeEmail(email));
         boolean passwordOk = encoder.matches(password, found.map(AppUser::passwordHash).orElse(dummyHash));
+        String normalized = normalizeEmail(email);
         if (found.isEmpty() || !passwordOk || !found.get().active()) {
+            // Nothing in the answer says which part was wrong, but the log does.
+            if (found.isPresent()) {
+                AppUser who = found.get();
+                audit.recordFor(who.restaurantId(), who.id(), normalized, "LOGIN_FAILED", "user", who.id().toString(), "FAILURE",
+                        Map.of("reason", !who.active() ? "account deactivated" : "wrong password"));
+            } else {
+                audit.recordUnscoped(normalized, "LOGIN_FAILED", "FAILURE", Map.of("reason", "unknown email"));
+            }
             throw ApiException.unauthorized("Invalid email or password");
         }
         AppUser user = found.get();
-        return TenantContext.callAs(user.restaurantId(), () -> tx.execute(status -> startSession(user)));
+        Session session = TenantContext.callAs(user.restaurantId(), () -> tx.execute(status -> startSession(user)));
+        audit.recordFor(user.restaurantId(), user.id(), normalized, "LOGIN_SUCCESS", "user", user.id().toString(), "SUCCESS", Map.of());
+        return session;
     }
 
     /** Exchanges a refresh token for a new session; the old token is used up. */
@@ -110,6 +130,8 @@ public class AuthService {
                 // A used-up token came back: someone copied it. Sign this user out everywhere.
                 // Committed on its own, before the error is raised, so it is not rolled back.
                 tx.executeWithoutResult(status -> refreshTokens.revokeAllForUser(stored.userId()));
+                audit.recordFor(stored.restaurantId(), stored.userId(), "", "TOKEN_REUSE_DETECTED", "user", stored.userId().toString(),
+                        "FAILURE", Map.of("effect", "all sessions of this user were ended"));
                 throw ApiException.unauthorized("Not signed in");
             }
             if (stored.expiresAt().isBefore(Instant.now())) {
@@ -134,11 +156,31 @@ public class AuthService {
                     tx.executeWithoutResult(status -> refreshTokens.revoke(t.id()));
                     return null;
                 }));
+        refreshTokens.findByHash(hash(rawToken)).ifPresent(t ->
+                audit.recordFor(t.restaurantId(), t.userId(), "", "LOGOUT", "user", t.userId().toString(), "SUCCESS", Map.of()));
     }
 
     /** Called from a request already running as the owner's restaurant. */
     public void revokeAllSessions(UUID userId) {
         refreshTokens.revokeAllForUser(userId);
+    }
+
+    /** A signed-in person changes their own password. Every other session of theirs ends; this one carries on. */
+    public Session changePassword(CurrentUser me, String currentPassword, String newPassword) {
+        PasswordPolicy.check(newPassword, "newPassword");
+        AppUser user = users.findById(me.userId()).orElseThrow(() -> ApiException.unauthorized("Not signed in"));
+        if (currentPassword == null || !encoder.matches(currentPassword, user.passwordHash())) {
+            audit.record("PASSWORD_CHANGE_FAILED", "user", user.id().toString(), Map.of("reason", "wrong current password"));
+            throw ApiException.invalid("currentPassword", "The current password is not correct");
+        }
+        String hash = encoder.encode(newPassword);
+        Session session = tx.execute(status -> {
+            users.updatePassword(user.restaurantId(), user.id(), hash);
+            refreshTokens.revokeAllForUser(user.id());
+            return startSession(user);
+        });
+        audit.record("PASSWORD_CHANGED", "user", user.id().toString(), Map.of());
+        return session;
     }
 
     private Session startSession(AppUser user) {

@@ -1,3 +1,7 @@
+server:
+  # Behind the reverse proxy the real client address arrives in X-Forwarded-For; the activity log records it.
+  forward-headers-strategy: framework
+
 spring:
   application:
     name: ristomanager-cloud
@@ -20,6 +24,12 @@ app:
     access-ttl: 15m
     refresh-ttl: 14d
     cookie-secure: ${COOKIE_SECURE:false}
+  retention:
+    enabled: ${RETENTION_ENABLED:true}
+    # Guest name, phone, email, notes and declared allergies are erased this many days after the visit.
+    guest-data-days: ${GUEST_DATA_DAYS:90}
+    # Entries of the activity log (which include IP addresses) are deleted after this many days.
+    audit-days: ${AUDIT_DAYS:365}
 
 springdoc:
   # The machine-readable API description. Off unless asked for: it lists every

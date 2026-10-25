@@ -64,6 +64,13 @@ public class UserRepository {
                 .list();
     }
 
+    /** @return true if a user of that restaurant had their password replaced. */
+    public boolean updatePassword(UUID restaurantId, UUID userId, String passwordHash) {
+        return jdbc.sql("update app_user set password_hash = :hash where id = :id and restaurant_id = :rid")
+                .param("hash", passwordHash).param("id", userId).param("rid", restaurantId)
+                .update() == 1;
+    }
+
     /** @return true if a user of that restaurant was deactivated. */
     public boolean deactivate(UUID restaurantId, UUID userId) {
         return jdbc.sql("update app_user set active = false where id = :id and restaurant_id = :rid")

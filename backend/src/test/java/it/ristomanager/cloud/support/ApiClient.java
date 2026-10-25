@@ -55,6 +55,19 @@ public class ApiClient {
                 JsonPath.read(body, "$.user.restaurantId"), email);
     }
 
+    /** Signs in with an email and password; the caller checks the status. */
+    public ResultActions login(String email, String password) throws Exception {
+        return mvc.perform(MockMvcRequestBuilders.post("/api/v1/auth/login").contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                        {"email":"%s","password":"%s"}
+                        """.formatted(email, password)));
+    }
+
+    /** Calls an endpoint that needs no sign-in. */
+    public ResultActions anonymousPost(String url, String json) throws Exception {
+        return mvc.perform(MockMvcRequestBuilders.post(url).contentType(MediaType.APPLICATION_JSON).content(json));
+    }
+
     public ResultActions get(Actor who, String url) throws Exception {
         return mvc.perform(MockMvcRequestBuilders.get(url).header("Authorization", "Bearer " + who.token()));
     }

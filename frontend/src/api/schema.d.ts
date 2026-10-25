@@ -84,6 +84,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/me/recovery": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["status"];
+        put: operations["setUp"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/staff": {
         parameters: {
             query?: never;
@@ -196,6 +212,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/me/password": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["changePassword"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/auth/signup": {
         parameters: {
             query?: never;
@@ -222,6 +254,38 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["refresh"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/recovery/reset": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["reset"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/recovery/questions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["questions"];
         delete?: never;
         options?: never;
         head?: never;
@@ -274,6 +338,22 @@ export interface paths {
         options?: never;
         head?: never;
         patch: operations["setServiceStatus"];
+        trace?: never;
+    };
+    "/api/v1/staff/{id}/password": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: operations["resetPassword"];
         trace?: never;
     };
     "/api/v1/reservations/{id}/status": {
@@ -331,7 +411,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["status"];
+        get: operations["status_1"];
         put?: never;
         post?: never;
         delete?: never;
@@ -428,6 +508,22 @@ export interface paths {
             cookie?: never;
         };
         get: operations["me"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/audit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["list_3"];
         put?: never;
         post?: never;
         delete?: never;
@@ -640,6 +736,13 @@ export interface components {
             allergens: ("GLUTEN" | "CRUSTACEANS" | "EGGS" | "FISH" | "PEANUTS" | "SOYBEANS" | "MILK" | "TREE_NUTS" | "CELERY" | "MUSTARD" | "SESAME" | "SULPHITES" | "LUPIN" | "MOLLUSCS")[];
             available: boolean;
         };
+        RecoverySetupRequest: {
+            currentPassword: string;
+            question1: string;
+            answer1: string;
+            question2: string;
+            answer2: string;
+        };
         CreateStaffRequest: {
             displayName: string;
             /** Format: email */
@@ -718,12 +821,9 @@ export interface components {
             /** Format: date-time */
             servedAt?: string | null;
         };
-        SignupRequest: {
-            restaurantName: string;
-            ownerName: string;
-            /** Format: email */
-            email: string;
-            password: string;
+        ChangePasswordRequest: {
+            currentPassword: string;
+            newPassword: string;
         };
         TokenResponse: {
             accessToken: string;
@@ -731,6 +831,27 @@ export interface components {
             /** Format: int64 */
             expiresInSeconds: number;
             user: components["schemas"]["UserView"];
+        };
+        SignupRequest: {
+            restaurantName: string;
+            ownerName: string;
+            /** Format: email */
+            email: string;
+            password: string;
+        };
+        RecoveryResetRequest: {
+            /** Format: email */
+            email: string;
+            answer1: string;
+            answer2: string;
+            newPassword: string;
+        };
+        RecoveryQuestionsRequest: {
+            /** Format: email */
+            email: string;
+        };
+        RecoveryQuestionsResponse: {
+            questions?: string[];
         };
         LoginRequest: {
             /** Format: email */
@@ -740,6 +861,9 @@ export interface components {
         ServiceStatusRequest: {
             /** @enum {string} */
             serviceStatus: "FREE" | "TO_CLEAN" | "OUT_OF_SERVICE";
+        };
+        ResetPasswordRequest: {
+            newPassword: string;
         };
         ReservationStatusChange: {
             /** @enum {string} */
@@ -763,6 +887,32 @@ export interface components {
             table: components["schemas"]["DiningTable"];
             /** @enum {string} */
             liveStatus: "FREE" | "RESERVED" | "OCCUPIED" | "TO_CLEAN" | "OUT_OF_SERVICE";
+        };
+        RecoveryStatus: {
+            configured?: boolean;
+            question1?: string | null;
+            question2?: string | null;
+            /** Format: date-time */
+            updatedAt?: string | null;
+        };
+        AuditEntry: {
+            /** Format: uuid */
+            id?: string;
+            /** Format: date-time */
+            occurredAt?: string;
+            /** Format: uuid */
+            actorUserId?: string | null;
+            /** @description Display name of the person, or the email that was tried for a failed sign-in */
+            actorName?: string;
+            action?: string;
+            targetType?: string | null;
+            targetId?: string | null;
+            /** @enum {string} */
+            outcome?: "SUCCESS" | "FAILURE";
+            details?: {
+                [key: string]: string;
+            };
+            ip?: string | null;
         };
     };
     responses: never;
@@ -1015,6 +1165,48 @@ export interface operations {
             cookie?: never;
         };
         requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    status: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["RecoveryStatus"];
+                };
+            };
+        };
+    };
+    setUp: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RecoverySetupRequest"];
+            };
+        };
         responses: {
             /** @description OK */
             200: {
@@ -1279,6 +1471,30 @@ export interface operations {
             };
         };
     };
+    changePassword: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ChangePasswordRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["TokenResponse"];
+                };
+            };
+        };
+    };
     signup: {
         parameters: {
             query?: never;
@@ -1321,6 +1537,52 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["TokenResponse"];
+                };
+            };
+        };
+    };
+    reset: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RecoveryResetRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    questions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RecoveryQuestionsRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["RecoveryQuestionsResponse"];
                 };
             };
         };
@@ -1392,6 +1654,30 @@ export interface operations {
                 content: {
                     "*/*": components["schemas"]["DiningTable"];
                 };
+            };
+        };
+    };
+    resetPassword: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ResetPasswordRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
@@ -1467,7 +1753,7 @@ export interface operations {
             };
         };
     };
-    status: {
+    status_1: {
         parameters: {
             query?: never;
             header?: never;
@@ -1612,6 +1898,32 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["UserView"];
+                };
+            };
+        };
+    };
+    list_3: {
+        parameters: {
+            query?: {
+                from?: string;
+                to?: string;
+                before?: string;
+                actorId?: string;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["AuditEntry"][];
                 };
             };
         };

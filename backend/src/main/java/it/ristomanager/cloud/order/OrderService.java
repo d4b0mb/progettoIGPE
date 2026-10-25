@@ -1,5 +1,6 @@
 package it.ristomanager.cloud.order;
 
+import it.ristomanager.cloud.audit.AuditLog;
 import it.ristomanager.cloud.common.Allergen;
 import it.ristomanager.cloud.common.ApiException;
 import it.ristomanager.cloud.floor.FloorRepository;
@@ -20,6 +21,7 @@ import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -36,15 +38,18 @@ public class OrderService {
     private final ReservationRepository reservations;
     private final RestaurantRepository restaurants;
     private final TicketEvents events;
+    private final AuditLog audit;
 
     OrderService(OrderRepository orders, MenuRepository menu, FloorRepository floor,
-                 ReservationRepository reservations, RestaurantRepository restaurants, TicketEvents events) {
+                 ReservationRepository reservations, RestaurantRepository restaurants, TicketEvents events,
+                 AuditLog audit) {
         this.orders = orders;
         this.menu = menu;
         this.floor = floor;
         this.reservations = reservations;
         this.restaurants = restaurants;
         this.events = events;
+        this.audit = audit;
     }
 
     @Transactional
@@ -102,6 +107,8 @@ public class OrderService {
         }
         TicketView view = orders.find(rid, ticketId).orElseThrow();
         events.publish(rid, "ticket-created", view);
+        audit.record("ORDER_CREATED", "order", ticketId.toString(),
+                Map.of("code", view.code(), "table", String.valueOf(table.number()), "lines", String.valueOf(lines.size())));
         return view;
     }
 
@@ -132,6 +139,8 @@ public class OrderService {
         }
         TicketView updated = get(rid, id);
         events.publish(rid, "ticket-updated", updated);
+        audit.record("ORDER_STATUS_CHANGED", "order", id.toString(),
+                Map.of("code", updated.code(), "from", current.status().name(), "to", next.name()));
         return updated;
     }
 }

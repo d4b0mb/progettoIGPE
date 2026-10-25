@@ -31,6 +31,8 @@ import org.springframework.security.oauth2.jwt.NimbusJwtEncoder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.oauth2.server.resource.web.authentication.BearerTokenAuthenticationFilter;
+import it.ristomanager.cloud.audit.AuditFilter;
+import it.ristomanager.cloud.audit.AuditLog;
 import it.ristomanager.cloud.tenant.TenantFilter;
 
 @Configuration
@@ -41,7 +43,7 @@ class SecurityConfig {
     private static final Logger log = LoggerFactory.getLogger(SecurityConfig.class);
 
     @Bean
-    SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+    SecurityFilterChain filterChain(HttpSecurity http, AuditLog auditLog) throws Exception {
         http
                 // Stateless bearer-token API: no session, so no session-riding CSRF.
                 // The one cookie (refresh) is SameSite=Strict and scoped to /api/v1/auth.
@@ -51,11 +53,14 @@ class SecurityConfig {
                         .requestMatchers("/actuator/health/**", "/api/v1/status", "/v3/api-docs/**").permitAll()
                         .requestMatchers(HttpMethod.POST,
                                 "/api/v1/auth/signup", "/api/v1/auth/login",
-                                "/api/v1/auth/refresh", "/api/v1/auth/logout").permitAll()
+                                "/api/v1/auth/refresh", "/api/v1/auth/logout",
+                                "/api/v1/auth/recovery/questions", "/api/v1/auth/recovery/reset").permitAll()
                         .anyRequest().authenticated())
                 .oauth2ResourceServer(o -> o.jwt(j -> j.jwtAuthenticationConverter(roleConverter())))
                 // Must run after the token is verified: it reads the restaurant from it.
-                .addFilterAfter(new TenantFilter(), BearerTokenAuthenticationFilter.class);
+                .addFilterAfter(new TenantFilter(), BearerTokenAuthenticationFilter.class)
+                // Inside the tenant filter, so a logged action is written as the right restaurant.
+                .addFilterAfter(new AuditFilter(auditLog), TenantFilter.class);
         return http.build();
     }
 

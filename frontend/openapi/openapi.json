@@ -309,6 +309,43 @@
         }
       }
     },
+    "/api/v1/me/recovery" : {
+      "get" : {
+        "tags" : [ "recovery-controller" ],
+        "operationId" : "status",
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/RecoveryStatus"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put" : {
+        "tags" : [ "recovery-controller" ],
+        "operationId" : "setUp",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/RecoverySetupRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK"
+          }
+        }
+      }
+    },
     "/api/v1/staff" : {
       "get" : {
         "tags" : [ "staff-controller" ],
@@ -608,6 +645,34 @@
         }
       }
     },
+    "/api/v1/me/password" : {
+      "post" : {
+        "tags" : [ "auth-controller" ],
+        "operationId" : "changePassword",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ChangePasswordRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/TokenResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/auth/signup" : {
       "post" : {
         "tags" : [ "auth-controller" ],
@@ -655,6 +720,55 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/TokenResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/recovery/reset" : {
+      "post" : {
+        "tags" : [ "recovery-controller" ],
+        "operationId" : "reset",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/RecoveryResetRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/auth/recovery/questions" : {
+      "post" : {
+        "tags" : [ "recovery-controller" ],
+        "operationId" : "questions",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/RecoveryQuestionsRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/RecoveryQuestionsResponse"
                 }
               }
             }
@@ -742,6 +856,36 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "/api/v1/staff/{id}/password" : {
+      "patch" : {
+        "tags" : [ "staff-controller" ],
+        "operationId" : "resetPassword",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ResetPasswordRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK"
           }
         }
       }
@@ -844,7 +988,7 @@
     "/api/v1/status" : {
       "get" : {
         "tags" : [ "status-controller" ],
-        "operationId" : "status",
+        "operationId" : "status_1",
         "responses" : {
           "200" : {
             "description" : "OK",
@@ -1017,6 +1161,69 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/UserView"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/audit" : {
+      "get" : {
+        "tags" : [ "audit-controller" ],
+        "operationId" : "list_3",
+        "parameters" : [ {
+          "name" : "from",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        }, {
+          "name" : "to",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        }, {
+          "name" : "before",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        }, {
+          "name" : "actorId",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "name" : "limit",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32",
+            "default" : 200
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/AuditEntry"
+                  }
                 }
               }
             }
@@ -1487,6 +1694,36 @@
         },
         "required" : [ "allergens", "available", "course", "description", "id", "name" ]
       },
+      "RecoverySetupRequest" : {
+        "type" : "object",
+        "properties" : {
+          "currentPassword" : {
+            "type" : "string",
+            "minLength" : 1
+          },
+          "question1" : {
+            "type" : "string",
+            "maxLength" : 200,
+            "minLength" : 0
+          },
+          "answer1" : {
+            "type" : "string",
+            "maxLength" : 200,
+            "minLength" : 0
+          },
+          "question2" : {
+            "type" : "string",
+            "maxLength" : 200,
+            "minLength" : 0
+          },
+          "answer2" : {
+            "type" : "string",
+            "maxLength" : 200,
+            "minLength" : 0
+          }
+        },
+        "required" : [ "answer1", "answer2", "currentPassword", "question1", "question2" ]
+      },
       "CreateStaffRequest" : {
         "type" : "object",
         "properties" : {
@@ -1695,6 +1932,39 @@
         },
         "required" : [ "code", "createdAt", "guestAllergens", "guestName", "hasAllergyConflicts", "id", "items", "note", "priority", "status" ]
       },
+      "ChangePasswordRequest" : {
+        "type" : "object",
+        "properties" : {
+          "currentPassword" : {
+            "type" : "string",
+            "minLength" : 1
+          },
+          "newPassword" : {
+            "type" : "string",
+            "minLength" : 1
+          }
+        },
+        "required" : [ "currentPassword", "newPassword" ]
+      },
+      "TokenResponse" : {
+        "type" : "object",
+        "properties" : {
+          "accessToken" : {
+            "type" : "string"
+          },
+          "tokenType" : {
+            "type" : "string"
+          },
+          "expiresInSeconds" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "user" : {
+            "$ref" : "#/components/schemas/UserView"
+          }
+        },
+        "required" : [ "accessToken", "expiresInSeconds", "tokenType", "user" ]
+      },
       "SignupRequest" : {
         "type" : "object",
         "properties" : {
@@ -1722,24 +1992,52 @@
         },
         "required" : [ "email", "ownerName", "password", "restaurantName" ]
       },
-      "TokenResponse" : {
+      "RecoveryResetRequest" : {
         "type" : "object",
         "properties" : {
-          "accessToken" : {
-            "type" : "string"
+          "email" : {
+            "type" : "string",
+            "format" : "email",
+            "minLength" : 1
           },
-          "tokenType" : {
-            "type" : "string"
+          "answer1" : {
+            "type" : "string",
+            "maxLength" : 200,
+            "minLength" : 0
           },
-          "expiresInSeconds" : {
-            "type" : "integer",
-            "format" : "int64"
+          "answer2" : {
+            "type" : "string",
+            "maxLength" : 200,
+            "minLength" : 0
           },
-          "user" : {
-            "$ref" : "#/components/schemas/UserView"
+          "newPassword" : {
+            "type" : "string",
+            "minLength" : 1
           }
         },
-        "required" : [ "accessToken", "expiresInSeconds", "tokenType", "user" ]
+        "required" : [ "answer1", "answer2", "email", "newPassword" ]
+      },
+      "RecoveryQuestionsRequest" : {
+        "type" : "object",
+        "properties" : {
+          "email" : {
+            "type" : "string",
+            "format" : "email",
+            "minLength" : 1
+          }
+        },
+        "required" : [ "email" ]
+      },
+      "RecoveryQuestionsResponse" : {
+        "type" : "object",
+        "properties" : {
+          "questions" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          }
+        }
       },
       "LoginRequest" : {
         "type" : "object",
@@ -1765,6 +2063,16 @@
           }
         },
         "required" : [ "serviceStatus" ]
+      },
+      "ResetPasswordRequest" : {
+        "type" : "object",
+        "properties" : {
+          "newPassword" : {
+            "type" : "string",
+            "minLength" : 1
+          }
+        },
+        "required" : [ "newPassword" ]
       },
       "ReservationStatusChange" : {
         "type" : "object",
@@ -1832,6 +2140,67 @@
           }
         },
         "required" : [ "liveStatus", "table" ]
+      },
+      "RecoveryStatus" : {
+        "type" : "object",
+        "properties" : {
+          "configured" : {
+            "type" : "boolean"
+          },
+          "question1" : {
+            "type" : [ "string", "null" ]
+          },
+          "question2" : {
+            "type" : [ "string", "null" ]
+          },
+          "updatedAt" : {
+            "type" : [ "string", "null" ],
+            "format" : "date-time"
+          }
+        }
+      },
+      "AuditEntry" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "occurredAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "actorUserId" : {
+            "type" : [ "string", "null" ],
+            "format" : "uuid"
+          },
+          "actorName" : {
+            "type" : "string",
+            "description" : "Display name of the person, or the email that was tried for a failed sign-in"
+          },
+          "action" : {
+            "type" : "string"
+          },
+          "targetType" : {
+            "type" : [ "string", "null" ]
+          },
+          "targetId" : {
+            "type" : [ "string", "null" ]
+          },
+          "outcome" : {
+            "type" : "string",
+            "enum" : [ "SUCCESS", "FAILURE" ]
+          },
+          "details" : {
+            "type" : "object",
+            "additionalProperties" : {
+              "type" : "string"
+            }
+          },
+          "ip" : {
+            "type" : [ "string", "null" ]
+          }
+        }
       }
     }
   }

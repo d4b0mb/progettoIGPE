@@ -1,5 +1,6 @@
 package it.ristomanager.cloud.auth;
 
+import it.ristomanager.cloud.auth.AuthDtos.ChangePasswordRequest;
 import it.ristomanager.cloud.auth.AuthDtos.LoginRequest;
 import it.ristomanager.cloud.auth.AuthDtos.SignupRequest;
 import it.ristomanager.cloud.auth.AuthDtos.TokenResponse;
@@ -61,6 +62,11 @@ class AuthController {
         return ResponseEntity.noContent()
                 .header(HttpHeaders.SET_COOKIE, cookie("", Duration.ZERO).toString())
                 .build();
+    }
+
+    @PostMapping("/me/password")
+    ResponseEntity<TokenResponse> changePassword(@AuthenticationPrincipal Jwt jwt, @Valid @RequestBody ChangePasswordRequest req) {
+        return respond(HttpStatus.OK, auth.changePassword(CurrentUser.from(jwt), req.currentPassword(), req.newPassword()));
     }
 
     @GetMapping("/me")

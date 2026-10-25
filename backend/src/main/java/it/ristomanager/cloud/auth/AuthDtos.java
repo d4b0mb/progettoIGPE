@@ -22,6 +22,9 @@ final class AuthDtos {
     record LoginRequest(@NotBlank @Email String email, @NotBlank String password) {
     }
 
+    record ChangePasswordRequest(@NotBlank String currentPassword, @NotBlank String newPassword) {
+    }
+
     record TokenResponse(String accessToken, String tokenType, long expiresInSeconds, UserView user) {
     }
 }
