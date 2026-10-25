@@ -7,14 +7,18 @@ describe("who may open what", () => {
       expect(mayOpen("OWNER", path)).toBe(true);
     }
     expect(mayOpen("KITCHEN", "/kitchen")).toBe(true);
-    for (const path of ["/reservations", "/floor", "/menu", "/staff", "/orders"]) {
+    for (const path of ["/reservations", "/floor", "/menu", "/staff", "/orders", "/activity"]) {
       expect(mayOpen("KITCHEN", path)).toBe(false);
     }
+    // Everyone may open their own account page.
+    expect(mayOpen("KITCHEN", "/account")).toBe(true);
   });
 
-  it("keeps staff management for the owner", () => {
+  it("keeps staff management and the activity log for the owner", () => {
     expect(mayOpen("MANAGER", "/staff")).toBe(false);
     expect(mayOpen("WAITER", "/staff")).toBe(false);
+    expect(mayOpen("MANAGER", "/activity")).toBe(false);
+    expect(mayOpen("OWNER", "/activity")).toBe(true);
   });
 
   it("leaves the home page and unknown paths open to anyone signed in", () => {
@@ -27,6 +31,6 @@ describe("who may open what", () => {
   });
 
   it("builds the menu from the same list", () => {
-    expect(navFor("KITCHEN").map((n) => n.href)).toEqual(["/kitchen"]);
+    expect(navFor("KITCHEN").map((n) => n.href)).toEqual(["/kitchen", "/account"]);
   });
 });

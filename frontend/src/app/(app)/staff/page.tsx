@@ -8,7 +8,9 @@ import type { components } from "@/api/schema";
 import { useSession } from "@/api/session";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
+import { Dialog } from "@/components/ui/Dialog";
 import { Field } from "@/components/ui/Field";
+import { expectOk } from "@/api/call";
 
 type Member = components["schemas"]["UserView"];
 const ROLES = ["MANAGER", "WAITER", "KITCHEN"] as const;
@@ -22,6 +24,9 @@ export default function StaffPage() {
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [notice, setNotice] = useState<string | null>(null);
+  const [resetting, setResetting] = useState<Member | null>(null);
+  const [resetPassword, setResetPassword] = useState("");
+  const [resetError, setResetError] = useState<string | null>(null);
 
   // Bumped after every change so the list is fetched again.
   const [version, setVersion] = useState(0);
@@ -67,6 +72,21 @@ export default function StaffPage() {
     setVersion((v) => v + 1);
   }
 
+  async function onReset(event: FormEvent) {
+    event.preventDefault();
+    if (!resetting) return;
+    setResetError(null);
+    try {
+      await expectOk(api.PATCH("/api/v1/staff/{id}/password", { params: { path: { id: resetting.id } }, body: { newPassword: resetPassword } }));
+      setNotice(t("resetDone", { name: resetting.displayName }));
+      setResetting(null);
+      setResetPassword("");
+    } catch (e) {
+      const problem = e as { fields?: Record<string, string>; message: string };
+      setResetError(problem.fields?.newPassword ?? problem.message);
+    }
+  }
+
   async function onDeactivate(member: Member) {
     if (!window.confirm(t("deactivateConfirm", { name: member.displayName }))) return;
     const res = await api.DELETE("/api/v1/staff/{id}", { params: { path: { id: member.id } } });
@@ -100,13 +120,18 @@ export default function StaffPage() {
               <span className="truncate font-bold">{member.displayName}</span>
               <span className="truncate text-sm text-muted">{member.email}</span>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center gap-3">
               <Badge tone={member.role === "OWNER" ? "info" : "neutral"}>{tr(member.role)}</Badge>
               <Badge tone={member.active ? "good" : "danger"}>{member.active ? t("active") : t("inactive")}</Badge>
               {member.active && member.id !== me.id ? (
-                <Button variant="danger" onClick={() => void onDeactivate(member)}>
-                  {t("deactivate")}
-                </Button>
+                <>
+                  <Button variant="secondary" onClick={() => { setResetting(member); setResetPassword(""); setResetError(null); }}>
+                    {t("resetPassword")}
+                  </Button>
+                  <Button variant="danger" onClick={() => void onDeactivate(member)}>
+                    {t("deactivate")}
+                  </Button>
+                </>
               ) : null}
             </div>
           </li>
@@ -136,6 +161,17 @@ export default function StaffPage() {
           <Button type="submit">{tc("save")}</Button>
         </div>
       </form>
+      <Dialog open={resetting !== null} onClose={() => setResetting(null)} title={resetting ? t("resetTitle", { name: resetting.displayName }) : ""}>
+        <form onSubmit={onReset} className="flex flex-col gap-4" noValidate>
+          <Field label={t("newPassword")} type="password" autoComplete="new-password" value={resetPassword} onChange={(e) => setResetPassword(e.target.value)} required minLength={10} maxLength={72} hint={t("resetHint")} error={resetError ?? undefined} />
+          <div className="flex flex-wrap justify-end gap-3">
+            <Button variant="secondary" onClick={() => setResetting(null)}>
+              {tc("cancel")}
+            </Button>
+            <Button type="submit">{tc("save")}</Button>
+          </div>
+        </form>
+      </Dialog>
     </div>
   );
 }

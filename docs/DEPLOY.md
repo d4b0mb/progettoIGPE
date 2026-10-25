@@ -29,6 +29,12 @@ To start from scratch: `docker compose down -v` (this deletes the database).
 Everything runs on plain HTTP here, which is why the refresh cookie is not marked Secure
 (`COOKIE_SECURE=false`). Never use this setup on the internet.
 
+### Opening it on your phone (same Wi-Fi)
+`localhost` always means "this device", so on the phone it points at the phone itself. Use the PC's
+address instead: find it with `ipconfig` (Windows, "IPv4 Address", like 192.168.1.20) and open
+`http://192.168.1.20:3000`. If it times out, allow port 3000 in Windows Firewall (private networks).
+The login cookie works over plain http on the local network.
+
 ## 2. On a server (one machine, HTTPS)
 
 ### What you need

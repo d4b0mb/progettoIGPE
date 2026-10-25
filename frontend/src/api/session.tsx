@@ -19,6 +19,8 @@ interface SessionApi {
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (input: components["schemas"]["SignupRequest"]) => Promise<void>;
   signOut: () => Promise<void>;
+  /** Changes the signed-in person's password. Their other sessions end; this one carries on. */
+  changePassword: (currentPassword: string, newPassword: string) => Promise<void>;
 }
 
 const SessionContext = createContext<SessionApi | null>(null);
@@ -68,13 +70,22 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     [accept],
   );
 
+  const changePassword = useCallback(
+    async (currentPassword: string, newPassword: string) => {
+      const { data, error, response } = await api.POST("/api/v1/me/password", { body: { currentPassword, newPassword } });
+      if (!data) throw toApiError(response.status, error);
+      accept(data);
+    },
+    [accept],
+  );
+
   const signOut = useCallback(async () => {
     await api.POST("/api/v1/auth/logout");
     token.set(null);
     setState({ status: "anonymous" });
   }, []);
 
-  const value = useMemo(() => ({ state, signIn, signUp, signOut }), [state, signIn, signUp, signOut]);
+  const value = useMemo(() => ({ state, signIn, signUp, signOut, changePassword }), [state, signIn, signUp, signOut, changePassword]);
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;
 }
 

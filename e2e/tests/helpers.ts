@@ -32,7 +32,7 @@ export async function signedIn(
 /** The page must never scroll sideways: on a phone that is the first sign of a broken layout. */
 export async function expectNoHorizontalScroll(page: Page) {
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth);
-  expect(overflow, "page scrolls horizontally").toBe(false);
+  expect(overflow, `page scrolls horizontally: ${page.url()}`).toBe(false);
 }
 
 /**

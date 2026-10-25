@@ -15,3 +15,4 @@ decision changes, a new record supersedes the old one.
 | [0007](0007-authentication.md) | Short-lived JWT plus rotating refresh cookie | Accepted |
 | [0008](0008-row-level-security-wiring.md) | How row-level security is wired | Accepted |
 | [0009](0009-double-booking-prevention.md) | Preventing double bookings in the database | Accepted |
+| [0010](0010-activity-log-recovery-retention.md) | Activity log, owner password recovery, guest-data retention | Accepted |

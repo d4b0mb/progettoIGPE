@@ -6,7 +6,7 @@ export type Role = components["schemas"]["UserView"]["role"];
 export interface NavItem {
   href: string;
   /** Key in the "nav" translations. */
-  key: "reservations" | "floor" | "orders" | "kitchen" | "menu" | "staff";
+  key: "reservations" | "floor" | "orders" | "kitchen" | "menu" | "staff" | "activity" | "account";
   icon: IconName;
   /** Who sees this entry. The server still checks the role on every request. */
   roles: Role[];
@@ -20,6 +20,8 @@ export const NAV: NavItem[] = [
   { href: "/floor", key: "floor", icon: "floor", roles: ["OWNER", "MANAGER", "WAITER"] },
   { href: "/menu", key: "menu", icon: "book", roles: ["OWNER", "MANAGER", "WAITER"] },
   { href: "/staff", key: "staff", icon: "users", roles: ["OWNER"] },
+  { href: "/activity", key: "activity", icon: "history", roles: ["OWNER"] },
+  { href: "/account", key: "account", icon: "user", roles: ["OWNER", "MANAGER", "WAITER", "KITCHEN"] },
 ];
 
 export function navFor(role: Role): NavItem[] {

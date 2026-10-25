@@ -47,6 +47,9 @@ export function LoginForm() {
       <Button type="submit" disabled={busy} className="min-h-12">
         {t("submitSignIn")}
       </Button>
+      <Link href="/recover" className="-mt-2 text-center text-sm font-bold text-primary underline">
+        {t("forgotPassword")}
+      </Link>
       <p className="text-center text-sm text-muted">
         {t("noAccount")}{" "}
         <Link href="/signup" className="font-bold text-primary underline">

@@ -36,17 +36,18 @@ test.describe("signing in", () => {
     await expect(nav(waiter.page).getByRole("link", { name: "Staff" })).toHaveCount(0);
     await waiter.context.close();
 
-    // Kitchen staff land straight on the kitchen screen, and it is their only one.
+    // Kitchen staff land straight on the kitchen screen; their only other page is their own account.
     const kitchen = await signedIn(browser, demo.kitchen);
     await expect(kitchen.page).toHaveURL(/\/kitchen/);
-    await expect(nav(kitchen.page).getByRole("link")).toHaveCount(1);
+    await expect(nav(kitchen.page).getByRole("link")).toHaveCount(2);
+    await expect(nav(kitchen.page).getByRole("link", { name: "Staff" })).toHaveCount(0);
     await kitchen.context.close();
   });
 
   test("the owner's pages fit a phone and a desktop without sideways scrolling", async ({ browser }) => {
     for (const viewport of [PHONE, DESKTOP]) {
       const { context, page } = await signedIn(browser, demo.owner, viewport);
-      for (const path of ["/reservations", "/floor", "/menu", "/staff", "/orders"]) {
+      for (const path of ["/reservations", "/floor", "/menu", "/staff", "/orders", "/activity", "/account"]) {
         await page.goto(path);
         // Not "network idle": the orders screen holds a live stream open on purpose.
         await expect(page.getByRole("heading", { level: 1 })).toBeVisible();

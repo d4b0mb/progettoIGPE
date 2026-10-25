@@ -851,7 +851,7 @@ export interface components {
             email: string;
         };
         RecoveryQuestionsResponse: {
-            questions?: string[];
+            questions: string[];
         };
         LoginRequest: {
             /** Format: email */
@@ -889,7 +889,7 @@ export interface components {
             liveStatus: "FREE" | "RESERVED" | "OCCUPIED" | "TO_CLEAN" | "OUT_OF_SERVICE";
         };
         RecoveryStatus: {
-            configured?: boolean;
+            configured: boolean;
             question1?: string | null;
             question2?: string | null;
             /** Format: date-time */
@@ -897,19 +897,19 @@ export interface components {
         };
         AuditEntry: {
             /** Format: uuid */
-            id?: string;
+            id: string;
             /** Format: date-time */
-            occurredAt?: string;
+            occurredAt: string;
             /** Format: uuid */
             actorUserId?: string | null;
             /** @description Display name of the person, or the email that was tried for a failed sign-in */
-            actorName?: string;
-            action?: string;
+            actorName: string;
+            action: string;
             targetType?: string | null;
             targetId?: string | null;
             /** @enum {string} */
-            outcome?: "SUCCESS" | "FAILURE";
-            details?: {
+            outcome: "SUCCESS" | "FAILURE";
+            details: {
                 [key: string]: string;
             };
             ip?: string | null;
