@@ -4,6 +4,7 @@ import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect } from "react";
+import { RestaurantProvider } from "@/api/restaurant";
 import { useSession } from "@/api/session";
 import { Shell } from "@/components/Shell";
 import { mayOpen } from "@/components/nav";
@@ -28,6 +29,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   }
   const allowed = mayOpen(state.user.role, pathname);
   return (
+    <RestaurantProvider>
     <Shell user={state.user}>
       {allowed ? (
         children
@@ -40,5 +42,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         </div>
       )}
     </Shell>
+    </RestaurantProvider>
   );
 }

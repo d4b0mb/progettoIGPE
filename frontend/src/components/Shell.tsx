@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { User } from "@/api/session";
 import { useSession } from "@/api/session";
+import { Brand } from "@/components/Brand";
 import { LanguageSwitch } from "@/components/LanguageSwitch";
 import { Icon } from "@/components/ui/Icon";
 import { navFor } from "./nav";
@@ -31,11 +32,7 @@ export function Shell({ user, children }: { user: User; children: React.ReactNod
       <aside className="hidden w-60 shrink-0 flex-col justify-between bg-sidebar p-4 text-sidebar-text md:flex">
         <div className="flex flex-col gap-6">
           <Link href="/" className="flex items-center gap-2.5 px-2">
-            <span className="flex h-8 w-8 items-center justify-center rounded-[9px] bg-accent font-extrabold text-sidebar">R</span>
-            <span className="flex flex-col leading-tight">
-              <span className="text-[15px] font-extrabold text-white">{tc("appName")}</span>
-              <span className="text-xs text-sidebar-muted">{tr(user.role)}</span>
-            </span>
+            <Brand fallbackName={tc("appName")} subtitle={tr(user.role)} />
           </Link>
           <nav aria-label={t("main")} className="flex flex-col gap-1">
             {items.map((item) => (
@@ -67,9 +64,8 @@ export function Shell({ user, children }: { user: User; children: React.ReactNod
 
       {/* Phone top bar */}
       <header className="flex items-center justify-between gap-3 bg-sidebar px-4 py-2.5 text-white md:hidden">
-        <Link href="/" className="flex items-center gap-2">
-          <span className="flex h-8 w-8 items-center justify-center rounded-[9px] bg-accent font-extrabold text-sidebar">R</span>
-          <span className="text-[15px] font-extrabold">{tc("appName")}</span>
+        <Link href="/" className="flex min-w-0 items-center gap-2">
+          <Brand fallbackName={tc("appName")} />
         </Link>
         <div className="flex items-center gap-2">
           <LanguageSwitch tone="dark" />

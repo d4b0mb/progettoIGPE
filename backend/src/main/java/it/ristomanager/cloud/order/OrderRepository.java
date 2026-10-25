@@ -103,7 +103,7 @@ public class OrderRepository {
         if (to == Status.SERVED) {
             Integer next = jdbc.sql("select min(serving) from ticket_item where restaurant_id = :rid and ticket_id = :id "
                             + "and serving > (select current_serving from kitchen_ticket where restaurant_id = :rid and id = :id)")
-                    .param("rid", rid).param("id", id).query((rs, n) -> rs.getObject(1, Integer.class)).single();
+                    .param("rid", rid).param("id", id).query((rs, n) -> rs.getObject(1, Integer.class)).list().get(0); // min() of nothing is one null row
             if (next != null) {
                 return jdbc.sql("update kitchen_ticket set status = 'NEW', current_serving = :next, serving_since = now(), "
                                 + "acknowledged_at = null, ready_at = null "

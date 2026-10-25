@@ -2,7 +2,7 @@
 
 import { useTranslations } from "next-intl";
 import type { ReactNode } from "react";
-import { elapsedText, isLate, minutesSince, type Ticket } from "./tickets";
+import { elapsedText, isLate, minutesSince, servingPosition, type Ticket } from "./tickets";
 
 const PRIORITY_STYLE = {
   NORMAL: null,
@@ -19,6 +19,10 @@ export function TicketCard({ ticket, now, actions }: { ticket: Ticket; now: numb
   const tc = useTranslations("courses");
 
   const late = isLate(ticket, now);
+  const position = servingPosition(ticket);
+  // Only the serving being cooked is shown in full; earlier ones are done, later ones wait their turn.
+  const current = ticket.items.filter((i) => i.serving === ticket.currentServing);
+  const later = ticket.items.filter((i) => i.serving > ticket.currentServing);
   const priorityStyle = PRIORITY_STYLE[ticket.priority];
   const conflictAllergens = [...new Set(ticket.items.flatMap((i) => i.conflicts))];
   const conflictDishes = ticket.items.filter((i) => i.conflicts.length > 0).map((i) => i.name);
@@ -27,15 +31,18 @@ export function TicketCard({ ticket, now, actions }: { ticket: Ticket; now: numb
   return (
     <article className={`flex flex-col gap-3 rounded-2xl border-[3px] bg-[#16231f] p-4 text-white ${border}`} aria-label={`${ticket.code}`}>
       <header className="flex flex-wrap items-center justify-between gap-2">
-        <div className="flex items-baseline gap-3">
-          <span className="text-2xl font-extrabold">{ticket.tableNumber != null ? t("tableLabel", { number: ticket.tableNumber }) : ticket.code}</span>
-          <span className="text-sm font-bold text-white/60">{ticket.code}</span>
+        <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+          <span className="text-2xl font-extrabold whitespace-nowrap">{ticket.tableNumber != null ? t("tableLabel", { number: ticket.tableNumber }) : ticket.code}</span>
+          <span className="text-sm font-bold whitespace-nowrap text-white/60">{ticket.code}</span>
+          {position.count > 1 ? (
+            <span className="rounded-md bg-white/15 px-2 py-0.5 text-xs font-extrabold tracking-wide uppercase">{t("servingOf", { index: position.index, count: position.count })}</span>
+          ) : null}
         </div>
         <div className="flex items-center gap-2">
           {priorityStyle ? <span className={`rounded-md px-2 py-1 text-xs font-extrabold ${priorityStyle}`}>{tp(ticket.priority).toUpperCase()}</span> : null}
           <span className={`text-sm font-bold tabular-nums ${late ? "text-red-300" : "text-white/70"}`}>
             {late ? `${t("late")} · ` : ""}
-            {elapsedText(minutesSince(ticket.createdAt, now))}
+            {elapsedText(minutesSince(ticket.servingSince, now))}
           </span>
         </div>
       </header>
@@ -53,7 +60,7 @@ export function TicketCard({ ticket, now, actions }: { ticket: Ticket; now: numb
       ) : null}
 
       <ul className="flex flex-col gap-1.5">
-        {ticket.items.map((item) => (
+        {current.map((item) => (
           <li key={item.id} className={`flex flex-col rounded-md px-2 py-1 text-[17px] font-semibold ${item.conflicts.length > 0 ? "bg-red-500/25" : ""}`}>
             <span>
               <span className="tabular-nums">{item.quantity} ×</span> {item.name}
@@ -64,6 +71,19 @@ export function TicketCard({ ticket, now, actions }: { ticket: Ticket; now: numb
           </li>
         ))}
       </ul>
+
+      {later.length > 0 ? (
+        <div className="rounded-lg border border-dashed border-white/25 px-3 py-2 text-sm text-white/60">
+          <span className="font-bold tracking-wide uppercase">{t("comingNext")}</span>
+          <ul className="mt-1 flex flex-col gap-0.5">
+            {later.map((item) => (
+              <li key={item.id}>
+                <span className="font-bold text-white/40 tabular-nums">{item.serving} ·</span> {item.quantity} × {item.name}
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
 
       {ticket.note ? (
         <p className="text-sm text-amber-200">

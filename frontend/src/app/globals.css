@@ -1,9 +1,12 @@
 @import "tailwindcss";
 @import "@fontsource-variable/manrope";
+@import "@fontsource-variable/montserrat";
+@import "@fontsource-variable/cormorant-garamond";
 
 /* Design tokens, taken from the screen mockups. One place to change the look. */
 @theme {
   --font-sans: "Manrope Variable", system-ui, sans-serif;
+  --font-display: "Manrope Variable", system-ui, sans-serif;
 
   --color-canvas: #f3f5f4;
   --color-surface: #ffffff;
@@ -51,4 +54,48 @@ body {
 svg g:focus-visible,
 svg g:focus {
   outline: none;
+}
+
+/*
+ * A restaurant's own look. Everything in the app takes its colours and fonts from the tokens above,
+ * so a look is just another set of values. "duodecim" follows the Duodecim Pizze menu: deep green,
+ * tomato red, cream paper, a serif for headings and Montserrat for text.
+ */
+html[data-theme="duodecim"] {
+  --font-sans: "Montserrat Variable", system-ui, sans-serif;
+  --font-display: "Cormorant Garamond Variable", Georgia, serif;
+
+  --color-canvas: #f5f1e8;
+  --color-ink: #14281d;
+  --color-muted: #4d5f54;
+  --color-line: #ded8c8;
+  --color-line-strong: #bdb5a1;
+
+  --color-primary: #1d6b3f;
+  --color-primary-strong: #14502d;
+  --color-primary-soft: #e3efe6;
+  --color-accent: #e0261d;
+
+  --color-sidebar: #0e2b1a;
+  --color-sidebar-active: #1d5a37;
+  --color-sidebar-text: #eef3ec;
+  --color-sidebar-muted: #a9c4b2;
+}
+
+/* Page titles are set in the serif, like the menu's section titles. */
+html[data-theme="duodecim"] h1 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+/* A thin red rule under the page title, as on the menu. */
+html[data-theme="duodecim"] main h1:not(header h1)::after {
+  content: "";
+  display: block;
+  width: 3rem;
+  height: 3px;
+  margin-top: 0.4rem;
+  background: var(--color-accent);
 }

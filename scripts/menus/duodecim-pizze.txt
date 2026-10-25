@@ -1,0 +1,101 @@
+# Menu of Duodecim Pizze, typed in from the printed menu.
+# Columns (separated by |): name, course, section, price in cents, allergens (comma separated), description.
+# ALLERGENS ARE A DRAFT worked out from the ingredient lists, not supplied by the restaurant: the kitchen must check them.
+Patate Dippers · sale e pepe nero|STARTER|Patate Dippers|450||Patate Dippers LambWeston
+Patate Dippers · paprika e pepe nero|STARTER|Patate Dippers|450||Patate Dippers LambWeston
+Patate Dippers · fonduta di Grana Padano 20 mesi|STARTER|Patate Dippers|550|MILK|Patate Dippers LambWeston
+Patate Dippers · ketchup di datterino giallo|STARTER|Patate Dippers|550||Patate Dippers LambWeston con ketchup di datterino giallo “Az. Finagricola”
+Patate Dippers · mayo al basilico|STARTER|Patate Dippers|550|EGGS|Patate Dippers LambWeston con mayo al basilico locale home-made e sale
+Patate Dippers · cipolla rossa di Tropea in agrodolce|STARTER|Patate Dippers|550|SULPHITES|Patate Dippers LambWeston con cipolla rossa di Tropea IGP in agrodolce e sale
+Patate Dippers · maionese alla cipolla in agrodolce|STARTER|Patate Dippers|550|EGGS,SULPHITES|Patate Dippers LambWeston con maionese alla cipolla in agrodolce home-made
+Tris di Polpette di melanzane|STARTER|Polpette|400|GLUTEN,MILK|Pane raffermo / melanzane locali / pecorino / aglio / basilico / prezzemolo / sale
+Tris di Polpette · maionese al basilico|STARTER|Polpette|500|GLUTEN,MILK,EGGS|Pane raffermo / melanzane locali / pecorino / aglio / basilico / prezzemolo / sale con maionese al basilico
+Tris di Polpette · maionese alla cipolla in agrodolce|STARTER|Polpette|500|GLUTEN,MILK,EGGS,SULPHITES|Pane raffermo / melanzane locali / pecorino / aglio / basilico / prezzemolo / sale con maionese alla cipolla in agrodolce home-made
+Crocchettone di patate · fior d’Agerola|STARTER|Crocchettone|250|GLUTEN,MILK,EGGS|Patate locali / fior d’Agerola / Grana Padano 20 mesi
+Crocchettone di patate · guanciale e fonduta|STARTER|Crocchettone|600|GLUTEN,MILK,EGGS|Patate locali / coriandoli di guanciale di maialino rosa casertano “Az. Scianca” / fonduta di Grana Padano 20 mesi
+Crocchettone di patate · stracciata e pistacchio|STARTER|Crocchettone|600|GLUTEN,MILK,EGGS,TREE_NUTS|Patate locali / stracciata pugliese “Az. Fattorie Normanne” / granella di pistacchio siciliano
+Montanara tradizionale|STARTER|Pizza fritta|500|GLUTEN,MILK|Pizzettina fritta condita con pomodoro cotto a bassa temperatura / scaglie di cacioricotta di capra del Cilento “I Filadelfi” presidio slow food / basilico fresco
+Montanara Special|STARTER|Pizza fritta|600|GLUTEN,MILK,FISH|Pizzettina fritta condita con stracciata di vaccino “Caseificio Fattorie Normanne” / filetto di alici di Cetara “Delfino Battista” / polvere di liquirizia biologica DOP
+Montanara Tonno & Stracciata|STARTER|Pizza fritta|600|GLUTEN,MILK,FISH|Pizzettina fritta condita con stracciata di vaccino pugliese / filetto di tonno Alalunga “Az. Delfino Battista” / polvere di bottarga di tonno rosso “Az. Callipo” / basilico fresco
+Montanara Crudo, stracciata e papavero|STARTER|Pizza fritta|600|GLUTEN,MILK,TREE_NUTS|Pizzettina fritta condita con prosciutto crudo di Parma Dop 20 mesi “Giancarlo Tanara” / stracciata di vaccino pugliese / purissima granella di nocciole di Giffoni Igp “Grimaldi” / semi di papavero / basilico fresco
+Pizza fritta in Doppia Cottura|STARTER|Pizza fritta|1000|GLUTEN,MILK|Pizzettina prima fritta a 180°C e poi ripassata al forno a legna condita con passata di pomodoro cotto a bassa temperatura / mozzarella di Bufala Campana DOP “Az. Campania Felix” e basilico fresco
+Pizza fritta in Doppia Cottura alla Norma|STARTER|Pizza fritta|1000|GLUTEN,MILK|Pizzettina prima fritta a 180°C e poi ripassata nel forno a legna condita con passata di pomodoro cotto a bassa temperatura / melanzane locali fritte / scaglie di ricotta ovicaprina salata “Casearia Chiellino” / basilico fresco
+Stracciatella Pugliese|STARTER|Da dividere|1000|GLUTEN,MILK|Servita con pomodori essiccati in olio “Sole&Terra del Vesuvio” / olive verdi schiacciate a mano / pomodori semisecchi / semi di papavero / olio Evo Bio / basilico fresco / focaccina calda con olio Evo Bio ed origano
+Doppio DOP|STARTER|Da dividere|1500|GLUTEN,MILK|Mozzarella di bufala Campana DOP “Caseificio Campania Felix” / prosciutto crudo di Parma DOP 20 mesi “Giancarlo Tanara” / rucola locale / olio evo BIO / basilico fresco / focaccina calda con olio Evo Bio ed origano
+Tagliere Duodecim (x2 persone)|STARTER|Da dividere|2000|GLUTEN,MILK,TREE_NUTS|Prosciutto crudo San Daniele Dop / soppressata dolce / prosciutto cotto alta qualità / Grana Padano Dop 20 mesi / olive verdi locali schiacciate a mano / stracciata di vaccino / taralli mandorlati Sugna&PepeNero / focaccina calda con olio Evo Bio ed origano locale
+Margherita|PIZZA||700|GLUTEN,MILK|Pomodoro pelato “Agriconserve Rega” / fior di latte della penisola “Latteria Sorrentina” / basilico fresco / olio evo BIO “Az. Tenute Librandi”
+Margherita con Bufala|PIZZA||1000|GLUTEN,MILK|Pomodoro pelato “Agriconserve Rega” / mozzarella di bufala campana DOP “Caseificio Colonne” / basilico fresco / olio evo BIO “Az. Tenute Librandi”
+Marinara tradizionale|PIZZA||600|GLUTEN|Pomodoro pelato “Agriconserve Rega” / origano dell’altopiano della Sila / aglio di Calabria / basilico fresco / olio evo BIO “Az. Tenute Librandi”
+Marinara del Pescatore 2.0|PIZZA||1100|GLUTEN,FISH|Pomodoro pelato “Agriconserve Rega” / datterino rosso&giallo / alici di Cetara “Battista” / olive taggiasche “Boeri” / origano dell’altopiano della Sila / aglio di Calabria / basilico fresco / olio evo BIO “Az. Tenute Librandi”
+Marinara Yellow|PIZZA||700|GLUTEN|Polpa di pomodoro giallo calabrese “Az. Migliarese” / origano dell’altopiano della Sila / aglio di Calabria / basilico fresco / olio evo BIO “Az. Tenute Librandi”
+Diavola Strong Yellow|PIZZA||1100|GLUTEN,MILK|Polpa di pomodoro giallo calabrese “Az. Migliarese” / fior di latte della penisola “Latteria Sorrentina” / salame piccante di maialino rosa casertano “Az. Scianca” / n’duja di Spilinga “F.lli Caccamo” / peperoncino rosso locale frantumato / basilico fresco / olio evo BIO “Az. Tenute Librandi”
+Capricciosa a modo nostro|PIZZA||1300|GLUTEN,MILK|Pomodoro pelato “Agriconserve Rega” / fior di latte della penisola “Latteria Sorrentina” / carciofini grigliati “Sole&Terra del Vesuvio” / funghi champignon freschi saltati in padella / prosciutto cotto alta qualità “Az. Villani” / olive taggiasche “Boeri” / basilico fresco / olio evo BIO “Az. Tenute Librandi”
+4 Bianchi Again|PIZZA||1250|GLUTEN,MILK,TREE_NUTS|Mozzarella di bufala campana Dop “Caseificio Colonne” / crema di ricotta di bufala campana Dop / gorgonzola dolce Dop “Latteria Cameri” / scaglie di ricotta ovicaprina salata “Casearia Chiellino” / purissima granella di nocciole di Giffoni Igp “Grimaldi” / miele millefiori “Apicoltura Pacienza” / basilico fresco / olio evo BIO “Az. Tenute Librandi”
+Se ti fidi, prendimi|PIZZA||1250|GLUTEN,MILK,TREE_NUTS|Fior di latte della penisola “Latteria Sorrentina” / pacchetella gialla della valle del Vesuvio “Az. Virtuna” / olive verdi locali schiacciate a mano / taralli mandorlati sbriciolati “Az. Iazzetta” / gocce di pesto di basilico Dop “Artigiana Genovese” / basilico fresco / olio evo BIO “Tenute Librandi”
+Crudo & Pesto di rucola|PIZZA||1400|GLUTEN,MILK,TREE_NUTS|Pesto di rucola di Rossano fatto da noi / fior di latte della penisola “Latteria Sorrentina” / prosciutto crudo San Daniele IGP “Dolcevalle” / pomodoro rosso semi-secco sott’olio / stracciata di vaccino “Fattorie Normanne” / basilico fresco / olio Evo Bio “Tenute Librandi”
+LasVegan|PIZZA||1200|GLUTEN|Pomodoro pelato “Agriconserve Rega” / datterino rosso&giallo / cipolla rossa di Tropea IGP in agrodolce / melanzane locali fritte / olive taggiasche “Az. Boeri” / origano dell’altopiano della Sila / basilico fresco / olio extravergine di oliva biologico “Tenute Librandi”
+Würstel di Fassona e Dippers|PIZZA||1200|GLUTEN,MILK|Fior di latte della penisola “Latteria Sorrentina” / würstel di Fassona piemontese “Az. La Granda” / patate dippers “LambWeston” Presidio Slow Food / fonduta di grana padano 20 mesi HomeMade / basilico fresco / olio extravergine di oliva Biologico “Tenute Librandi”
+N’dujAMI|PIZZA||1300|GLUTEN,MILK|Mozzarella di bufala campana Dop “Caseificio Colonne” misto fior di latte della penisola “Latteria Sorrentina” / n’duja di Spilinga “F.lli Caccamo” / pomodoro giallo della valle del Vesuvio “Virtuna” / stracciata di vaccino pugliese “Fattorie Normanne” / semi di papavero / coriandoli di erba cipollina selvatica / scaglie di Grana Padano 20 mesi / basilico fresco / olio evo BIO “Az. Tenute Librandi”
+N’dujAMI Old School|PIZZA||1300|GLUTEN,MILK|Pomodoro pelato “Agriconserve Rega” / datterino rosso&giallo / stracciata di vaccino pugliese “Fattorie Normanne” / N’duja di Spilinga “F.lli Caccamo” / polvere di pepe nero / basilico fresco / olio evo bio “Tenute Librandi”
+Tonno D’Autunno|PIZZA||1400|GLUTEN,MILK,FISH,TREE_NUTS|Crema di zucca home-made / fior di latte della penisola “Latteria Sorrentina” / filetto di tonno alalunga “Battista” / melanzane locali fritte / granella di pistacchio siciliano / olio Evo Bio “Tenute Librandi”
+La NORMAlità|PIZZA||1100|GLUTEN,MILK|Pomodoro pelato “Agriconserve Rega” / fior di latte della penisola “Latteria Sorrentina” / melanzane locali fritte / scaglie di ricotta ovicaprina salata “Casearia Chiellino” / basilico fresco olio Evo Bio “Tenute Librandi”
+Il Ripieno Duodecim|PIZZA||1200|GLUTEN,MILK|Ripieno cotto al forno a legna condito con pomodoro pelato “Agriconserve Rega” / fior di latte della penisola “Latteria Sorrentina” / salame piccante di maialino rosa casertano “Az. Scianca” / crema di ricotta di bufala Campana Dop / pepe nero / basilico fresco / olio evo Bio “Az. Tenute Librandi”
+Il Ripieno Duodecim 2.0|PIZZA||1200|GLUTEN,MILK|Pomodoro pelato “Agriconserve Rega” / fior di latte della penisola “Latteria Sorrentina” / crema di ricotta di bufala campana DOP / prosciutto cotto alta qualità “Az. Villani” / olive verdi locali schiacciate a mano / scaglie di grana padano DOP 20 mesi / olio extravergine di oliva biologico “Tenute Librandi”
+Tiramisù|DESSERT||600|GLUTEN,EGGS,MILK|Pan di spagna alla vaniglia / caffè espresso / mascarpone fresco / tuorlo pastorizzato / panna fresca - in collaborazione con Armonia dei Gusti
+ChocoPeanut|DESSERT||600|GLUTEN,EGGS,MILK,PEANUTS|Pan di spagna al cioccolato / camy cream all’arachide / golosa all’arachide / arachidi pralinate - in collaborazione con Armonia dei Gusti
+Sfizietto dolce #1|DESSERT||500|GLUTEN|7 palline di impasto fritto condite con zucchero eridani
+Sfizietto dolce #2|DESSERT||550|GLUTEN,MILK,TREE_NUTS|7 palline di impasto fritto condite con crema alla gianduia “Babbi” / granella di nocciole / zucchero a velo
+Sfizietto dolce #3|DESSERT||550|GLUTEN,MILK,TREE_NUTS|7 palline di impasto fritto condito con crema al cioccolato bianco e granella di pistacchio di Sicilia
+Sfizietto dolce #4|DESSERT||550|GLUTEN,MILK,TREE_NUTS|7 palline di impasto fritto condite con crema alla gianduia “Babbi” e scaglie di cocco rapè
+Cannolo scomposto #1|DESSERT||600|GLUTEN,MILK,TREE_NUTS|Crema di ricotta di bufala dolce / granella di pistacchio / cannolo sbriciolato
+Cannolo scomposto #2|DESSERT||600|GLUTEN,MILK|Crema di ricotta di bufala dolce / gocce di cioccolato fondente / cannolo sbriciolato
+Grimbergen Blonde|DRINK|Birre in bottiglia (33 cl)|400|GLUTEN|Lager / 6,7% / Chiara
+Grimbergen Double Ambrée|DRINK|Birre in bottiglia (33 cl)|450|GLUTEN|Doppio malto / 6,5% / Ambrata
+Grimbergen Blanche|DRINK|Birre in bottiglia (33 cl)|450|GLUTEN|Witbier / 6% / Giallo chiaro
+Angelo Poretti 4 Luppoli|DRINK|Birre in bottiglia (33 cl)|350|GLUTEN|Lager / 5% / Chiara
+Angelo Poretti 6 Luppoli|DRINK|Birre in bottiglia (33 cl)|450|GLUTEN|Bock Rossa / 6,5%
+Angelo Poretti 9 Luppoli|DRINK|Birre in bottiglia (33 cl)|450|GLUTEN|Ipa / 6%
+Angelo Poretti 4 Luppoli Analcolica|DRINK|Birre in bottiglia (33 cl)|350|GLUTEN|Analcolica / Chiara
+Budweiser|DRINK|Birre in bottiglia (33 cl)|350|GLUTEN|Lager / 5% / Chiara
+Pilsner Urquell|DRINK|Birre in bottiglia (33 cl)|450|GLUTEN|Lager / 4,4% / Chiara / Rep. Ceca
+Her|DRINK|Birre artigianali De Alchemia (33 cl)|650|GLUTEN|6,5% / Chiara. Indian Pale Ale con scorze di cedro e bergamotto. Luppoli americani in dry hopping conferiscono intensi aromi agrumati e tropicali. Finale asciutto e amaro.
+Schizophrenic|DRINK|Birre artigianali De Alchemia (33 cl)|650|GLUTEN|5,4% / Chiara. American Pale Ale chiara e leggera. Luppoli di diverse origini, amaro, aromi fruttati e floreali.
+Anime|DRINK|Birre artigianali De Alchemia (33 cl)|650|GLUTEN|6,1% / Ambrata. Belgian Pale Ale ambrata, schiuma soffice e abbondante. Grande equilibrio tra note dolci e maltate con un finale secco e leggermente amaro.
+Welcome To Sybaris|DRINK|Birre artigianali De Alchemia (33 cl)|650|GLUTEN|5,6% / Saison. Saison sui generis prodotta con malto d’orzo, riso di Sibari, scorze di limoni IGP di Rocca Imperiale, sale.
+Sintesi|DRINK|Birre artigianali De Alchemia (33 cl)|650|GLUTEN|4%  / Chiara. Mediterranean Gose fermentata in vasca aperta con batteri lattici e lievito ale. Sale di Trapani IGP, coriandolo, zenzero, maturazione in acciaio.
+Lunare|DRINK|Birre artigianali De Alchemia (33 cl)|650|GLUTEN|5,5% / Bianca. Blanche legata al territorio prodotta con grano antico varietà “rosetta” coltivato a Saracena (CS), nel Parco Nazionale del Pollino e scorze di piretto di Civita (CS).
+Spleen Et Dreams|DRINK|Birre artigianali De Alchemia (33 cl)|650|GLUTEN|5,5% / Chiara. Ipa
+I Monaci IGP (bottiglia)|DRINK|Vini rossi|2000|SULPHITES|Giraldi & Giraldi / Magliocco 100% / Rende (CS) / Premio Top Hundred 2017 “Golosaria”
+Pescanera IGT (bottiglia)|DRINK|Vini rosati|2200|SULPHITES|Ippolito / Greco Nero / Cirò (KR)
+Donna Giuliana IGP (bottiglia)|DRINK|Vini rosati|2000|SULPHITES|Giraldi & Giraldi / Magliocco e Greco nero / Rende (CS)
+Pecorello IGT (bottiglia)|DRINK|Vini bianchi|2200|SULPHITES|Ippolito / Pecorello / Cirò (KR)
+Arintha IGP (bottiglia)|DRINK|Vini bianchi|2000|SULPHITES|Giraldi & Giraldi / Greco bianco e chardonnay / Rende (CS)
+Labella Rosè (bottiglia)|DRINK|Bollicine|2000|SULPHITES|Librandi / Greco bianco / Strongoli (KR)
+Labella Bianco (bottiglia)|DRINK|Bollicine|2000|SULPHITES|Librandi / Gaglioppo / Strongoli (KR)
+I Monaci IGP (calice)|DRINK|Vino al calice|500|SULPHITES|
+Donna Giuliana IGP (calice)|DRINK|Vino al calice|500|SULPHITES|
+Arintha IGP (calice)|DRINK|Vino al calice|500|SULPHITES|
+Labella Rosè (calice)|DRINK|Vino al calice|500|SULPHITES|
+Labella Bianco (calice)|DRINK|Vino al calice|500|SULPHITES|
+Acqua naturale 0,50 (plastica)|DRINK|Bibite e caffè|150||Ferrarelle Electa
+Acqua frizzante 0,50 (plastica)|DRINK|Bibite e caffè|150||Ferrarelle Maxima
+Acqua naturale 0,75 (vetro)|DRINK|Bibite e caffè|300||Ferrarelle Electa
+Acqua frizzante 0,75 (vetro)|DRINK|Bibite e caffè|300||Ferrarelle Maxima
+Coca Cola 0,33 (vetro)|DRINK|Bibite e caffè|300||
+Coca Cola Zero 0,33 (vetro)|DRINK|Bibite e caffè|300||
+Fanta 0,33 (vetro)|DRINK|Bibite e caffè|300||
+Caffè Aiello|DRINK|Bibite e caffè|100||
+Rupes|DRINK|Amari|300||
+Amaro Silano|DRINK|Amari|300||
+Jefferson|DRINK|Amari|400||
+Jägermeister|DRINK|Amari|300||
+Amaro del Capo|DRINK|Amari|300||
+Liquirizia di Calabria|DRINK|Amari|300||
+Amaro alle erbe Felisao|DRINK|Amari|300||
+Kaciuto|DRINK|Amari|300||
+Meloncello|DRINK|Liquori|300||
+Limoncello|DRINK|Liquori|300||
+Grappa 903 Barrique|DRINK|Grappe|350||
+Grappa 903 Tipica|DRINK|Grappe|300||
+18 Lune|DRINK|Grappe|500||Distilleria Marzadro
+Coperto|SIDE||200||Per persona

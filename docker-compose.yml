@@ -61,11 +61,11 @@ services:
   # Runs once, creates the demo restaurant, then exits. Safe to run again.
   seed:
     image: curlimages/curl:8.11.1
-    entrypoint: ["sh", "/seed-demo.sh"]
+    entrypoint: ["sh", "/scripts/seed-demo.sh"]
     environment:
       API_URL: http://backend:8080
     volumes:
-      - ./scripts/seed-demo.sh:/seed-demo.sh:ro
+      - ./scripts:/scripts:ro
     depends_on:
       - backend
     restart: "no"

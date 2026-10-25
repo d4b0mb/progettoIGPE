@@ -12,6 +12,7 @@ import { Dialog } from "@/components/ui/Dialog";
 import { useRemote } from "@/lib/useRemote";
 import { COURSES, MenuForm } from "./MenuForm";
 import { formatCents } from "./money";
+import { groupBySection } from "./sections";
 
 type MenuItem = components["schemas"]["MenuItem"];
 
@@ -70,41 +71,46 @@ export function MenuScreen() {
         return (
           <section key={course} className="flex flex-col gap-2">
             <h2 className="text-sm font-extrabold tracking-wide text-muted uppercase">{tcourse(course)}</h2>
-            <ul className="flex flex-col divide-y divide-line rounded-2xl border border-line bg-surface">
-              {inCourse.map((item) => (
-                <li key={item.id} className={`flex flex-col gap-3 p-4 sm:flex-row sm:items-center ${item.available ? "" : "opacity-60"}`}>
-                  <div className="flex min-w-0 flex-1 flex-col gap-1.5">
-                    <div className="flex flex-wrap items-baseline gap-x-3">
-                      <span className="font-bold">{item.name}</span>
-                      {item.priceCents != null ? <span className="text-sm font-semibold text-muted tabular-nums">{formatCents(item.priceCents, locale)}</span> : null}
-                      {!item.available ? <Badge tone="warn">{t("unavailable")}</Badge> : null}
-                    </div>
-                    {item.description ? <p className="text-sm text-muted">{item.description}</p> : null}
-                    <div className="flex flex-wrap gap-1.5">
-                      {item.allergens.length === 0 ? (
-                        <span className="text-xs text-muted">{t("noAllergens")}</span>
-                      ) : (
-                        item.allergens.map((a) => (
-                          <Badge key={a} tone="danger">
-                            {ta(a)}
-                          </Badge>
-                        ))
-                      )}
-                    </div>
-                  </div>
-                  {canEdit ? (
-                    <div className="flex gap-2">
-                      <Button variant="secondary" onClick={() => setEditing(item)}>
-                        {t("edit")}
-                      </Button>
-                      <Button variant="danger" onClick={() => void remove(item)}>
-                        {tc("delete")}
-                      </Button>
-                    </div>
-                  ) : null}
-                </li>
-              ))}
-            </ul>
+            {groupBySection(inCourse).map((group) => (
+              <div key={group.section} className="flex flex-col gap-2">
+                {group.section ? <h3 className="text-xs font-extrabold tracking-wide text-primary-strong uppercase">{group.section}</h3> : null}
+                <ul className="flex flex-col divide-y divide-line rounded-2xl border border-line bg-surface">
+                  {group.items.map((item) => (
+                    <li key={item.id} className={`flex flex-col gap-3 p-4 sm:flex-row sm:items-center ${item.available ? "" : "opacity-60"}`}>
+                      <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+                        <div className="flex flex-wrap items-baseline gap-x-3">
+                          <span className="font-bold">{item.name}</span>
+                          {item.priceCents != null ? <span className="text-sm font-semibold text-muted tabular-nums">{formatCents(item.priceCents, locale)}</span> : null}
+                          {!item.available ? <Badge tone="warn">{t("unavailable")}</Badge> : null}
+                        </div>
+                        {item.description ? <p className="text-sm text-muted">{item.description}</p> : null}
+                        <div className="flex flex-wrap gap-1.5">
+                          {item.allergens.length === 0 ? (
+                            <span className="text-xs text-muted">{t("noAllergens")}</span>
+                          ) : (
+                            item.allergens.map((a) => (
+                              <Badge key={a} tone="danger">
+                                {ta(a)}
+                              </Badge>
+                            ))
+                          )}
+                        </div>
+                      </div>
+                      {canEdit ? (
+                        <div className="flex gap-2">
+                          <Button variant="secondary" onClick={() => setEditing(item)}>
+                            {t("edit")}
+                          </Button>
+                          <Button variant="danger" onClick={() => void remove(item)}>
+                            {tc("delete")}
+                          </Button>
+                        </div>
+                      ) : null}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
           </section>
         );
       })}

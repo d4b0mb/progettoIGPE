@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { NextIntlClientProvider } from "next-intl";
 import { getLocale, getMessages } from "next-intl/server";
+import { EARLY_THEME_SCRIPT } from "@/api/restaurant";
 import { SessionProvider } from "@/api/session";
 import "./globals.css";
 
@@ -19,7 +20,10 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const locale = await getLocale();
   const messages = await getMessages();
   return (
-    <html lang={locale}>
+    <html lang={locale} suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: EARLY_THEME_SCRIPT }} />
+      </head>
       <body className="antialiased">
         <NextIntlClientProvider messages={messages}>
           <SessionProvider>{children}</SessionProvider>

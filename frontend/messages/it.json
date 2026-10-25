@@ -155,7 +155,9 @@
     "empty": "Il menù è vuoto. Aggiungi il primo piatto.",
     "deleteConfirm": "Eliminare {name} dal menù?",
     "noAllergens": "Nessun allergene dichiarato",
-    "readOnly": "Solo il titolare e i responsabili possono modificare il menù."
+    "readOnly": "Solo il titolare e i responsabili possono modificare il menù.",
+    "section": "Sezione (facoltativa, es. Birre)",
+    "sectionHint": "Raggruppa i piatti dentro una categoria."
   },
   "courses": {
     "DRINK": "Bevande",
@@ -163,7 +165,8 @@
     "FIRST": "Primi",
     "SECOND": "Secondi",
     "SIDE": "Contorni",
-    "DESSERT": "Dessert"
+    "DESSERT": "Dessert",
+    "PIZZA": "Pizze"
   },
   "floor": {
     "title": "Piantina",
@@ -267,7 +270,17 @@
     "sent": "Comanda {code} inviata in cucina.",
     "confirmAllergy": "Questa comanda ha un piatto con un allergene dichiarato dal cliente ({list}). Inviarla comunque?",
     "emptyCart": "Aggiungi almeno un piatto.",
-    "tableLive": "Tavolo {number} - {status}"
+    "tableLive": "Tavolo {number} - {status}",
+    "servedServing": "Portata {index} di {count} servita",
+    "serving": "Portata {n}",
+    "servingTabs": "Portate di questo ordine",
+    "addServing": "Aggiungi portata",
+    "removeServing": "Elimina portata vuota {n}",
+    "servingHint": "I piatti che aggiungi vanno nella portata selezionata. La cucina le manda una dopo l’altra.",
+    "servingSummary": "Portata {n}: {count, plural, one {# articolo} other {# articoli}}",
+    "search": "Cerca nel menu",
+    "allCourses": "Tutte",
+    "noMatches": "Nessun risultato."
   },
   "kitchen": {
     "title": "Cucina",
@@ -287,7 +300,9 @@
     "conflictsIn": "in {dishes}",
     "note": "Nota",
     "waiting": "{time}",
-    "allClear": "Ancora nessuna comanda. Le nuove comande compaiono qui nel momento in cui vengono inviate."
+    "allClear": "Ancora nessuna comanda. Le nuove comande compaiono qui nel momento in cui vengono inviate.",
+    "servingOf": "Portata {index} di {count}",
+    "comingNext": "A seguire"
   },
   "account": {
     "title": "Account",
@@ -313,7 +328,11 @@
     "confirmWithPassword": "Inserisci la password attuale per confermare",
     "bannerTitle": "Attiva il recupero dell'account",
     "bannerText": "Se dimentichi la password, al momento non c'è modo di rientrare.",
-    "bannerAction": "Attivalo ora"
+    "bannerAction": "Attivalo ora",
+    "lookTitle": "Aspetto dell’app",
+    "lookHelp": "Scegli colori e caratteri per tutto il personale del locale.",
+    "lookClassic": "Classico",
+    "lookDuodecim": "Duodecim Pizze"
   },
   "recover": {
     "title": "Recupera il tuo account",

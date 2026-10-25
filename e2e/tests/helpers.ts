@@ -8,6 +8,13 @@ export const demo = {
   kitchen: "kitchen@demo.ristomanager.local",
 };
 
+/** The pizzeria demo: a real menu and its own look. */
+export const duodecim = {
+  owner: "owner@duodecim.ristomanager.local",
+  waiter: "waiter@duodecim.ristomanager.local",
+  kitchen: "kitchen@duodecim.ristomanager.local",
+};
+
 export const PHONE = { width: 390, height: 844 };
 export const DESKTOP = { width: 1280, height: 800 };
 

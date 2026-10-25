@@ -4,6 +4,7 @@ import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { OrderEntry } from "./OrderEntry";
+import { servingPosition } from "./tickets";
 import { TicketCard } from "./TicketCard";
 import { useNow, useTicketStream } from "./useTicketStream";
 
@@ -47,7 +48,7 @@ export function OrdersScreen() {
                   className="min-h-14 flex-1 !bg-white !text-[#06241d]"
                   onClick={() => void setStatus(ticket, "SERVED").catch((e: Error) => setError(e.message))}
                 >
-                  {t("served")}
+                  {servingPosition(ticket).count > 1 ? t("servedServing", { index: servingPosition(ticket).index, count: servingPosition(ticket).count }) : t("served")}
                 </Button>
               }
             />

@@ -4,6 +4,7 @@ import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { useSession } from "@/api/session";
 import { Button } from "@/components/ui/Button";
+import { useWakeLock } from "@/lib/useWakeLock";
 import { TicketCard } from "./TicketCard";
 import type { Ticket, TicketStatus } from "./tickets";
 import { useNow, useTicketStream } from "./useTicketStream";
@@ -14,6 +15,7 @@ export function KitchenScreen() {
   const { state } = useSession();
   const { tickets, connected, loaded, setStatus } = useTicketStream();
   const now = useNow();
+  useWakeLock();
   const [error, setError] = useState<string | null>(null);
 
   if (state.status !== "authenticated") return null;

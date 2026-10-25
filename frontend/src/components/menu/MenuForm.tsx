@@ -14,7 +14,8 @@ import { centsToInput, parsePriceToCents } from "./money";
 
 type MenuItem = components["schemas"]["MenuItem"];
 type Course = MenuItem["course"];
-export const COURSES: Course[] = ["DRINK", "STARTER", "FIRST", "SECOND", "SIDE", "DESSERT"];
+/** In the order a guest reads a menu. */
+export const COURSES: Course[] = ["STARTER", "PIZZA", "FIRST", "SECOND", "SIDE", "DESSERT", "DRINK"];
 
 export function MenuForm({ existing, onSaved, onCancel }: { existing?: MenuItem; onSaved: () => void; onCancel: () => void }) {
   const t = useTranslations("menu");
@@ -23,6 +24,7 @@ export function MenuForm({ existing, onSaved, onCancel }: { existing?: MenuItem;
   const [name, setName] = useState(existing?.name ?? "");
   const [description, setDescription] = useState(existing?.description ?? "");
   const [course, setCourse] = useState<Course>(existing?.course ?? "FIRST");
+  const [section, setSection] = useState(existing?.section ?? "");
   const [price, setPrice] = useState(centsToInput(existing?.priceCents));
   const [allergens, setAllergens] = useState<Allergen[]>(existing?.allergens ?? []);
   const [available, setAvailable] = useState(existing?.available ?? true);
@@ -40,7 +42,7 @@ export function MenuForm({ existing, onSaved, onCancel }: { existing?: MenuItem;
     setPriceError(undefined);
     setBusy(true);
     setProblem(null);
-    const body = { name, description, course, priceCents: cents, allergens, available };
+    const body = { name, description, course, section: section.trim(), priceCents: cents, allergens, available };
     try {
       if (existing) {
         await unwrap(api.PUT("/api/v1/menu/items/{id}", { params: { path: { id: existing.id } }, body }));
@@ -70,6 +72,7 @@ export function MenuForm({ existing, onSaved, onCancel }: { existing?: MenuItem;
         </SelectField>
         <Field label={t("price")} inputMode="decimal" value={price} onChange={(e) => setPrice(e.target.value)} error={priceError ?? fe.priceCents} />
       </div>
+      <Field label={t("section")} hint={t("sectionHint")} value={section} onChange={(e) => setSection(e.target.value)} maxLength={60} error={fe.section} />
       <AllergenPicker label={t("allergens")} value={allergens} onChange={setAllergens} />
       <label className="flex min-h-11 items-center gap-3 text-sm font-bold">
         <input type="checkbox" checked={available} onChange={(e) => setAvailable(e.target.checked)} className="h-5 w-5 accent-primary" />

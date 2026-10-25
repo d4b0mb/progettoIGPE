@@ -155,7 +155,9 @@
     "empty": "The menu is empty. Add your first dish.",
     "deleteConfirm": "Delete {name} from the menu?",
     "noAllergens": "No declared allergens",
-    "readOnly": "Only the owner and managers can change the menu."
+    "readOnly": "Only the owner and managers can change the menu.",
+    "section": "Section (optional, e.g. Beers)",
+    "sectionHint": "Groups items inside a course."
   },
   "courses": {
     "DRINK": "Drinks",
@@ -163,7 +165,8 @@
     "FIRST": "First courses",
     "SECOND": "Second courses",
     "SIDE": "Sides",
-    "DESSERT": "Desserts"
+    "DESSERT": "Desserts",
+    "PIZZA": "Pizzas"
   },
   "floor": {
     "title": "Floor plan",
@@ -267,7 +270,17 @@
     "sent": "Order {code} sent to the kitchen.",
     "confirmAllergy": "This order has a dish with an allergen the guest declared ({list}). Send it anyway?",
     "emptyCart": "Add at least one dish.",
-    "tableLive": "Table {number} - {status}"
+    "tableLive": "Table {number} - {status}",
+    "servedServing": "Serving {index} of {count} served",
+    "serving": "Serving {n}",
+    "servingTabs": "Servings of this order",
+    "addServing": "Add serving",
+    "removeServing": "Remove empty serving {n}",
+    "servingHint": "Dishes you add go into the selected serving. The kitchen sends them out one serving after the other.",
+    "servingSummary": "Serving {n}: {count, plural, one {# item} other {# items}}",
+    "search": "Search the menu",
+    "allCourses": "All",
+    "noMatches": "Nothing matches your search."
   },
   "kitchen": {
     "title": "Kitchen",
@@ -287,7 +300,9 @@
     "conflictsIn": "in {dishes}",
     "note": "Note",
     "waiting": "{time}",
-    "allClear": "No orders yet. New orders appear here the moment they are sent."
+    "allClear": "No orders yet. New orders appear here the moment they are sent.",
+    "servingOf": "Serving {index} of {count}",
+    "comingNext": "Coming next"
   },
   "account": {
     "title": "Account",
@@ -313,7 +328,11 @@
     "confirmWithPassword": "Enter your current password to confirm",
     "bannerTitle": "Set up account recovery",
     "bannerText": "If you forget your password, there is currently no way back in.",
-    "bannerAction": "Set it up now"
+    "bannerAction": "Set it up now",
+    "lookTitle": "Look of the app",
+    "lookHelp": "Choose the colours and lettering for everyone in the restaurant.",
+    "lookClassic": "Classic",
+    "lookDuodecim": "Duodecim Pizze"
   },
   "recover": {
     "title": "Recover your account",

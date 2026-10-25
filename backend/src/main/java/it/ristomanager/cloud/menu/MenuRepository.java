@@ -25,7 +25,7 @@ public class MenuRepository {
     }
 
     public List<MenuItem> list(UUID rid) {
-        return jdbc.sql("select " + COLS + " from menu_item where restaurant_id = :rid order by name")
+        return jdbc.sql("select " + COLS + " from menu_item where restaurant_id = :rid order by created_at, name")
                 .param("rid", rid).query(MenuRepository::map).list();
     }
 

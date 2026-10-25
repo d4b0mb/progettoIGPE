@@ -4,6 +4,7 @@ import { useTranslations } from "next-intl";
 import { useSession } from "@/api/session";
 import { PasswordForm } from "./PasswordForm";
 import { RecoverySetup } from "./RecoverySetup";
+import { ThemeSetup } from "./ThemeSetup";
 
 export function AccountScreen() {
   const t = useTranslations("account");
@@ -19,6 +20,7 @@ export function AccountScreen() {
         <p className="text-sm text-muted">{user.email}</p>
       </div>
       <PasswordForm />
+      {user.role === "OWNER" ? <ThemeSetup /> : null}
       {user.role === "OWNER" ? <RecoverySetup /> : null}
     </div>
   );

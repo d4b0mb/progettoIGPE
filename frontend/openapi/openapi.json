@@ -119,6 +119,34 @@
         }
       }
     },
+    "/api/v1/restaurant/theme" : {
+      "put" : {
+        "tags" : [ "restaurant-controller" ],
+        "operationId" : "setTheme",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ThemeRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/RestaurantView"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/reservations/{id}" : {
       "get" : {
         "tags" : [ "reservation-controller" ],
@@ -1030,6 +1058,24 @@
         }
       }
     },
+    "/api/v1/restaurant" : {
+      "get" : {
+        "tags" : [ "restaurant-controller" ],
+        "operationId" : "get_1",
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/RestaurantView"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/reservations/available-tables" : {
       "get" : {
         "tags" : [ "reservation-controller" ],
@@ -1087,7 +1133,7 @@
     "/api/v1/orders/{id}" : {
       "get" : {
         "tags" : [ "order-controller" ],
-        "operationId" : "get_1",
+        "operationId" : "get_2",
         "parameters" : [ {
           "name" : "id",
           "in" : "path",
@@ -1426,6 +1472,29 @@
         },
         "required" : [ "gridStepMeters", "heightMeters", "id", "name", "widthMeters" ]
       },
+      "ThemeRequest" : {
+        "type" : "object",
+        "properties" : {
+          "theme" : {
+            "type" : "string",
+            "enum" : [ "CLASSIC", "DUODECIM" ]
+          }
+        },
+        "required" : [ "theme" ]
+      },
+      "RestaurantView" : {
+        "type" : "object",
+        "properties" : {
+          "name" : {
+            "type" : "string"
+          },
+          "theme" : {
+            "type" : "string",
+            "enum" : [ "CLASSIC", "DUODECIM" ]
+          }
+        },
+        "required" : [ "name", "theme" ]
+      },
       "ReservationRequest" : {
         "type" : "object",
         "properties" : {
@@ -1639,7 +1708,12 @@
           },
           "course" : {
             "type" : "string",
-            "enum" : [ "DRINK", "STARTER", "FIRST", "SECOND", "SIDE", "DESSERT" ]
+            "enum" : [ "DRINK", "STARTER", "PIZZA", "FIRST", "SECOND", "SIDE", "DESSERT" ]
+          },
+          "section" : {
+            "type" : "string",
+            "maxLength" : 60,
+            "minLength" : 0
           },
           "priceCents" : {
             "type" : "integer",
@@ -1675,7 +1749,10 @@
           },
           "course" : {
             "type" : "string",
-            "enum" : [ "DRINK", "STARTER", "FIRST", "SECOND", "SIDE", "DESSERT" ]
+            "enum" : [ "DRINK", "STARTER", "PIZZA", "FIRST", "SECOND", "SIDE", "DESSERT" ]
+          },
+          "section" : {
+            "type" : "string"
           },
           "priceCents" : {
             "type" : [ "integer", "null" ],
@@ -1692,7 +1769,7 @@
             "type" : "boolean"
           }
         },
-        "required" : [ "allergens", "available", "course", "description", "id", "name" ]
+        "required" : [ "allergens", "available", "course", "description", "id", "name", "section" ]
       },
       "RecoverySetupRequest" : {
         "type" : "object",
@@ -1790,6 +1867,10 @@
           },
           "note" : {
             "type" : "string"
+          },
+          "serving" : {
+            "type" : "integer",
+            "format" : "int32"
           }
         }
       },
@@ -1839,7 +1920,7 @@
           },
           "course" : {
             "type" : "string",
-            "enum" : [ "DRINK", "STARTER", "FIRST", "SECOND", "SIDE", "DESSERT" ]
+            "enum" : [ "DRINK", "STARTER", "PIZZA", "FIRST", "SECOND", "SIDE", "DESSERT" ]
           },
           "allergens" : {
             "type" : "array",
@@ -1857,9 +1938,13 @@
           },
           "note" : {
             "type" : "string"
+          },
+          "serving" : {
+            "type" : "integer",
+            "format" : "int32"
           }
         },
-        "required" : [ "allergens", "conflicts", "course", "id", "name", "note", "quantity" ]
+        "required" : [ "allergens", "conflicts", "course", "id", "name", "note", "quantity", "serving" ]
       },
       "TicketView" : {
         "type" : "object",
@@ -1913,6 +1998,18 @@
               "$ref" : "#/components/schemas/ItemView"
             }
           },
+          "currentServing" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "servingCount" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "servingSince" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
           "createdAt" : {
             "type" : "string",
             "format" : "date-time"
@@ -1930,7 +2027,7 @@
             "format" : "date-time"
           }
         },
-        "required" : [ "code", "createdAt", "guestAllergens", "guestName", "hasAllergyConflicts", "id", "items", "note", "priority", "status" ]
+        "required" : [ "code", "createdAt", "currentServing", "guestAllergens", "guestName", "hasAllergyConflicts", "id", "items", "note", "priority", "servingCount", "servingSince", "status" ]
       },
       "ChangePasswordRequest" : {
         "type" : "object",

@@ -36,6 +36,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/restaurant/theme": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["setTheme"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/reservations/{id}": {
         parameters: {
             query?: never;
@@ -436,6 +452,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/restaurant": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get_1"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/reservations/available-tables": {
         parameters: {
             query?: never;
@@ -459,7 +491,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["get_1"];
+        get: operations["get_2"];
         put?: never;
         post?: never;
         delete?: never;
@@ -627,6 +659,15 @@ export interface components {
             /** Format: double */
             gridStepMeters: number;
         };
+        ThemeRequest: {
+            /** @enum {string} */
+            theme: "CLASSIC" | "DUODECIM";
+        };
+        RestaurantView: {
+            name: string;
+            /** @enum {string} */
+            theme: "CLASSIC" | "DUODECIM";
+        };
         ReservationRequest: {
             guestName?: string;
             phone?: string;
@@ -718,7 +759,8 @@ export interface components {
             name: string;
             description?: string;
             /** @enum {string} */
-            course: "DRINK" | "STARTER" | "FIRST" | "SECOND" | "SIDE" | "DESSERT";
+            course: "DRINK" | "STARTER" | "PIZZA" | "FIRST" | "SECOND" | "SIDE" | "DESSERT";
+            section?: string;
             /** Format: int32 */
             priceCents?: number;
             allergens?: ("GLUTEN" | "CRUSTACEANS" | "EGGS" | "FISH" | "PEANUTS" | "SOYBEANS" | "MILK" | "TREE_NUTS" | "CELERY" | "MUSTARD" | "SESAME" | "SULPHITES" | "LUPIN" | "MOLLUSCS")[];
@@ -730,7 +772,8 @@ export interface components {
             name: string;
             description: string;
             /** @enum {string} */
-            course: "DRINK" | "STARTER" | "FIRST" | "SECOND" | "SIDE" | "DESSERT";
+            course: "DRINK" | "STARTER" | "PIZZA" | "FIRST" | "SECOND" | "SIDE" | "DESSERT";
+            section: string;
             /** Format: int32 */
             priceCents?: number | null;
             allergens: ("GLUTEN" | "CRUSTACEANS" | "EGGS" | "FISH" | "PEANUTS" | "SOYBEANS" | "MILK" | "TREE_NUTS" | "CELERY" | "MUSTARD" | "SESAME" | "SULPHITES" | "LUPIN" | "MOLLUSCS")[];
@@ -768,6 +811,8 @@ export interface components {
             /** Format: int32 */
             quantity?: number;
             note?: string;
+            /** Format: int32 */
+            serving?: number;
         };
         OrderRequest: {
             /** Format: uuid */
@@ -788,10 +833,12 @@ export interface components {
             /** Format: int32 */
             quantity: number;
             /** @enum {string} */
-            course: "DRINK" | "STARTER" | "FIRST" | "SECOND" | "SIDE" | "DESSERT";
+            course: "DRINK" | "STARTER" | "PIZZA" | "FIRST" | "SECOND" | "SIDE" | "DESSERT";
             allergens: ("GLUTEN" | "CRUSTACEANS" | "EGGS" | "FISH" | "PEANUTS" | "SOYBEANS" | "MILK" | "TREE_NUTS" | "CELERY" | "MUSTARD" | "SESAME" | "SULPHITES" | "LUPIN" | "MOLLUSCS")[];
             conflicts: ("GLUTEN" | "CRUSTACEANS" | "EGGS" | "FISH" | "PEANUTS" | "SOYBEANS" | "MILK" | "TREE_NUTS" | "CELERY" | "MUSTARD" | "SESAME" | "SULPHITES" | "LUPIN" | "MOLLUSCS")[];
             note: string;
+            /** Format: int32 */
+            serving: number;
         };
         TicketView: {
             /** Format: uuid */
@@ -812,6 +859,12 @@ export interface components {
             note: string;
             hasAllergyConflicts: boolean;
             items: components["schemas"]["ItemView"][];
+            /** Format: int32 */
+            currentServing: number;
+            /** Format: int32 */
+            servingCount: number;
+            /** Format: date-time */
+            servingSince: string;
             /** Format: date-time */
             createdAt: string;
             /** Format: date-time */
@@ -1012,6 +1065,30 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    setTheme: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ThemeRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["RestaurantView"];
+                };
             };
         };
     };
@@ -1795,6 +1872,26 @@ export interface operations {
             };
         };
     };
+    get_1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["RestaurantView"];
+                };
+            };
+        };
+    };
     availableTables: {
         parameters: {
             query: {
@@ -1820,7 +1917,7 @@ export interface operations {
             };
         };
     };
-    get_1: {
+    get_2: {
         parameters: {
             query?: never;
             header?: never;

@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/Button";
 import { SelectField } from "@/components/ui/Controls";
 import { Field } from "@/components/ui/Field";
 import { COURSES } from "@/components/menu/MenuForm";
+import { groupBySection } from "@/components/menu/sections";
 import { formatCents } from "@/components/menu/money";
 import { todayLocal } from "@/components/reservations/time";
 import { useRemote } from "@/lib/useRemote";
@@ -49,7 +50,12 @@ export function OrderEntry({ onSent }: { onSent: (code: string) => void }) {
   const setup = useRemote(loadSetup);
 
   const [tableId, setTableId] = useState("");
+  // Quantities are kept per serving: the key is "serving|dish".
   const [cart, setCart] = useState<Record<string, number>>({});
+  const [servings, setServings] = useState<number[]>([1]);
+  const [active, setActive] = useState(1);
+  const [search, setSearch] = useState("");
+  const [courseFilter, setCourseFilter] = useState<"ALL" | (typeof COURSES)[number]>("ALL");
   const [priority, setPriority] = useState<NonNullable<Priority>>("NORMAL");
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
@@ -57,17 +63,34 @@ export function OrderEntry({ onSent }: { onSent: (code: string) => void }) {
 
   const tableAllergies = useMemo(() => setup.data?.allergiesByTable.get(tableId) ?? [], [setup.data, tableId]);
   const menu = setup.data?.menu ?? [];
-  const lines = menu.filter((m) => (cart[m.id] ?? 0) > 0);
-  const count = lines.reduce((sum, m) => sum + cart[m.id], 0);
+  const key = (serving: number, id: string) => `${serving}|${id}`;
+  const qtyIn = (serving: number, id: string) => cart[key(serving, id)] ?? 0;
+  // Every line to send, in serving order.
+  const lines = servings.flatMap((serving) => menu.filter((m) => qtyIn(serving, m.id) > 0).map((m) => ({ item: m, serving, quantity: qtyIn(serving, m.id) })));
+  const count = lines.reduce((sum, l) => sum + l.quantity, 0);
+  const countIn = (serving: number) => lines.filter((l) => l.serving === serving).reduce((sum, l) => sum + l.quantity, 0);
   const conflictsOf = (m: MenuItem) => m.allergens.filter((a) => tableAllergies.includes(a));
-  const conflicting = lines.flatMap(conflictsOf);
+  const conflicting = lines.flatMap((l) => conflictsOf(l.item));
 
   function change(id: string, delta: number) {
     setCart((c) => {
-      const next = Math.max(0, Math.min(99, (c[id] ?? 0) + delta));
-      const others = Object.entries(c).filter(([key]) => key !== id);
-      return Object.fromEntries(next === 0 ? others : [...others, [id, next]]);
+      const k = key(active, id);
+      const next = Math.max(0, Math.min(99, (c[k] ?? 0) + delta));
+      const others = Object.entries(c).filter(([name]) => name !== k);
+      return Object.fromEntries(next === 0 ? others : [...others, [k, next]]);
     });
+  }
+
+  function addServing() {
+    const next = Math.min(9, Math.max(...servings) + 1);
+    if (servings.includes(next)) return;
+    setServings((s) => [...s, next]);
+    setActive(next);
+  }
+
+  function removeServing(n: number) {
+    setServings((s) => s.filter((x) => x !== n));
+    if (active === n) setActive(servings.find((x) => x !== n) ?? 1);
   }
 
   async function send() {
@@ -77,10 +100,12 @@ export function OrderEntry({ onSent }: { onSent: (code: string) => void }) {
     try {
       const ticket = await unwrap(
         api.POST("/api/v1/orders", {
-          body: { tableId, priority, note: note.trim() || undefined, items: lines.map((m) => ({ menuItemId: m.id, quantity: cart[m.id] })) },
+          body: { tableId, priority, note: note.trim() || undefined, items: lines.map((l) => ({ menuItemId: l.item.id, quantity: l.quantity, serving: l.serving })) },
         }),
       );
       setCart({});
+      setServings([1]);
+      setActive(1);
       setNote("");
       setPriority("NORMAL");
       onSent(ticket.code);
@@ -93,6 +118,9 @@ export function OrderEntry({ onSent }: { onSent: (code: string) => void }) {
   if (!setup.data) return <p className="text-muted">…</p>;
   const { tables } = setup.data;
   const ready = tableId !== "" && count > 0;
+  const needle = search.trim().toLowerCase();
+  const matches = (m: MenuItem) =>
+    (courseFilter === "ALL" || m.course === courseFilter) && (needle === "" || m.name.toLowerCase().includes(needle) || m.description.toLowerCase().includes(needle));
 
   return (
     <div className="flex flex-col gap-5 pb-40 md:pb-24">
@@ -129,47 +157,109 @@ export function OrderEntry({ onSent }: { onSent: (code: string) => void }) {
         ) : null}
       </section>
 
+      <section className="flex flex-col gap-2" aria-label={t("servingTabs")}>
+        <div role="group" aria-label={t("servingTabs")} className="flex flex-wrap items-center gap-2">
+          {servings.map((n) => (
+            <span key={n} className="flex items-stretch">
+              <button
+                type="button"
+                aria-pressed={active === n}
+                onClick={() => setActive(n)}
+                className={`min-h-12 rounded-l-[10px] border-2 px-4 text-sm font-extrabold ${n === 1 && servings.length === 1 ? "rounded-r-[10px]" : ""} ${
+                  active === n ? "border-primary bg-primary text-white" : "border-line-strong bg-surface text-ink"
+                }`}
+              >
+                {t("serving", { n })}
+                {countIn(n) > 0 ? <span className="ml-2 rounded-full bg-white/25 px-2 py-0.5 text-xs tabular-nums">{countIn(n)}</span> : null}
+              </button>
+              {servings.length > 1 && countIn(n) === 0 ? (
+                <button type="button" aria-label={t("removeServing", { n })} onClick={() => removeServing(n)} className="min-h-12 min-w-10 rounded-r-[10px] border-2 border-l-0 border-line-strong bg-surface text-lg font-bold text-muted">
+                  ×
+                </button>
+              ) : null}
+            </span>
+          ))}
+          {servings.length < 9 ? (
+            <button type="button" onClick={addServing} className="min-h-12 rounded-[10px] border-2 border-dashed border-line-strong px-4 text-sm font-bold text-primary-strong">
+              + {t("addServing")}
+            </button>
+          ) : null}
+        </div>
+        {servings.length > 1 ? <p className="text-sm text-muted">{t("servingHint")}</p> : null}
+      </section>
+
+      <section className="flex flex-col gap-2" aria-label={t("search")}>
+        <Field label={t("search")} type="search" value={search} onChange={(e) => setSearch(e.target.value)} />
+        <div role="group" aria-label={t("search")} className="flex flex-wrap gap-2">
+          {(["ALL", ...COURSES] as const)
+            .filter((c) => c === "ALL" || menu.some((m) => m.course === c))
+            .map((c) => (
+              <button
+                key={c}
+                type="button"
+                aria-pressed={courseFilter === c}
+                onClick={() => setCourseFilter(c)}
+                className={`min-h-11 rounded-full border px-4 text-sm font-bold ${courseFilter === c ? "border-primary bg-primary text-white" : "border-line-strong bg-surface text-ink"}`}
+              >
+                {c === "ALL" ? t("allCourses") : tcourse(c)}
+              </button>
+            ))}
+        </div>
+      </section>
+
       {menu.length === 0 ? <p className="text-muted">{t("menuEmpty")}</p> : null}
+      {menu.length > 0 && !menu.some((m) => matches(m)) ? <p className="text-muted">{t("noMatches")}</p> : null}
       {COURSES.map((course) => {
-        const items = menu.filter((m) => m.course === course);
+        const items = menu.filter((m) => m.course === course && matches(m));
         if (items.length === 0) return null;
         return (
-          <section key={course} className="flex flex-col gap-2" aria-label={tcourse(course)}>
+          <section key={course} className="flex flex-col gap-3" aria-label={tcourse(course)}>
             <h2 className="text-sm font-extrabold tracking-wide text-muted uppercase">{tcourse(course)}</h2>
-            <ul className="flex flex-col gap-2">
-              {items.map((m) => {
-                const conflicts = conflictsOf(m);
-                const qty = cart[m.id] ?? 0;
-                return (
-                  <li key={m.id} className={`flex items-center gap-3 rounded-2xl border-2 bg-surface p-3 ${conflicts.length > 0 ? "border-danger" : "border-line"} ${m.available ? "" : "opacity-50"}`}>
-                    <div className="flex min-w-0 flex-1 flex-col gap-1">
-                      <span className="font-bold">{m.name}</span>
-                      <div className="flex flex-wrap items-center gap-1.5">
-                        {m.priceCents != null ? <span className="text-xs font-semibold text-muted tabular-nums">{formatCents(m.priceCents, locale)}</span> : null}
-                        {!m.available ? <Badge tone="warn">{t("unavailable")}</Badge> : null}
-                        {m.allergens.map((a) => (
-                          <Badge key={a} tone={conflicts.includes(a) ? "danger" : "neutral"}>
-                            {ta(a)}
-                          </Badge>
-                        ))}
-                      </div>
-                      {conflicts.length > 0 ? <span className="text-xs font-bold text-danger-ink">{t("containsAllergen", { list: conflicts.map((a) => ta(a)).join(", ") })}</span> : null}
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      <button type="button" aria-label={t("remove", { name: m.name })} disabled={qty === 0} onClick={() => change(m.id, -1)} className="min-h-12 min-w-12 rounded-[10px] border border-line-strong bg-surface text-xl font-bold disabled:opacity-40">
-                        −
-                      </button>
-                      <span aria-label={t("quantity", { name: m.name })} className="min-w-7 text-center text-lg font-extrabold tabular-nums">
-                        {qty}
-                      </span>
-                      <button type="button" aria-label={t("add", { name: m.name })} disabled={!m.available} onClick={() => change(m.id, 1)} className="min-h-12 min-w-12 rounded-[10px] bg-primary text-xl font-bold text-white disabled:opacity-40">
-                        +
-                      </button>
-                    </div>
-                  </li>
-                );
-              })}
-            </ul>
+            {groupBySection(items).map((group) => (
+              <div key={group.section} className="flex flex-col gap-2">
+                {group.section ? <h3 className="text-xs font-extrabold tracking-wide text-primary-strong uppercase">{group.section}</h3> : null}
+                <ul className="flex flex-col gap-2">
+                  {group.items.map((m) => {
+                    const conflicts = conflictsOf(m);
+                    const qty = qtyIn(active, m.id);
+                    const elsewhere = servings.filter((n) => n !== active && qtyIn(n, m.id) > 0);
+                    return (
+                      <li key={m.id} className={`flex items-center gap-3 rounded-2xl border-2 bg-surface p-3 ${conflicts.length > 0 ? "border-danger" : "border-line"} ${m.available ? "" : "opacity-50"}`}>
+                        <div className="flex min-w-0 flex-1 flex-col gap-1">
+                          <span className="font-bold">{m.name}</span>
+                          <div className="flex flex-wrap items-center gap-1.5">
+                            {m.priceCents != null ? <span className="text-xs font-semibold text-muted tabular-nums">{formatCents(m.priceCents, locale)}</span> : null}
+                            {!m.available ? <Badge tone="warn">{t("unavailable")}</Badge> : null}
+                            {m.allergens.map((a) => (
+                              <Badge key={a} tone={conflicts.includes(a) ? "danger" : "neutral"}>
+                                {ta(a)}
+                              </Badge>
+                            ))}
+                            {elsewhere.map((n) => (
+                              <Badge key={n} tone="info">
+                                {qtyIn(n, m.id)} × {t("serving", { n })}
+                              </Badge>
+                            ))}
+                          </div>
+                          {conflicts.length > 0 ? <span className="text-xs font-bold text-danger-ink">{t("containsAllergen", { list: conflicts.map((a) => ta(a)).join(", ") })}</span> : null}
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <button type="button" aria-label={t("remove", { name: m.name })} disabled={qty === 0} onClick={() => change(m.id, -1)} className="min-h-12 min-w-12 rounded-[10px] border border-line-strong bg-surface text-xl font-bold disabled:opacity-40">
+                            −
+                          </button>
+                          <span aria-label={t("quantity", { name: m.name })} className="min-w-7 text-center text-lg font-extrabold tabular-nums">
+                            {qty}
+                          </span>
+                          <button type="button" aria-label={t("add", { name: m.name })} disabled={!m.available} onClick={() => change(m.id, 1)} className="min-h-12 min-w-12 rounded-[10px] bg-primary text-xl font-bold text-white disabled:opacity-40">
+                            +
+                          </button>
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            ))}
           </section>
         );
       })}
