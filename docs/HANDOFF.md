@@ -59,8 +59,8 @@ production (Phase 3). GitHub Actions CI. Reasons for each choice: `docs/adr/`.
 11. Floor plan editor and dark look: done. Direct manipulation with mouse or finger: tool rail (add round/square/rectangular
    tables and the 10 object types, snap, turn 90, duplicate, delete, undo), handles on the edges and corners of the selected
    item to resize (opposite side stays fixed; seats are recomputed by the server when a table is resized), a knob to turn it,
-   handles on the room's right/bottom edges to stretch the room. Room settings changes show without a reload. Sun/moon button
-   (light/dark, remembered per device, follows the device setting first time) for both looks. 24 browser tests, 78 frontend tests.
+   handles on the room's right/bottom edges to stretch the room, an Expand button (plan fills the window, Esc returns). Room settings changes show without a reload. Sun/moon button
+   (light/dark, remembered per device, follows the device setting first time) for both looks. 25 browser tests, 78 frontend tests.
    Maths is in `floor/geometry.ts` (tested); the gesture code is in `FloorCanvas.tsx`.
 
 Next phases (not started): Phase 3 Kubernetes (k3s), staging/production, monitoring; Phase 4 public

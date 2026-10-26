@@ -155,8 +155,19 @@ function RoomView({ room, canEdit, onRoomChanged }: { room: Room; canEdit: boole
   const [snapOn, setSnapOn] = useState(true);
   // On a phone the palette folds away so the plan stays in view; on a bigger screen it is always open.
   const [paletteOpen, setPaletteOpen] = useState(false);
+  // Expanded: the plan and its tools take the whole window; Escape goes back.
+  const [expanded, setExpanded] = useState(false);
   const [undo, setUndo] = useState<{ kind: Kind; id: string; before: Geom } | null>(null);
   const viewCenter = useRef({ x: room.widthMeters / 2, y: room.heightMeters / 2 });
+
+  useEffect(() => {
+    if (!expanded) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setExpanded(false);
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [expanded]);
 
   const fetchLayout = useCallback(() => unwrap(api.GET("/api/v1/rooms/{id}/layout", { params: { path: { id: room.id } } })), [room.id]);
 
@@ -397,7 +408,7 @@ function RoomView({ room, canEdit, onRoomChanged }: { room: Room; canEdit: boole
   ) : null;
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className={`flex flex-col gap-4 ${expanded ? "fixed inset-0 z-50 overflow-y-auto bg-canvas p-4" : ""}`}>
       {error ? (
         <p role="alert" className="rounded-lg bg-danger-soft px-3 py-2 text-sm font-semibold text-danger-ink">
           {error}
@@ -418,6 +429,8 @@ function RoomView({ room, canEdit, onRoomChanged }: { room: Room; canEdit: boole
             onViewCenter={(c) => {
               viewCenter.current = c;
             }}
+            fill={expanded}
+            onToggleFill={() => setExpanded((v) => !v)}
           />
           <ul className="flex flex-wrap gap-x-4 gap-y-2 text-xs text-muted" aria-label={t("live")}>
             {LIVE_STATUSES.map((s) => (

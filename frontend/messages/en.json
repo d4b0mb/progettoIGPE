@@ -232,7 +232,9 @@
     "duplicate": "Duplicate",
     "deleteSelected": "Delete",
     "undo": "Undo",
-    "deleteConfirm": "Delete the selected item?"
+    "deleteConfirm": "Delete the selected item?",
+    "expandPlan": "Expand the plan to fill the screen",
+    "collapsePlan": "Back to the normal view"
   },
   "elements": {
     "WALL": "Wall",

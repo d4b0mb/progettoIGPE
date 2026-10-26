@@ -232,7 +232,9 @@
     "duplicate": "Duplica",
     "deleteSelected": "Elimina",
     "undo": "Annulla",
-    "deleteConfirm": "Eliminare l’elemento selezionato?"
+    "deleteConfirm": "Eliminare l’elemento selezionato?",
+    "expandPlan": "Ingrandisci la pianta a tutto schermo",
+    "collapsePlan": "Torna alla vista normale"
   },
   "elements": {
     "WALL": "Muro",

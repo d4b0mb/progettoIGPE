@@ -3,6 +3,7 @@
 import { useTranslations } from "next-intl";
 import { useEffect, useRef, useState, type KeyboardEvent, type PointerEvent as ReactPointerEvent } from "react";
 import type { components } from "@/api/schema";
+import { Icon } from "@/components/ui/Icon";
 import {
   dragTarget,
   fitView,
@@ -79,6 +80,8 @@ export function FloorCanvas({
   onGeometry,
   onRoomSize,
   onViewCenter,
+  fill = false,
+  onToggleFill,
 }: {
   layout: Layout;
   selection: Selection;
@@ -89,6 +92,9 @@ export function FloorCanvas({
   onRoomSize: (width: number, height: number) => void;
   /** Tells the screen which spot is in the middle of what is shown, so new objects appear where you are looking. */
   onViewCenter?: (center: { x: number; y: number }) => void;
+  /** Use the whole height of the window (expanded view) instead of leaving room for the page around it. */
+  fill?: boolean;
+  onToggleFill?: () => void;
 }) {
   const t = useTranslations("floor");
   const te = useTranslations("elements");
@@ -382,7 +388,7 @@ export function FloorCanvas({
         aria-label={room.name}
         className={`block w-full rounded-2xl border border-line bg-surface select-none ${pan ? "cursor-grabbing" : "cursor-default"}`}
         // Always fits the screen's height; the drawing keeps its shape inside.
-        style={{ aspectRatio: `${view.width} / ${view.height}`, maxHeight: "calc(100dvh - 14rem)", minHeight: 280, touchAction: "pan-y" }}
+        style={{ aspectRatio: `${view.width} / ${view.height}`, maxHeight: fill ? "calc(100dvh - 2rem)" : "calc(100dvh - 12rem)", minHeight: 280, touchAction: "pan-y" }}
         onPointerDownCapture={() => setActive(true)}
         onPointerDown={onBackgroundDown}
         onPointerMove={onBackgroundMove}
@@ -540,6 +546,18 @@ export function FloorCanvas({
           </text>
         </g>
       </svg>
+
+      {onToggleFill ? (
+        <button
+          type="button"
+          aria-pressed={fill}
+          onClick={onToggleFill}
+          className="absolute top-3 left-3 flex min-h-11 min-w-11 items-center justify-center rounded-xl border border-line-strong bg-surface shadow-sm hover:bg-canvas"
+        >
+          <Icon name={fill ? "collapse" : "expand"} />
+          <span className="sr-only">{fill ? t("collapsePlan") : t("expandPlan")}</span>
+        </button>
+      ) : null}
 
       <div className="absolute top-3 right-3 flex flex-col overflow-hidden rounded-xl border border-line-strong bg-surface shadow-sm" role="group" aria-label={t("fit")}>
         <button type="button" aria-label={t("zoomIn")} onClick={() => zoomBy(1.4)} className="flex min-h-11 min-w-11 items-center justify-center text-xl font-bold hover:bg-canvas">

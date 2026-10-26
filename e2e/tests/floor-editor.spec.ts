@@ -111,6 +111,30 @@ test.describe("floor plan editor", () => {
   });
 });
 
+test("the plan can be expanded to fill the screen and brought back with Escape", async ({ browser }) => {
+  const { context, page } = await signedIn(browser, demo.owner, { width: 1440, height: 900 });
+  await page.goto("/floor");
+  await expect(page.getByRole("button", { name: /^Table 1,/ })).toBeVisible();
+  const plan = page.getByRole("group", { name: "Main room" });
+  const normal = (await plan.boundingBox())!;
+
+  await page.getByRole("button", { name: "Expand the plan to fill the screen" }).click();
+  await expect.poll(async () => (await plan.boundingBox())!.height).toBeGreaterThan(normal.height + 40);
+  // The app's own menu is covered while expanded: whatever is on top of it is not the menu.
+  const menuIsOnTop = () =>
+    page.evaluate(() => {
+      const nav = document.querySelector('nav[aria-label="Main navigation"]')!;
+      const box = nav.getBoundingClientRect();
+      return nav.contains(document.elementFromPoint(box.x + box.width / 2, box.y + box.height / 2));
+    });
+  expect(await menuIsOnTop()).toBe(false);
+
+  await page.keyboard.press("Escape");
+  await expect.poll(async () => Math.round((await plan.boundingBox())!.height)).toBe(Math.round(normal.height));
+  expect(await menuIsOnTop()).toBe(true);
+  await context.close();
+});
+
 test("dark look: the sun/moon button switches it and the choice is remembered", async ({ page }) => {
   await page.goto("/login");
   await page.getByRole("button", { name: "EN" }).first().click();
