@@ -405,14 +405,15 @@ function RoomView({ room, canEdit, onRoomChanged }: { room: Room; canEdit: boole
   const rail = canEdit ? (
     <div className="flex flex-col gap-3 lg:w-48 lg:shrink-0">
       <section className="flex flex-col gap-3 rounded-2xl border border-line bg-surface p-3" aria-label={t("palette")}>
+        {/* Outside the folded part so it is visible on a phone too. */}
+        <Button variant="secondary" onClick={() => setDraftOpen(true)}>
+          {t("draftButton")}
+        </Button>
         <button type="button" aria-expanded={paletteOpen} onClick={() => setPaletteOpen((v) => !v)} className="flex min-h-11 items-center justify-between text-left text-sm font-extrabold lg:hidden">
           {t("palette")}
           <span aria-hidden="true">{paletteOpen ? "−" : "+"}</span>
         </button>
         <div className={`${paletteOpen ? "flex" : "hidden"} flex-col gap-3 lg:flex`}>
-          <Button variant="secondary" onClick={() => setDraftOpen(true)}>
-            {t("draftButton")}
-          </Button>
           <div className="flex flex-wrap items-center gap-2 lg:flex-col lg:items-stretch lg:gap-1.5">
             <span className={heading}>{t("addTable")}</span>
             {TABLE_KINDS.map((k) => (
