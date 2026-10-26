@@ -29,3 +29,18 @@ move a booking where it searched instead of saying it cannot.
 
 Limits: 50 cases, one run each, written by the developer. It shows the model is usable, not that it is safe.
 Real safety comes from code (confirmation step, permissions, logging, no allergen verdicts), not from the model.
+
+## Through the real assistant endpoint (`node ai-eval/run-endpoint.mjs`)
+
+Same 50 requests, but sent to `POST /api/v1/assistant/chat` of a running stack with the real prompt, tools, guards and the model.
+Which tools were called is read from the activity log; nothing is ever confirmed. It paces itself (limit: 12 requests a minute).
+
+| Version | Passed | Median |
+|---------|--------|--------|
+| First version of the assistant prompt | 42/50 (3 were empty-answer 502s, one a rate-limit hit) | 2.4 s |
+| + retry after an empty answer, action-claim guard, booking-versus-lookup hint | 44/50 | 2.0 s |
+| + 7-day calendar (each weekday once) | **47/50** | 2.3 s |
+
+Still failing: "dom" and "dopodomani" resolve to the wrong day (the proposal card shows the date, so a person catches it), and "sposta la
+prenotazione di rossi alle 22" (no edit tool exists) makes the model loop until the 90 s timeout. Create cases for "stasera" can be refused
+as already past; then only the tool choice is scored.
