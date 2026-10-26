@@ -13,6 +13,7 @@ import Link from "next/link";
 import { timeOf, todayLocal } from "@/components/reservations/time";
 import { FloorCanvas, LIVE_STATUSES, liveSwatch, type Selection } from "./FloorCanvas";
 import { clamp, defaultObstacleSize, snap, tidy, type Geom, type ObstacleType } from "./geometry";
+import { FloorDraftDialog } from "./FloorDraftDialog";
 import { EmptyInspector, OBSTACLE_TYPES, ObstacleInspector, TableInspector } from "./Inspector";
 import { RoomForm } from "./RoomForm";
 
@@ -160,6 +161,7 @@ function RoomView({ room, canEdit, onRoomChanged }: { room: Room; canEdit: boole
   const [paletteOpen, setPaletteOpen] = useState(false);
   // Expanded: the plan and its tools take the whole window; Escape goes back.
   const [expanded, setExpanded] = useState(false);
+  const [draftOpen, setDraftOpen] = useState(false);
   const [undo, setUndo] = useState<{ kind: Kind; id: string; before: Geom } | null>(null);
   const viewCenter = useRef({ x: room.widthMeters / 2, y: room.heightMeters / 2 });
 
@@ -404,6 +406,9 @@ function RoomView({ room, canEdit, onRoomChanged }: { room: Room; canEdit: boole
           <span aria-hidden="true">{paletteOpen ? "−" : "+"}</span>
         </button>
         <div className={`${paletteOpen ? "flex" : "hidden"} flex-col gap-3 lg:flex`}>
+          <Button variant="secondary" onClick={() => setDraftOpen(true)}>
+            {t("draftButton")}
+          </Button>
           <div className="flex flex-wrap items-center gap-2 lg:flex-col lg:items-stretch lg:gap-1.5">
             <span className={heading}>{t("addTable")}</span>
             {TABLE_KINDS.map((k) => (
@@ -529,6 +534,8 @@ function RoomView({ room, canEdit, onRoomChanged }: { room: Room; canEdit: boole
           <EmptyInspector />
         )}
       </div>
+
+      {canEdit ? <FloorDraftDialog open={draftOpen} onClose={() => setDraftOpen(false)} room={layout.room} onApplied={() => void refresh()} /> : null}
     </div>
   );
 }

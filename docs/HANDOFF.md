@@ -2,7 +2,7 @@
 
 Read this first when starting a new session or switching models. It says what this
 project is, where it stands, how to run it, and the rules to keep.
-Last updated: 2026-10-26, after Block 12 (pizza options and notes, reservation rules, live floor plan).
+Last updated: 2026-10-26, after Block 14 (AI foundation, 50-request test kit, floor plan from a photo).
 
 ## What this is
 RistoManager Cloud: a multi-tenant web service for restaurants (reservations, floor plan,
@@ -77,6 +77,19 @@ production (Phase 3). GitHub Actions CI. Reasons for each choice: `docs/adr/`.
      Zoom controls moved into a bar above the plan. Send on the order screen always explains what is missing.
    118 backend tests, 94 frontend tests, 29 browser tests.
 
+13. AI foundation: done. Package `ai` (backend): `LlmClient` seam, `OllamaClient` (JDK HttpClient, timeouts, per-request options for JSON schema,
+   thinking and timeout, images, never logs message text), settings under `app.ai` (default `qwen3.5:9b`, temperature 0.2, 8k context, kept loaded,
+   thinking ON), `GET /api/v1/ai/status` (owner/manager), empty `SpeechSynthesizer` and `SpeechRecognizer` seams for a later voice.
+   Docker: the backend reaches the PC's Ollama at `host.docker.internal:11434`. `ai-eval/` holds 50 slangy IT/EN requests and a runner
+   (`node ai-eval/run.mjs`): qwen3.5:9b scored 29/50 with thinking off (it announced bookings it never made) and 44/50 with it on
+   (injection 4/4, allergy safety 5/5, median 1.7 s). Voice research: `docs/VOICE_RESEARCH.md`.
+14. Floor plan from a photo: done. `POST /api/v1/rooms/{id}/floor-draft` (owner/manager; JPEG or PNG plus the room width): the vision model
+   answers in image fractions, `FloorDraftMapper` converts to metres, snaps, drops implausible, outside and duplicate items and returns a draft
+   with warnings. It writes nothing. Screen: "Da una foto" in the floor editor (`FloorDraftDialog`): shrinks the photo in the browser, shows a
+   preview with a tick per item, and only "Add N items" creates them (sequentially, through the normal endpoints). Measured on a drawn test plan:
+   finds the tables and their shapes, positions within about 0.3-0.5 m, sizes unreliable (rectangles too small), bar mistaken for a kitchen, doors
+   missed; thinking on was slower and no better for this, so the call uses thinking off. Not yet tried on a real photo of the pizzeria.
+
 Next phases (not started): Phase 3 Kubernetes (k3s), staging/production, monitoring; Phase 4 public
 booking site (Next.js, SEO, email confirmation).
 
@@ -104,7 +117,7 @@ Italian is the default UI language; English is available.
 - The Duodecim allergens are a draft from ingredient lists; the pizzeria must confirm them.
 - Servings are strictly in order (no "send serving 2 now"). Menu order is insertion order (no drag to reorder).
 - Wake lock needs https or localhost; on plain http the tablet's own screen timeout applies.
-- Floor plan from a photo, and the local assistant (Ollama), are designed but not built.
+- The staff assistant (chat with tools, then create/cancel with confirmation) and the voice are designed but not built. Floor plan from a photo works on a drawn plan only.
 - Floor plan editor: no multi-select, no drag-from-palette (tap adds at the middle of the view), left/top room edges do not stretch, one level of undo, and no undo for add/delete/room size.
 - No login lockout (by choice; failed sign-ins are logged). Recovery attempts are throttled in memory, per API instance.
 - Security questions are a weak recovery method; recovery codes would be stronger.
@@ -122,6 +135,8 @@ ristomanager-cloud. Continue from the status list. Follow the rules in the hando
 Keep answers short and in plain English."
 
 ## Lessons worth remembering
+- On the author's Windows PC (Java 25) JUnit tests that open a local socket fail with "Unable to establish loopback connection". Run the backend tests in Linux instead: `docker run --rm -v "$PWD:/w" -v "$HOME/.m2/repository:/root/.m2/repository" -w /w/backend maven:3.9-eclipse-temurin-21 mvn -B test` (for `verify` also mount `//var/run/docker.sock` and set `TESTCONTAINERS_HOST_OVERRIDE=host.docker.internal`, `TESTCONTAINERS_RYUK_DISABLED=true`). In PowerShell quote `-Dit.test=...` or the dot splits it.
+- A small local model with thinking off will say "done" without calling the tool: keep thinking on for the assistant, and let code (not the model) do date arithmetic and safety rules.
 - The demo seed makes a reservation "10 minutes ago": on an old database the allergy e2e tests fail. Reset with `docker compose down -v` and reseed.
 - A module imported by a server component must not be marked "use client": its constants arrive as client references (this broke the "before first paint" scripts; they live in `lib/early-scripts.ts`).
 - Floor plan tools sit in a left rail on big screens; stacking them above the plan pushed it off-screen again (the 1080p test catches it).
