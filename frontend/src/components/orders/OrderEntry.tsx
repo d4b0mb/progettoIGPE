@@ -136,7 +136,7 @@ export function OrderEntry({ onSent }: { onSent: (code: string) => void }) {
               onClick={() => setTableId(table.id)}
               className={`flex min-h-14 flex-col items-center justify-center rounded-xl border-2 text-lg font-extrabold ${
                 tableId === table.id
-                  ? "border-primary bg-primary text-white"
+                  ? "border-primary bg-primary text-on-primary"
                   : liveStatus === "OCCUPIED"
                     ? "border-primary bg-primary-soft text-primary-strong"
                     : liveStatus === "RESERVED"
@@ -166,7 +166,7 @@ export function OrderEntry({ onSent }: { onSent: (code: string) => void }) {
                 aria-pressed={active === n}
                 onClick={() => setActive(n)}
                 className={`min-h-12 rounded-l-[10px] border-2 px-4 text-sm font-extrabold ${n === 1 && servings.length === 1 ? "rounded-r-[10px]" : ""} ${
-                  active === n ? "border-primary bg-primary text-white" : "border-line-strong bg-surface text-ink"
+                  active === n ? "border-primary bg-primary text-on-primary" : "border-line-strong bg-surface text-ink"
                 }`}
               >
                 {t("serving", { n })}
@@ -199,7 +199,7 @@ export function OrderEntry({ onSent }: { onSent: (code: string) => void }) {
                 type="button"
                 aria-pressed={courseFilter === c}
                 onClick={() => setCourseFilter(c)}
-                className={`min-h-11 rounded-full border px-4 text-sm font-bold ${courseFilter === c ? "border-primary bg-primary text-white" : "border-line-strong bg-surface text-ink"}`}
+                className={`min-h-11 rounded-full border px-4 text-sm font-bold ${courseFilter === c ? "border-primary bg-primary text-on-primary" : "border-line-strong bg-surface text-ink"}`}
               >
                 {c === "ALL" ? t("allCourses") : tcourse(c)}
               </button>
@@ -250,7 +250,7 @@ export function OrderEntry({ onSent }: { onSent: (code: string) => void }) {
                           <span aria-label={t("quantity", { name: m.name })} className="min-w-7 text-center text-lg font-extrabold tabular-nums">
                             {qty}
                           </span>
-                          <button type="button" aria-label={t("add", { name: m.name })} disabled={!m.available} onClick={() => change(m.id, 1)} className="min-h-12 min-w-12 rounded-[10px] bg-primary text-xl font-bold text-white disabled:opacity-40">
+                          <button type="button" aria-label={t("add", { name: m.name })} disabled={!m.available} onClick={() => change(m.id, 1)} className="min-h-12 min-w-12 rounded-[10px] bg-primary text-xl font-bold text-on-primary disabled:opacity-40">
                             +
                           </button>
                         </div>

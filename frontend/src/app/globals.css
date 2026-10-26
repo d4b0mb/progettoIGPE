@@ -18,6 +18,7 @@
   --color-primary: #0f6b5c;
   --color-primary-strong: #0a4f44;
   --color-primary-soft: #e3f1ee;
+  --color-on-primary: #ffffff;
   --color-accent: #34b39b;
 
   --color-sidebar: #0f2a24;
@@ -34,7 +35,19 @@
   --color-info-ink: #1e3a8a;
 }
 
+/* Colours of the floor plan drawing (plain variables: they are used inside the SVG). */
+:root {
+  --plan-obstacle-fill: #e3e8e5;
+  --plan-obstacle-line: #9aa9a3;
+  --plan-grid: #b8c4bf;
+  --plan-room-line: #6b7a74;
+  --plan-text: #3f4f48;
+  --plan-selected: #1d4ed8;
+  --plan-reserved-line: #b45309;
+}
+
 html {
+  color-scheme: light;
   background: var(--color-canvas);
   color: var(--color-ink);
 }
@@ -98,4 +111,66 @@ html[data-theme="duodecim"] main h1:not(header h1)::after {
   height: 3px;
   margin-top: 0.4rem;
   background: var(--color-accent);
+}
+
+/*
+ * The dark look. It only changes the same tokens, so every screen follows. The button text on the primary
+ * colour turns dark, because the primary colour is lighter here.
+ */
+html[data-mode="dark"] {
+  color-scheme: dark;
+
+  --color-canvas: #0d1412;
+  --color-surface: #16201d;
+  --color-ink: #e6eeea;
+  --color-muted: #9fb2aa;
+  --color-line: #263631;
+  --color-line-strong: #3b4f48;
+
+  --color-primary: #34b39b;
+  --color-primary-strong: #7fe0cc;
+  --color-primary-soft: #11332c;
+  --color-on-primary: #04201a;
+  --color-accent: #34b39b;
+
+  --color-sidebar: #0a1613;
+  --color-sidebar-active: #17382f;
+  --color-sidebar-text: #e6f1ee;
+  --color-sidebar-muted: #a9c7bf;
+
+  --color-danger: #f97066;
+  --color-danger-soft: #3a1714;
+  --color-danger-ink: #fecdca;
+  --color-warn-soft: #3b2a0b;
+  --color-warn-ink: #fde68a;
+  --color-info-soft: #12263f;
+  --color-info-ink: #bfdbfe;
+
+  --plan-obstacle-fill: #2a3833;
+  --plan-obstacle-line: #51655e;
+  --plan-grid: #3c4e47;
+  --plan-room-line: #7f938b;
+  --plan-text: #c7d6cf;
+  --plan-selected: #6ea8ff;
+  --plan-reserved-line: #f0a64a;
+}
+
+html[data-theme="duodecim"][data-mode="dark"] {
+  --color-canvas: #0b1610;
+  --color-surface: #13221a;
+  --color-ink: #eaf1ea;
+  --color-muted: #a3b8a8;
+  --color-line: #25392c;
+  --color-line-strong: #3a5242;
+
+  --color-primary: #3fae6e;
+  --color-primary-strong: #8fe3b0;
+  --color-primary-soft: #12301f;
+  --color-on-primary: #04170c;
+  --color-accent: #f0463d;
+
+  --color-sidebar: #07140d;
+  --color-sidebar-active: #174a2c;
+  --color-sidebar-text: #eef3ec;
+  --color-sidebar-muted: #9fc1ab;
 }

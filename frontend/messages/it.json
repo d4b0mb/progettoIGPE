@@ -12,7 +12,9 @@
     "noAccess": "Non hai accesso a questa schermata.",
     "goHome": "Torna alla schermata iniziale",
     "showPassword": "Mostra password",
-    "hidePassword": "Nascondi password"
+    "hidePassword": "Nascondi password",
+    "darkMode": "Passa al tema scuro",
+    "lightMode": "Passa al tema chiaro"
   },
   "nav": {
     "reservations": "Prenotazioni",
@@ -211,7 +213,7 @@
     "elementType": "Tipo",
     "label": "Etichetta (facoltativa)",
     "save": "Salva modifiche",
-    "dragHint": "Trascina per spostare. Le modifiche si salvano quando rilasci.",
+    "dragHint": "Trascina un elemento per spostarlo. Selezionalo per vedere le maniglie: trascina i lati per ridimensionarlo, la manopola rotonda sopra per ruotarlo. Trascina i bordi destro e inferiore della sala per allungarla. Le modifiche si salvano quando rilasci.",
     "seatsShort": "{count} posti",
     "ownerOnlyEdit": "Solo il titolare e i responsabili possono modificare la piantina.",
     "table": "Tavolo",
@@ -219,7 +221,18 @@
     "zoomOut": "Riduci",
     "fit": "Adatta allo schermo",
     "panHint": "Trascina il pavimento vuoto per spostarti. Clicca la pianta, poi Ctrl + rotella per ingrandirla.",
-    "scale": "{metres} m"
+    "scale": "{metres} m",
+    "palette": "Aggiungi alla sala",
+    "tableRound": "Tavolo rotondo",
+    "tableSquare": "Tavolo quadrato",
+    "tableRectangle": "Tavolo rettangolare",
+    "tools": "Strumenti di modifica",
+    "snap": "Aggancia alla griglia",
+    "rotate90": "Ruota di 90°",
+    "duplicate": "Duplica",
+    "deleteSelected": "Elimina",
+    "undo": "Annulla",
+    "deleteConfirm": "Eliminare l’elemento selezionato?"
   },
   "elements": {
     "WALL": "Muro",

@@ -23,8 +23,9 @@ export async function signedIn(
   browser: Browser,
   email: string,
   viewport = DESKTOP,
+  contextOptions: Parameters<Browser["newContext"]>[0] = {},
 ): Promise<{ context: BrowserContext; page: Page }> {
-  const context = await browser.newContext({ viewport, locale: "en-GB" });
+  const context = await browser.newContext({ viewport, locale: "en-GB", ...contextOptions });
   const page = await context.newPage();
   await page.goto("/login");
   await page.getByRole("button", { name: "EN" }).first().click();

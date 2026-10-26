@@ -7,6 +7,7 @@ import type { User } from "@/api/session";
 import { useSession } from "@/api/session";
 import { Brand } from "@/components/Brand";
 import { LanguageSwitch } from "@/components/LanguageSwitch";
+import { ModeToggle } from "@/components/ModeToggle";
 import { Icon } from "@/components/ui/Icon";
 import { navFor } from "./nav";
 
@@ -50,7 +51,10 @@ export function Shell({ user, children }: { user: User; children: React.ReactNod
         </div>
         <div className="flex flex-col gap-3">
           <p className="truncate px-2 text-sm text-sidebar-muted">{user.displayName}</p>
-          <LanguageSwitch tone="dark" />
+          <div className="flex items-center gap-2">
+            <LanguageSwitch tone="dark" />
+            <ModeToggle tone="dark" />
+          </div>
           <button
             type="button"
             onClick={() => void signOut()}
@@ -69,6 +73,7 @@ export function Shell({ user, children }: { user: User; children: React.ReactNod
         </Link>
         <div className="flex items-center gap-2">
           <LanguageSwitch tone="dark" />
+          <ModeToggle tone="dark" />
           <button
             type="button"
             aria-label={tc("signOut")}

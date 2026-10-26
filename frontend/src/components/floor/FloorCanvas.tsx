@@ -3,37 +3,52 @@
 import { useTranslations } from "next-intl";
 import { useEffect, useRef, useState, type KeyboardEvent, type PointerEvent as ReactPointerEvent } from "react";
 import type { components } from "@/api/schema";
-import { dragTarget, fitView, moveByKey, panBy, scaleBarMetres, zoomAt, zoomLevel, type View } from "./geometry";
+import {
+  dragTarget,
+  fitView,
+  handleDirection,
+  HANDLES,
+  minimumSize,
+  moveByKey,
+  panBy,
+  resizeFromHandle,
+  resizeRoom,
+  rotateToward,
+  scaleBarMetres,
+  zoomAt,
+  zoomLevel,
+  type Geom,
+  type Handle,
+  type View,
+} from "./geometry";
 
 type Layout = components["schemas"]["Layout"];
 type Table = components["schemas"]["DiningTable"];
 type Obstacle = components["schemas"]["Obstacle"];
 type Live = components["schemas"]["TableView"]["liveStatus"];
+type Kind = "table" | "obstacle";
 
-export type Selection = { kind: "table" | "obstacle"; id: string } | null;
+export type Selection = { kind: Kind; id: string } | null;
 
 /** Colours of a table by what is happening at it right now. Text and outline differ in lightness, not just hue. */
 const LIVE_STYLE: Record<Live, { fill: string; stroke: string; text: string; dash?: string }> = {
   FREE: { fill: "var(--color-primary-soft)", stroke: "var(--color-primary)", text: "var(--color-ink)" },
-  RESERVED: { fill: "var(--color-warn-soft)", stroke: "#b45309", text: "var(--color-warn-ink)" },
-  OCCUPIED: { fill: "var(--color-primary)", stroke: "var(--color-primary-strong)", text: "#ffffff" },
-  TO_CLEAN: { fill: "var(--color-info-soft)", stroke: "#1d4ed8", text: "var(--color-info-ink)" },
-  OUT_OF_SERVICE: { fill: "#e3e8e5", stroke: "#6b7a74", text: "#3f4f48", dash: "0.12 0.08" },
+  RESERVED: { fill: "var(--color-warn-soft)", stroke: "var(--plan-reserved-line)", text: "var(--color-warn-ink)" },
+  OCCUPIED: { fill: "var(--color-primary)", stroke: "var(--color-primary-strong)", text: "var(--color-on-primary)" },
+  TO_CLEAN: { fill: "var(--color-info-soft)", stroke: "var(--plan-selected)", text: "var(--color-info-ink)" },
+  OUT_OF_SERVICE: { fill: "var(--plan-obstacle-fill)", stroke: "var(--plan-room-line)", text: "var(--plan-text)", dash: "0.12 0.08" },
 };
 
-const OBSTACLE_FILL = "#e3e8e5";
-const OBSTACLE_STROKE = "#9aa9a3";
-const SELECTED = "#1d4ed8";
+const OBSTACLE_FILL = "var(--plan-obstacle-fill)";
+const OBSTACLE_STROKE = "var(--plan-obstacle-line)";
+const SELECTED = "var(--plan-selected)";
 
-interface Drag {
-  kind: "table" | "obstacle";
-  id: string;
-  grabX: number;
-  grabY: number;
-  x: number;
-  y: number;
-  moved: boolean;
-}
+
+type Gesture =
+  | { type: "move"; kind: Kind; id: string; grabX: number; grabY: number; geom: Geom; moved: boolean }
+  | { type: "resize"; kind: Kind; id: string; handle: Handle; start: Geom; geom: Geom; changed: boolean }
+  | { type: "rotate"; kind: Kind; id: string; start: Geom; geom: Geom; changed: boolean }
+  | { type: "room"; edge: "e" | "s" | "se"; width: number; height: number; changed: boolean };
 
 interface Pan {
   pointerId: number;
@@ -41,34 +56,61 @@ interface Pan {
   lastY: number;
 }
 
+const HANDLE_CURSOR: Record<Handle, string> = { n: "ns-resize", s: "ns-resize", e: "ew-resize", w: "ew-resize", ne: "nesw-resize", sw: "nesw-resize", nw: "nwse-resize", se: "nwse-resize" };
+
+const geomOf = (el: Table | Obstacle): Geom => ({ x: el.xMeters, y: el.yMeters, width: el.widthMeters, height: el.heightMeters, rotation: el.rotationDegrees });
+
+/** Nice number for a label: 2.5 not 2.500. */
+const fmt = (n: number) => String(Math.round(n * 100) / 100);
+
 /**
  * The room drawn to scale. Coordinates are in metres. The picture always fits the screen
  * height; zoom in with the buttons or Ctrl + scroll, and drag the empty floor to move around.
- * Editors can also drag elements (snapped to the grid) or nudge the selected one with the arrow keys.
+ * Editors work directly on the drawing, with mouse or finger: drag an element to move it, drag the
+ * handles on its edges and corners to resize it, drag the knob above it to turn it, and drag the
+ * room's right and bottom edges to stretch the room. The arrow keys nudge the selected element.
  */
 export function FloorCanvas({
   layout,
   selection,
   editable,
+  snapOn,
   onSelect,
-  onMove,
+  onGeometry,
+  onRoomSize,
+  onViewCenter,
 }: {
   layout: Layout;
   selection: Selection;
   editable: boolean;
+  snapOn: boolean;
   onSelect: (selection: Selection) => void;
-  onMove: (kind: "table" | "obstacle", id: string, x: number, y: number) => void;
+  onGeometry: (kind: Kind, id: string, geom: Geom) => void;
+  onRoomSize: (width: number, height: number) => void;
+  /** Tells the screen which spot is in the middle of what is shown, so new objects appear where you are looking. */
+  onViewCenter?: (center: { x: number; y: number }) => void;
 }) {
   const t = useTranslations("floor");
   const te = useTranslations("elements");
   const svgRef = useRef<SVGSVGElement>(null);
   const { room } = layout;
-  const W = room.widthMeters;
-  const H = room.heightMeters;
+  const step = snapOn ? room.gridStepMeters : 0;
 
-  const [view, setView] = useState<View>(() => fitView(W, H));
-  const [drag, setDrag] = useState<Drag | null>(null);
+  const [gesture, setGesture] = useState<Gesture | null>(null);
+  // While the room is being stretched it is drawn at its new size before anything is saved.
+  const W = gesture?.type === "room" ? gesture.width : room.widthMeters;
+  const H = gesture?.type === "room" ? gesture.height : room.heightMeters;
+  const [view, setView] = useState<View>(() => fitView(room.widthMeters, room.heightMeters));
+  const [roomSize, setRoomSize] = useState({ w: room.widthMeters, h: room.heightMeters });
   const [pan, setPan] = useState<Pan | null>(null);
+  const [pxPerMeter, setPxPerMeter] = useState(40);
+
+  // When the room has a new saved size, show all of it again.
+  if (roomSize.w !== room.widthMeters || roomSize.h !== room.heightMeters) {
+    setRoomSize({ w: room.widthMeters, h: room.heightMeters });
+    setView(fitView(room.widthMeters, room.heightMeters));
+  }
+
   // Ctrl + scroll zooms the plan only after the plan was clicked; otherwise the browser's own zoom keeps working.
   const [active, setActive] = useState(false);
   const activeRef = useRef(false);
@@ -103,6 +145,21 @@ export function FloorCanvas({
       document.removeEventListener("keydown", onEscape);
     };
   }, []);
+
+  // Handles are drawn a fixed size on screen, so we need to know how many pixels a metre is right now.
+  useEffect(() => {
+    const svg = svgRef.current;
+    if (!svg) return;
+    const measure = () => setPxPerMeter(Math.max(1, svg.getBoundingClientRect().width / view.width));
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(svg);
+    return () => observer.disconnect();
+  }, [view.width]);
+
+  useEffect(() => {
+    onViewCenter?.({ x: view.x + view.width / 2, y: view.y + view.height / 2 });
+  }, [view, onViewCenter]);
 
   /** Pixel position on screen to metres in the room, using the SVG's own transform. */
   function toMeters(clientX: number, clientY: number): { x: number; y: number } | null {
@@ -146,33 +203,84 @@ export function FloorCanvas({
     }
   }
 
-  // --- dragging an element
-  function onElementDown(event: ReactPointerEvent<SVGGElement>, kind: "table" | "obstacle", el: Table | Obstacle) {
+  // --- moving an element
+  function onElementDown(event: ReactPointerEvent<SVGGElement>, kind: Kind, el: Table | Obstacle) {
     event.stopPropagation();
     onSelect({ kind, id: el.id });
     if (!editable) return;
     const p = toMeters(event.clientX, event.clientY);
     if (!p) return;
     event.currentTarget.setPointerCapture(event.pointerId);
-    setDrag({ kind, id: el.id, grabX: p.x - el.xMeters, grabY: p.y - el.yMeters, x: el.xMeters, y: el.yMeters, moved: false });
+    setGesture({ type: "move", kind, id: el.id, grabX: p.x - el.xMeters, grabY: p.y - el.yMeters, geom: geomOf(el), moved: false });
   }
 
   function onElementMove(event: ReactPointerEvent<SVGGElement>) {
-    if (!drag) return;
+    if (gesture?.type !== "move") return;
     const p = toMeters(event.clientX, event.clientY);
     if (!p) return;
-    const next = dragTarget(p, { x: drag.grabX, y: drag.grabY }, room.gridStepMeters, W, H);
-    setDrag({ ...drag, ...next, moved: drag.moved || next.x !== drag.x || next.y !== drag.y });
+    const next = dragTarget(p, { x: gesture.grabX, y: gesture.grabY }, step, W, H);
+    setGesture({ ...gesture, geom: { ...gesture.geom, ...next }, moved: gesture.moved || next.x !== gesture.geom.x || next.y !== gesture.geom.y });
   }
 
-  function onElementUp(event: ReactPointerEvent<SVGGElement>) {
-    if (!drag) return;
-    event.currentTarget.releasePointerCapture(event.pointerId);
-    if (drag.moved) onMove(drag.kind, drag.id, drag.x, drag.y);
-    setDrag(null);
+  function finish(event: ReactPointerEvent<Element>) {
+    if (!gesture) return;
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
+    if (gesture.type === "room") {
+      if (gesture.changed) onRoomSize(gesture.width, gesture.height);
+    } else if (gesture.type === "move" ? gesture.moved : gesture.changed) {
+      onGeometry(gesture.kind, gesture.id, gesture.geom);
+    }
+    setGesture(null);
   }
 
-  function onElementKey(event: KeyboardEvent<SVGGElement>, kind: "table" | "obstacle", el: Table | Obstacle) {
+  // --- resizing and turning the selected element
+  function startResize(event: ReactPointerEvent<SVGElement>, kind: Kind, el: Table | Obstacle, handle: Handle) {
+    event.stopPropagation();
+    event.currentTarget.setPointerCapture(event.pointerId);
+    setGesture({ type: "resize", kind, id: el.id, handle, start: geomOf(el), geom: geomOf(el), changed: false });
+  }
+
+  function moveResize(event: ReactPointerEvent<SVGElement>, kind: Kind, el: Table | Obstacle) {
+    if (gesture?.type !== "resize" || gesture.id !== el.id) return;
+    const p = toMeters(event.clientX, event.clientY);
+    if (!p) return;
+    const min = minimumSize(kind);
+    const square = kind === "table" ? (el as Table).shape !== "RECTANGLE" : (el as Obstacle).type === "COLUMN";
+    const geom = resizeFromHandle(gesture.start, gesture.handle, p, { step, minWidth: min.width, minHeight: min.height, maxSize: 50, keepSquare: square });
+    setGesture({ ...gesture, geom, changed: gesture.changed || geom.width !== gesture.start.width || geom.height !== gesture.start.height });
+  }
+
+  function startRotate(event: ReactPointerEvent<SVGElement>, kind: Kind, el: Table | Obstacle) {
+    event.stopPropagation();
+    event.currentTarget.setPointerCapture(event.pointerId);
+    setGesture({ type: "rotate", kind, id: el.id, start: geomOf(el), geom: geomOf(el), changed: false });
+  }
+
+  function moveRotate(event: ReactPointerEvent<SVGElement>, el: Table | Obstacle) {
+    if (gesture?.type !== "rotate" || gesture.id !== el.id) return;
+    const p = toMeters(event.clientX, event.clientY);
+    if (!p) return;
+    const rotation = rotateToward({ x: gesture.start.x, y: gesture.start.y }, p, step > 0 ? 15 : 1);
+    setGesture({ ...gesture, geom: { ...gesture.start, rotation }, changed: rotation !== gesture.start.rotation });
+  }
+
+  // --- stretching the room
+  function startRoom(event: ReactPointerEvent<SVGElement>, edge: "e" | "s" | "se") {
+    event.stopPropagation();
+    event.currentTarget.setPointerCapture(event.pointerId);
+    onSelect(null);
+    setGesture({ type: "room", edge, width: room.widthMeters, height: room.heightMeters, changed: false });
+  }
+
+  function moveRoom(event: ReactPointerEvent<SVGElement>) {
+    if (gesture?.type !== "room") return;
+    const p = toMeters(event.clientX, event.clientY);
+    if (!p) return;
+    const size = resizeRoom(p, { width: room.widthMeters, height: room.heightMeters }, gesture.edge);
+    setGesture({ ...gesture, ...size, changed: size.width !== room.widthMeters || size.height !== room.heightMeters });
+  }
+
+  function onElementKey(event: KeyboardEvent<SVGGElement>, kind: Kind, el: Table | Obstacle) {
     if (event.key === "Enter" || event.key === " ") {
       event.preventDefault();
       onSelect({ kind, id: el.id });
@@ -183,17 +291,87 @@ export function FloorCanvas({
     if (next) {
       event.preventDefault();
       onSelect({ kind, id: el.id });
-      onMove(kind, el.id, next.x, next.y);
+      onGeometry(kind, el.id, { ...geomOf(el), ...next });
     }
   }
 
-  const position = (kind: "table" | "obstacle", el: Table | Obstacle) =>
-    drag && drag.kind === kind && drag.id === el.id ? { x: drag.x, y: drag.y } : { x: el.xMeters, y: el.yMeters };
-  const isSelected = (kind: "table" | "obstacle", id: string) => selection?.kind === kind && selection.id === id;
+  const geometry = (kind: Kind, el: Table | Obstacle): Geom =>
+    gesture && gesture.type !== "room" && gesture.kind === kind && gesture.id === el.id ? gesture.geom : geomOf(el);
+  const isSelected = (kind: Kind, id: string) => selection?.kind === kind && selection.id === id;
   const elementStyle = { cursor: editable ? "grab" : "pointer", touchAction: editable ? ("none" as const) : ("auto" as const), outline: "none" };
   const label = 0.3;
   const bar = scaleBarMetres(view.width);
   const level = zoomLevel(view, W, H);
+  const px = (n: number) => n / pxPerMeter; // screen pixels to metres at the current zoom
+
+  /** The grab points around the selected element: eight resize handles and a turning knob. */
+  function renderHandles(kind: Kind, el: Table | Obstacle) {
+    const g = geometry(kind, el);
+    const knobDistance = px(34);
+    // A small item on screen would be buried under eight handles: keep only the corners, with smaller grab areas.
+    const sizeOnScreen = Math.min(g.width, g.height) * pxPerMeter;
+    const compact = sizeOnScreen < 64;
+    const grab = compact ? Math.max(11, sizeOnScreen * 0.45) : 22;
+    return (
+      <g transform={`translate(${g.x} ${g.y}) rotate(${g.rotation})`}>
+        <rect x={-g.width / 2} y={-g.height / 2} width={g.width} height={g.height} fill="none" stroke={SELECTED} strokeWidth={px(1.5)} strokeDasharray={`${px(5)} ${px(4)}`} pointerEvents="none" />
+        {HANDLES.filter((handle) => !compact || handle.length === 2).map((handle) => {
+          const { dx, dy } = handleDirection(handle);
+          return (
+            <g
+              key={handle}
+              data-handle={handle}
+              transform={`translate(${(dx * g.width) / 2} ${(dy * g.height) / 2})`}
+              style={{ cursor: HANDLE_CURSOR[handle], touchAction: "none" }}
+              onPointerDown={(e) => startResize(e, kind, el, handle)}
+              onPointerMove={(e) => moveResize(e, kind, el)}
+              onPointerUp={finish}
+              onPointerCancel={finish}
+            >
+              <circle r={px(grab)} fill="transparent" />
+              <rect x={-px(7)} y={-px(7)} width={px(14)} height={px(14)} rx={px(3)} fill="var(--color-surface)" stroke={SELECTED} strokeWidth={px(2)} />
+            </g>
+          );
+        })}
+        <g
+          data-handle="rotate"
+          transform={`translate(0 ${-g.height / 2 - knobDistance})`}
+          style={{ cursor: "grab", touchAction: "none" }}
+          onPointerDown={(e) => startRotate(e, kind, el)}
+          onPointerMove={(e) => moveRotate(e, el)}
+          onPointerUp={finish}
+          onPointerCancel={finish}
+        >
+          <line x1="0" y1="0" x2="0" y2={knobDistance - px(9)} stroke={SELECTED} strokeWidth={px(1.5)} pointerEvents="none" />
+          <circle r={px(22)} fill="transparent" />
+          <circle r={px(9)} fill={SELECTED} stroke="var(--color-surface)" strokeWidth={px(2)} />
+        </g>
+      </g>
+    );
+  }
+
+  /** A small readout while something is being resized or turned. */
+  function renderReadout() {
+    if (!gesture || gesture.type === "move") return null;
+    if (gesture.type === "room") {
+      return (
+        <text x={W} y={H + px(26)} textAnchor="end" fontSize={px(14)} fontWeight="800" fill="var(--color-ink)" stroke="var(--color-surface)" strokeWidth={px(4)} paintOrder="stroke" pointerEvents="none">
+          {fmt(W)} × {fmt(H)} m
+        </text>
+      );
+    }
+    const g = gesture.geom;
+    const text = gesture.type === "rotate" ? `${Math.round(g.rotation)}°` : `${fmt(g.width)} × ${fmt(g.height)} m`;
+    const reach = Math.max(g.width, g.height) / 2 + px(60);
+    return (
+      <text x={g.x} y={g.y - reach} textAnchor="middle" fontSize={px(14)} fontWeight="800" fill="var(--color-ink)" stroke="var(--color-surface)" strokeWidth={px(4)} paintOrder="stroke" pointerEvents="none">
+        {text}
+      </text>
+    );
+  }
+
+  const selectedTable = selection?.kind === "table" ? layout.tables.find((v) => v.table.id === selection.id)?.table : undefined;
+  const selectedObstacle = selection?.kind === "obstacle" ? layout.obstacles.find((o) => o.id === selection.id) : undefined;
 
   return (
     <div className="relative">
@@ -213,16 +391,16 @@ export function FloorCanvas({
       >
         <defs>
           <pattern id="floor-grid" width={room.gridStepMeters * 4} height={room.gridStepMeters * 4} patternUnits="userSpaceOnUse">
-            <circle cx={room.gridStepMeters * 2} cy={room.gridStepMeters * 2} r="0.035" fill="#b8c4bf" />
+            <circle cx={room.gridStepMeters * 2} cy={room.gridStepMeters * 2} r="0.035" fill="var(--plan-grid)" />
           </pattern>
         </defs>
         {/* The empty floor: grabbing it pans the plan. */}
         <rect id="floor-background" x={view.x} y={view.y} width={view.width} height={view.height} fill="transparent" />
         {/* The room itself, so it is clear where it ends. */}
-        <rect x="0" y="0" width={W} height={H} fill="url(#floor-grid)" stroke="#6b7a74" strokeWidth="0.08" rx="0.1" style={{ pointerEvents: "none" }} />
+        <rect data-testid="room-outline" x="0" y="0" width={W} height={H} fill="url(#floor-grid)" stroke="var(--plan-room-line)" strokeWidth="0.08" rx="0.1" style={{ pointerEvents: "none" }} />
 
         {layout.obstacles.map((o) => {
-          const { x, y } = position("obstacle", o);
+          const { x, y, width, height, rotation } = geometry("obstacle", o);
           const selected = isSelected("obstacle", o.id);
           const round = o.type === "COLUMN";
           const shape = { fill: OBSTACLE_FILL, stroke: selected ? SELECTED : OBSTACLE_STROKE, strokeWidth: selected ? 0.1 : 0.04 };
@@ -237,22 +415,23 @@ export function FloorCanvas({
               style={elementStyle}
               onPointerDown={(e) => onElementDown(e, "obstacle", o)}
               onPointerMove={onElementMove}
-              onPointerUp={onElementUp}
+              onPointerUp={finish}
+              onPointerCancel={finish}
               onKeyDown={(e) => onElementKey(e, "obstacle", o)}
               transform={`translate(${x} ${y})`}
             >
-              <g transform={`rotate(${o.rotationDegrees})`}>
+              <g transform={`rotate(${rotation})`}>
                 {round ? (
-                  <ellipse rx={o.widthMeters / 2} ry={o.heightMeters / 2} {...shape} />
+                  <ellipse rx={width / 2} ry={height / 2} {...shape} />
                 ) : (
-                  <rect x={-o.widthMeters / 2} y={-o.heightMeters / 2} width={o.widthMeters} height={o.heightMeters} rx="0.05" {...shape} />
+                  <rect x={-width / 2} y={-height / 2} width={width} height={height} rx="0.05" {...shape} />
                 )}
                 {/* Keyboard focus ring, drawn as part of the picture (browsers draw a poor one around SVG groups). */}
                 <rect
-                  x={-o.widthMeters / 2 - 0.12}
-                  y={-o.heightMeters / 2 - 0.12}
-                  width={o.widthMeters + 0.24}
-                  height={o.heightMeters + 0.24}
+                  x={-width / 2 - 0.12}
+                  y={-height / 2 - 0.12}
+                  width={width + 0.24}
+                  height={height + 0.24}
                   rx="0.15"
                   fill="none"
                   stroke={SELECTED}
@@ -261,8 +440,8 @@ export function FloorCanvas({
                   className="opacity-0 group-focus-visible:opacity-100"
                 />
               </g>
-              {o.widthMeters >= 1 && o.heightMeters >= 0.45 ? (
-                <text textAnchor="middle" dominantBaseline="central" fontSize={label * 0.8} fontWeight="700" fill="#3f4f48" style={{ pointerEvents: "none" }}>
+              {width >= 1 && height >= 0.45 ? (
+                <text textAnchor="middle" dominantBaseline="central" fontSize={label * 0.8} fontWeight="700" fill="var(--plan-text)" style={{ pointerEvents: "none" }}>
                   {(o.name || te(o.type)).toUpperCase()}
                 </text>
               ) : null}
@@ -271,12 +450,12 @@ export function FloorCanvas({
         })}
 
         {layout.tables.map(({ table, liveStatus }) => {
-          const { x, y } = position("table", table);
+          const { x, y, width, height, rotation } = geometry("table", table);
           const selected = isSelected("table", table.id);
           const style = LIVE_STYLE[liveStatus];
           const shape = { fill: style.fill, stroke: selected ? SELECTED : style.stroke, strokeWidth: selected ? 0.1 : 0.05, strokeDasharray: style.dash };
-          const ringW = table.widthMeters + 0.3;
-          const ringH = table.heightMeters + 0.3;
+          const ringW = width + 0.3;
+          const ringH = height + 0.3;
           return (
             <g
               key={table.id}
@@ -288,11 +467,12 @@ export function FloorCanvas({
               style={elementStyle}
               onPointerDown={(e) => onElementDown(e, "table", table)}
               onPointerMove={onElementMove}
-              onPointerUp={onElementUp}
+              onPointerUp={finish}
+              onPointerCancel={finish}
               onKeyDown={(e) => onElementKey(e, "table", table)}
               transform={`translate(${x} ${y})`}
             >
-              <g transform={`rotate(${table.rotationDegrees})`}>
+              <g transform={`rotate(${rotation})`}>
                 {selected ? (
                   table.shape === "ROUND" ? (
                     <ellipse rx={ringW / 2} ry={ringH / 2} fill="none" stroke={SELECTED} strokeWidth="0.05" opacity="0.35" />
@@ -301,9 +481,9 @@ export function FloorCanvas({
                   )
                 ) : null}
                 {table.shape === "ROUND" ? (
-                  <ellipse rx={table.widthMeters / 2} ry={table.heightMeters / 2} {...shape} />
+                  <ellipse rx={width / 2} ry={height / 2} {...shape} />
                 ) : (
-                  <rect x={-table.widthMeters / 2} y={-table.heightMeters / 2} width={table.widthMeters} height={table.heightMeters} rx="0.1" {...shape} />
+                  <rect x={-width / 2} y={-height / 2} width={width} height={height} rx="0.1" {...shape} />
                 )}
                 {table.shape === "ROUND" ? (
                   <ellipse rx={ringW / 2} ry={ringH / 2} fill="none" stroke={SELECTED} strokeWidth="0.06" strokeDasharray="0.15 0.1" className="opacity-0 group-focus-visible:opacity-100" />
@@ -321,10 +501,41 @@ export function FloorCanvas({
           );
         })}
 
+        {/* Handles go on top of everything so they are never hidden behind a neighbour. */}
+        {editable && selectedTable && gesture?.type !== "room" ? renderHandles("table", selectedTable) : null}
+        {editable && selectedObstacle && gesture?.type !== "room" ? renderHandles("obstacle", selectedObstacle) : null}
+
+        {/* Grab points on the room's right and bottom edges and its corner. */}
+        {editable
+          ? (
+              [
+                { edge: "e" as const, x: W, y: H / 2, cursor: "ew-resize" },
+                { edge: "s" as const, x: W / 2, y: H, cursor: "ns-resize" },
+                { edge: "se" as const, x: W, y: H, cursor: "nwse-resize" },
+              ]
+            ).map((h) => (
+              <g
+                key={h.edge}
+                data-room-handle={h.edge}
+                transform={`translate(${h.x} ${h.y})`}
+                style={{ cursor: h.cursor, touchAction: "none" }}
+                onPointerDown={(e) => startRoom(e, h.edge)}
+                onPointerMove={moveRoom}
+                onPointerUp={finish}
+                onPointerCancel={finish}
+              >
+                <circle r={px(24)} fill="transparent" />
+                <rect x={-px(8)} y={-px(8)} width={px(16)} height={px(16)} rx={px(4)} fill="var(--color-primary)" stroke="var(--color-surface)" strokeWidth={px(2)} />
+              </g>
+            ))
+          : null}
+
+        {renderReadout()}
+
         {/* Scale bar, bottom left of what is on screen. */}
         <g transform={`translate(${view.x + view.width * 0.03} ${view.y + view.height * 0.95})`} style={{ pointerEvents: "none" }}>
-          <rect x="0" y="-0.05" width={bar} height="0.1" fill="#3f4f48" rx="0.03" />
-          <text x={bar / 2} y="-0.14" textAnchor="middle" fontSize={view.width * 0.015} fontWeight="700" fill="#3f4f48">
+          <rect x="0" y="-0.05" width={bar} height="0.1" fill="var(--plan-text)" rx="0.03" />
+          <text x={bar / 2} y="-0.14" textAnchor="middle" fontSize={view.width * 0.015} fontWeight="700" fill="var(--plan-text)">
             {t("scale", { metres: bar })}
           </text>
         </g>

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { clamp, defaultObstacleSize, dragTarget, keepInRoom, moveByKey, snap, tidy } from "./geometry";
+import { clamp, defaultObstacleSize, dragTarget, HANDLES, keepInRoom, moveByKey, resizeFromHandle, resizeRoom, rotateToward, snap, tidy, type Geom, type ResizeOptions } from "./geometry";
 
 describe("floor plan geometry", () => {
   it("snaps to the grid", () => {
@@ -105,5 +105,89 @@ describe("camera: zoom and pan", () => {
     expect(scaleBarMetres(13)).toBe(2);
     expect(scaleBarMetres(40)).toBe(10);
     expect(scaleBarMetres(1.5)).toBe(0.25);
+  });
+});
+
+describe("resizing by dragging a handle", () => {
+  const box: Geom = { x: 5, y: 4, width: 2, height: 1, rotation: 0 };
+  const free: ResizeOptions = { step: 0, minWidth: 0.4, minHeight: 0.4, maxSize: 50, keepSquare: false };
+
+  it("stretches to the right while the left edge stays put", () => {
+    const next = resizeFromHandle(box, "e", { x: 8, y: 4 }, free);
+    expect(next).toMatchObject({ width: 4, height: 1 });
+    expect(next.x - next.width / 2).toBeCloseTo(4); // left edge was at 5 - 1 = 4
+  });
+
+  it("stretches to the left while the right edge stays put", () => {
+    const next = resizeFromHandle(box, "w", { x: 3, y: 4 }, free);
+    expect(next.width).toBe(3);
+    expect(next.x + next.width / 2).toBeCloseTo(6); // right edge was at 6
+  });
+
+  it("a corner changes both sides and keeps the opposite corner fixed", () => {
+    const next = resizeFromHandle(box, "se", { x: 8, y: 7 }, free);
+    expect(next.width).toBe(4); // from the fixed left edge at x=4 to the pointer at x=8
+    expect(next.height).toBe(3.5); // from the fixed top edge at y=3.5 to the pointer at y=7
+    expect(next.x - next.width / 2).toBeCloseTo(4);
+    expect(next.y - next.height / 2).toBeCloseTo(3.5);
+  });
+
+  it("an edge handle leaves the other direction alone", () => {
+    const next = resizeFromHandle(box, "n", { x: 20, y: 1.5 }, free);
+    expect(next.width).toBe(2);
+    expect(next.x).toBe(5);
+    expect(next.height).toBe(3);
+  });
+
+  it("never gets smaller than the minimum, even when dragged past the opposite side", () => {
+    const next = resizeFromHandle(box, "e", { x: 0, y: 4 }, free);
+    expect(next.width).toBe(0.4);
+  });
+
+  it("snaps the size to whole grid steps", () => {
+    const next = resizeFromHandle(box, "e", { x: 6.6, y: 4 }, { ...free, step: 0.5 });
+    expect(next.width).toBe(2.5); // 2.6 m rounds to the nearest half metre
+  });
+
+  it("keeps round and square things square", () => {
+    const next = resizeFromHandle({ ...box, width: 1, height: 1 }, "se", { x: 8, y: 5 }, { ...free, keepSquare: true });
+    expect(next.width).toBe(next.height);
+    expect(next.width).toBeGreaterThan(1);
+  });
+
+  it("follows the element's own axes when it is turned", () => {
+    // Turned a quarter: its "east" edge now points down the screen.
+    const turned: Geom = { x: 5, y: 5, width: 2, height: 1, rotation: 90 };
+    const next = resizeFromHandle(turned, "e", { x: 5, y: 9 }, free);
+    expect(next.width).toBe(5); // from the fixed edge at y=4 down to y=9
+    expect(next.x).toBeCloseTo(5);
+    expect(next.y).toBeCloseTo(6.5);
+  });
+
+  it("never exceeds the biggest size", () => {
+    expect(resizeFromHandle(box, "e", { x: 500, y: 4 }, free).width).toBe(50);
+  });
+
+  it("has eight handles", () => {
+    expect(new Set(HANDLES).size).toBe(8);
+  });
+});
+
+describe("turning by dragging the knob", () => {
+  it("points up for no turn and snaps to 15 degrees", () => {
+    expect(rotateToward({ x: 0, y: 0 }, { x: 0, y: -5 })).toBe(0);
+    expect(rotateToward({ x: 0, y: 0 }, { x: 5, y: 0 })).toBe(90);
+    expect(rotateToward({ x: 0, y: 0 }, { x: 0, y: 5 })).toBe(180);
+    expect(rotateToward({ x: 0, y: 0 }, { x: -5, y: 0 })).toBe(270);
+    expect(rotateToward({ x: 0, y: 0 }, { x: 5, y: -1.2 })).toBe(75);
+  });
+});
+
+describe("stretching the room", () => {
+  it("moves only the grabbed edges, in half metres, within the allowed range", () => {
+    expect(resizeRoom({ x: 13.3, y: 20 }, { width: 12, height: 9 }, "e")).toEqual({ width: 13.5, height: 9 });
+    expect(resizeRoom({ x: 13.3, y: 10.2 }, { width: 12, height: 9 }, "se")).toEqual({ width: 13.5, height: 10 });
+    expect(resizeRoom({ x: 0, y: 0 }, { width: 12, height: 9 }, "se")).toEqual({ width: 2, height: 2 });
+    expect(resizeRoom({ x: 900, y: 900 }, { width: 12, height: 9 }, "se")).toEqual({ width: 200, height: 200 });
   });
 });

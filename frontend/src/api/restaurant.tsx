@@ -3,12 +3,12 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { api } from "./client";
 import { unwrap } from "./call";
+import { THEME_STORAGE_KEY } from "@/lib/early-scripts";
 import type { components } from "./schema";
 
 export type RestaurantView = components["schemas"]["RestaurantView"];
 export type Theme = RestaurantView["theme"];
 
-const STORAGE_KEY = "rm_theme";
 
 type Value = { name: string | null; theme: Theme; setTheme: (theme: Theme) => Promise<void> };
 const RestaurantContext = createContext<Value>({ name: null, theme: "CLASSIC", setTheme: async () => {} });
@@ -17,7 +17,7 @@ function applyTheme(theme: Theme) {
   const value = theme.toLowerCase();
   document.documentElement.dataset.theme = value;
   try {
-    localStorage.setItem(STORAGE_KEY, value);
+    localStorage.setItem(THEME_STORAGE_KEY, value);
   } catch {
     // Private windows may refuse storage; the theme still applies for this visit.
   }
@@ -54,6 +54,3 @@ export function RestaurantProvider({ children }: { children: React.ReactNode }) 
 }
 
 export const useRestaurant = () => useContext(RestaurantContext);
-
-/** Runs before the page is painted so a returning visitor never sees the default look flash. */
-export const EARLY_THEME_SCRIPT = `try{var t=localStorage.getItem("${STORAGE_KEY}");if(t==="duodecim")document.documentElement.dataset.theme=t}catch(e){}`;

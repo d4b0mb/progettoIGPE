@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { useSession } from "@/api/session";
 import { LanguageSwitch } from "@/components/LanguageSwitch";
+import { ModeToggle } from "@/components/ModeToggle";
 
 /** Sign-in and sign-up share this frame: brand panel beside the form, stacked on a phone. */
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
@@ -39,8 +40,9 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
         <p className="hidden max-w-md text-sm text-sidebar-muted lg:block">{t("heroFooter")}</p>
       </section>
       <main className="flex flex-1 flex-col gap-6 px-4 py-6 sm:px-10 lg:px-16">
-        <div className="flex justify-end">
+        <div className="flex items-center justify-end gap-2">
           <LanguageSwitch />
+          <ModeToggle />
         </div>
         <div className="flex flex-1 items-center justify-center">{children}</div>
       </main>

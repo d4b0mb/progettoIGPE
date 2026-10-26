@@ -2,7 +2,7 @@
 
 Read this first when starting a new session or switching models. It says what this
 project is, where it stands, how to run it, and the rules to keep.
-Last updated: 2026-10-25, after Block 10 (servings, pizzeria menu and look, tablet trial guide).
+Last updated: 2026-10-26, after Block 11 (floor plan editor, dark look).
 
 ## What this is
 RistoManager Cloud: a multi-tenant web service for restaurants (reservations, floor plan,
@@ -56,6 +56,12 @@ production (Phase 3). GitHub Actions CI. Reasons for each choice: `docs/adr/`.
    98 items, imported by `scripts/import-menu.sh`) is seeded as a second demo restaurant with its own logins; home-screen
    manifest and wake lock for the kitchen tablet. Guide: `docs/PIZZERIA_TRIAL.md`. 20 browser tests. The seed finishes a half-seeded Duodecim (rerun `docker compose run --rm seed`);
    password boxes have a show/hide eye (in the shared Field component).
+11. Floor plan editor and dark look: done. Direct manipulation with mouse or finger: tool rail (add round/square/rectangular
+   tables and the 10 object types, snap, turn 90, duplicate, delete, undo), handles on the edges and corners of the selected
+   item to resize (opposite side stays fixed; seats are recomputed by the server when a table is resized), a knob to turn it,
+   handles on the room's right/bottom edges to stretch the room. Room settings changes show without a reload. Sun/moon button
+   (light/dark, remembered per device, follows the device setting first time) for both looks. 24 browser tests, 78 frontend tests.
+   Maths is in `floor/geometry.ts` (tested); the gesture code is in `FloorCanvas.tsx`.
 
 Next phases (not started): Phase 3 Kubernetes (k3s), staging/production, monitoring; Phase 4 public
 booking site (Next.js, SEO, email confirmation).
@@ -83,6 +89,7 @@ Italian is the default UI language; English is available.
 - Servings are strictly in order (no "send serving 2 now"). Menu order is insertion order (no drag to reorder).
 - Wake lock needs https or localhost; on plain http the tablet's own screen timeout applies.
 - Floor plan from a photo, and the local assistant (Ollama), are designed but not built.
+- Floor plan editor: no multi-select, no drag-from-palette (tap adds at the middle of the view), left/top room edges do not stretch, one level of undo, and no undo for add/delete/room size.
 - No login lockout (by choice; failed sign-ins are logged). Recovery attempts are throttled in memory, per API instance.
 - Security questions are a weak recovery method; recovery codes would be stronger.
 - Italian text for the Block 9 screens was written by the AI and needs a native read.
@@ -100,6 +107,8 @@ Keep answers short and in plain English."
 
 ## Lessons worth remembering
 - The demo seed makes a reservation "10 minutes ago": on an old database the allergy e2e tests fail. Reset with `docker compose down -v` and reseed.
+- A module imported by a server component must not be marked "use client": its constants arrive as client references (this broke the "before first paint" scripts; they live in `lib/early-scripts.ts`).
+- Floor plan tools sit in a left rail on big screens; stacking them above the plan pushed it off-screen again (the 1080p test catches it).
 - Playwright `getByLabel("Password")` also matches any button whose aria-label contains "password": give icon buttons screen-reader text instead of an aria-label.
 - A green build can hide skipped tests: always confirm tests actually ran (Failsafe for `*IT`).
 - Rebuilding the backend jar while it runs breaks the running JVM: restart after every rebuild.

@@ -142,3 +142,104 @@ export function scaleBarMetres(viewWidth: number): number {
   }
   return 50;
 }
+
+/** Where an element sits and how big it is, in metres, with its turn in degrees. */
+export interface Geom {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  rotation: number;
+}
+
+/** The eight grab points around an element: n, s, e, w are the edge middles, the rest are corners. */
+export type Handle = "n" | "s" | "e" | "w" | "ne" | "nw" | "se" | "sw";
+
+export const HANDLES: Handle[] = ["nw", "n", "ne", "e", "se", "s", "sw", "w"];
+
+/** Where a handle sits on an unrotated element centred on the origin: -1, 0 or 1 of the half-size on each axis. */
+export function handleDirection(handle: Handle): { dx: -1 | 0 | 1; dy: -1 | 0 | 1 } {
+  return {
+    dx: handle.includes("e") ? 1 : handle.includes("w") ? -1 : 0,
+    dy: handle.includes("s") ? 1 : handle.includes("n") ? -1 : 0,
+  };
+}
+
+const RAD = Math.PI / 180;
+
+/** Rounds a length to a whole number of grid steps, never below the minimum. */
+function snapLength(length: number, step: number, min: number): number {
+  const snapped = step > 0 ? Math.round(length / step) * step : length;
+  return Math.max(min, tidy(snapped));
+}
+
+export interface ResizeOptions {
+  /** Grid step in metres; 0 or less turns snapping off. */
+  step: number;
+  minWidth: number;
+  minHeight: number;
+  maxSize: number;
+  /** Keep width and height equal (round and square tables, columns). */
+  keepSquare: boolean;
+}
+
+/**
+ * Dragging one handle of an element: the opposite edge or corner stays where it is and the grabbed side
+ * follows the pointer. Works for turned elements too, by measuring the pointer along the element's own axes.
+ */
+export function resizeFromHandle(start: Geom, handle: Handle, pointer: { x: number; y: number }, options: ResizeOptions): Geom {
+  const { dx, dy } = handleDirection(handle);
+  const angle = start.rotation * RAD;
+  const cos = Math.cos(angle);
+  const sin = Math.sin(angle);
+  // The pointer in the element's own frame: origin at its centre, axes turned with it.
+  const rx = pointer.x - start.x;
+  const ry = pointer.y - start.y;
+  const lx = rx * cos + ry * sin;
+  const ly = -rx * sin + ry * cos;
+
+  let width = start.width;
+  let height = start.height;
+  if (dx !== 0) width = (lx - (-dx * start.width) / 2) * dx;
+  if (dy !== 0) height = (ly - (-dy * start.height) / 2) * dy;
+  width = Math.min(options.maxSize, snapLength(width, options.step, options.minWidth));
+  height = Math.min(options.maxSize, snapLength(height, options.step, options.minHeight));
+
+  if (options.keepSquare) {
+    const side = dx !== 0 && dy !== 0 ? Math.max(width, height) : dx !== 0 ? width : height;
+    width = side;
+    height = side;
+  }
+
+  // The fixed side stays put, so the centre moves by half of what the size changed.
+  const shiftX = dx === 0 ? 0 : dx * (width - start.width) / 2;
+  const shiftY = dy === 0 ? 0 : dy * (height - start.height) / 2;
+  return {
+    x: tidy(start.x + shiftX * cos - shiftY * sin),
+    y: tidy(start.y + shiftX * sin + shiftY * cos),
+    width: tidy(width),
+    height: tidy(height),
+    rotation: start.rotation,
+  };
+}
+
+/** Turning an element by dragging the knob above it: the knob follows the pointer around the centre. */
+export function rotateToward(center: { x: number; y: number }, pointer: { x: number; y: number }, stepDegrees = 15): number {
+  const degrees = Math.atan2(pointer.y - center.y, pointer.x - center.x) / RAD + 90;
+  const snapped = stepDegrees > 0 ? Math.round(degrees / stepDegrees) * stepDegrees : degrees;
+  return tidy(((snapped % 360) + 360) % 360);
+}
+
+/** New room size while one of its right or bottom handles is dragged: whole half-metres, within what the server accepts. */
+export function resizeRoom(pointer: { x: number; y: number }, current: { width: number; height: number }, edge: "e" | "s" | "se"): { width: number; height: number } {
+  const clampSize = (v: number) => clamp(Math.round(v * 2) / 2, 2, 200);
+  return {
+    width: edge === "s" ? current.width : clampSize(pointer.x),
+    height: edge === "e" ? current.height : clampSize(pointer.y),
+  };
+}
+
+/** Sensible smallest sizes: a table can be small but not tiny, a wall can be thin. */
+export function minimumSize(kind: "table" | "obstacle"): { width: number; height: number } {
+  return kind === "table" ? { width: 0.4, height: 0.4 } : { width: 0.1, height: 0.1 };
+}

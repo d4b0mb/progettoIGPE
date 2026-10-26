@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { NextIntlClientProvider } from "next-intl";
 import { getLocale, getMessages } from "next-intl/server";
-import { EARLY_THEME_SCRIPT } from "@/api/restaurant";
+import { EARLY_SCRIPT } from "@/lib/early-scripts";
 import { SessionProvider } from "@/api/session";
 import "./globals.css";
 
@@ -22,7 +22,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   return (
     <html lang={locale} suppressHydrationWarning>
       <head>
-        <script dangerouslySetInnerHTML={{ __html: EARLY_THEME_SCRIPT }} />
+        <script dangerouslySetInnerHTML={{ __html: EARLY_SCRIPT }} />
       </head>
       <body className="antialiased">
         <NextIntlClientProvider messages={messages}>
