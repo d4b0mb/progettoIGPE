@@ -2,7 +2,7 @@
 
 Read this first when starting a new session or switching models. It says what this
 project is, where it stands, how to run it, and the rules to keep.
-Last updated: 2026-10-26, after Block 14 (AI foundation, 50-request test kit, floor plan from a photo).
+Last updated: 2026-10-26, after Block 15 (staff assistant). Open review findings are listed under "Open issues" below: read them before starting.
 
 ## What this is
 RistoManager Cloud: a multi-tenant web service for restaurants (reservations, floor plan,
@@ -90,6 +90,17 @@ production (Phase 3). GitHub Actions CI. Reasons for each choice: `docs/adr/`.
    finds the tables and their shapes, positions within about 0.3-0.5 m, sizes unreliable (rectangles too small), bar mistaken for a kitchen, doors
    missed; thinking on was slower and no better for this, so the call uses thinking off. Not yet tried on a real photo of the pizzeria.
 
+15. Staff assistant: done (read tools, create and cancel with confirmation). Backend `assistant` package, ADR 0012. `POST /api/v1/assistant/chat`
+   (everyone signed in; history is plain user/assistant text), `POST /proposals/{id}/confirm` (owner/manager), `DELETE /proposals/{id}`. Tools:
+   find_reservations, floor_status, kitchen_queue, menu_lookup (reads); propose_create_reservation, propose_cancel_reservation (proposals only).
+   The model can never execute a write: a proposal is stored server side and only the person's Confirm request runs it (single use, 10 minutes,
+   same user and restaurant). Code, not the model, replaces replies that vouch for allergy safety or claim an action that no proposal backs;
+   `AiGate` limits (2 concurrent model calls, 12 requests a minute per user, `app.ai.limits`) also protect the floor-draft endpoint; one retry
+   after an empty model answer. Frontend: floating button + sheet on every signed-in screen except `/kitchen` (`components/assistant/`), proposal cards with
+   Confirm and Dismiss, fixed localised notices (never server text). `ai-eval/run-endpoint.mjs` runs the 50 requests through the real endpoint
+   (reads the activity log for the tools called; needs the stack and Ollama up). Checked in the real browser: create then cancel through the cards,
+   audit trail intact. 134 backend unit tests, 18 `AssistantIT`, 132 frontend tests, 35 browser tests (assistant ones use a mocked model).
+
 Next phases (not started): Phase 3 Kubernetes (k3s), staging/production, monitoring; Phase 4 public
 booking site (Next.js, SEO, email confirmation).
 
@@ -117,7 +128,8 @@ Italian is the default UI language; English is available.
 - The Duodecim allergens are a draft from ingredient lists; the pizzeria must confirm them.
 - Servings are strictly in order (no "send serving 2 now"). Menu order is insertion order (no drag to reorder).
 - Wake lock needs https or localhost; on plain http the tablet's own screen timeout applies.
-- The staff assistant (chat with tools, then create/cancel with confirmation) and the voice are designed but not built. Floor plan from a photo works on a drawn plan only.
+- Voice (listening and speaking) is only research (`docs/VOICE_RESEARCH.md`) and two empty seams. Floor plan from a photo is proven on a drawn plan only.
+- Assistant: proposals live in memory (one backend instance, a restart forgets them); it cannot edit a booking, take an order or answer from history by day; the prompt is tuned for the 9b model only; the Italian texts are AI-written.
 - Floor plan editor: no multi-select, no drag-from-palette (tap adds at the middle of the view), left/top room edges do not stretch, one level of undo, and no undo for add/delete/room size.
 - No login lockout (by choice; failed sign-ins are logged). Recovery attempts are throttled in memory, per API instance.
 - Security questions are a weak recovery method; recovery codes would be stronger.
@@ -129,12 +141,31 @@ Italian is the default UI language; English is available.
 - Production server setup (deploy/) is untested on a real server.
 - Public booking site (Phase 4) and Kubernetes (Phase 3) are not started.
 
+## Open issues (from the independent review, 2026-10-26; none fixed yet unless marked)
+Verified in the code by the author: F-1 and F-8. The rest are the reviewer's findings, not yet re-checked.
+- **F-1 (high, safety): the allergy alarm can be missing.** `ReservationRepository.findArrivedAt` only accepts an ARRIVED booking while `starts_at <= now < ends_at`;
+  `liveStatuses` uses a 12 h window. A guest who arrives early or stays late gives an order with no allergy link and no alarm. Fix: use the same window,
+  add an `OrderIT` case; consider copying reservation notes onto the ticket and showing "no reservation linked".
+- **F-8 (medium): a waiter can set any reservation status** (`PATCH /reservations/{id}/status`): cancel, no-show, revive. Restrict to ARRIVED (and maybe COMPLETED).
+- F-3: `/auth/recovery/questions` reveals which owner emails have recovery set up (real questions vs a fixed decoy list).
+- F-4: `RecoveryThrottle` maps grow without bound; the per-address limit trusts `X-Forwarded-For` (check what Caddy and the Next rewrite pass).
+- F-5: refresh-token rotation is not atomic (two parallel refreshes both succeed); revoke with `where not revoked` and require one row.
+- F-6: failed logins for unknown emails write one unscoped audit row each, unbounded.
+- F-9: when the refresh fails mid-use the UI stays "signed in" (every call 401) until a reload.
+- F-12/F-13: retention does not clear ticket notes; docs say "blank" but the code writes "Anonymised"; ADR 0008 and this file are stale about V10; no catch-all error handler (a constraint error could log guest data).
+- Backend tests for `FloorDraftController` (roles, tenant 404, 503/504/502/422) are still missing; `/ai/status` too.
+- Not yet reviewed by anyone: several frontend screens (OrderEntry, MenuScreen, ReservationForm, staff, FloorCanvas), the e2e specs, most docs.
+
 ## Prompt to start a new session
 "Read docs/HANDOFF.md and docs/adr/README.md in the d4b0mb/progettoIGPE repo, branch
 ristomanager-cloud. Continue from the status list. Follow the rules in the handoff.
 Keep answers short and in plain English."
 
 ## Lessons worth remembering
+- Jackson 3: `JsonNode.textValue()` THROWS for a number or object (it does not return null). Read model or client JSON through `common/Json.text(node)`.
+- `docker compose up --build frontend` also rebuilds and restarts `backend` (it is a dependency), so the backend you test is the one in your working tree.
+- The browser pane's coordinate clicks are flaky while the page is still loading: focus a field with a script, then type; check results by reading the dialog text.
+- Assistant evaluation must pace itself (`run-endpoint.mjs` waits 5.6 s) or it trips the 12 per minute limit.
 - On the author's Windows PC (Java 25) JUnit tests that open a local socket fail with "Unable to establish loopback connection". Run the backend tests in Linux instead: `docker run --rm -v "$PWD:/w" -v "$HOME/.m2/repository:/root/.m2/repository" -w /w/backend maven:3.9-eclipse-temurin-21 mvn -B test` (for `verify` also mount `//var/run/docker.sock` and set `TESTCONTAINERS_HOST_OVERRIDE=host.docker.internal`, `TESTCONTAINERS_RYUK_DISABLED=true`). In PowerShell quote `-Dit.test=...` or the dot splits it.
 - A small local model with thinking off will say "done" without calling the tool: keep thinking on for the assistant, and let code (not the model) do date arithmetic and safety rules.
 - The demo seed makes a reservation "10 minutes ago": on an old database the allergy e2e tests fail. Reset with `docker compose down -v` and reseed.

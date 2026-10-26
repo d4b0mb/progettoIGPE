@@ -762,12 +762,75 @@ class AssistantServiceTest {
 
     private int statusOf(Kind kind) {
         llm.script.add(new AiException(kind, "boom"));
+        if (kind == Kind.BAD_RESPONSE) {
+            // An empty answer is asked for once more, so it takes two to give up.
+            llm.script.add(new AiException(kind, "boom"));
+        }
         try {
             chat(Role.OWNER, "ciao");
         } catch (ApiException e) {
             return e.status().value();
         }
         throw new AssertionError("expected an ApiException for " + kind);
+    }
+
+    @Test
+    void anEmptyAnswerIsAskedForOnceMoreButOnlyOnce() {
+        llm.script.add(new AiException(Kind.BAD_RESPONSE, "empty"));
+        llm.script.add(say("Ok."));
+        assertThat(chat(Role.WAITER, "ciao").reply()).isEqualTo("Ok.");
+        assertThat(llm.calls).hasSize(2);
+
+        // A second empty answer in the same request is reported, not retried again.
+        llm.script.add(new AiException(Kind.BAD_RESPONSE, "empty"));
+        llm.script.add(call("floor_status", "{}"));
+        llm.script.add(new AiException(Kind.BAD_RESPONSE, "empty"));
+        assertThatThrownBy(() -> chat(Role.WAITER, "stato sala"))
+                .isInstanceOfSatisfying(ApiException.class, e -> assertThat(e.status().value()).isEqualTo(502));
+        // A timeout is never retried.
+        llm.script.clear();
+        llm.script.add(new AiException(Kind.TIMEOUT, "slow"));
+        assertThatThrownBy(() -> chat(Role.WAITER, "ciao"))
+                .isInstanceOfSatisfying(ApiException.class, e -> assertThat(e.status().value()).isEqualTo(504));
+    }
+
+    @Test
+    void announcingAnActionThatNoProposalBacksIsReplacedAndSaysNothingChanged() {
+        for (String claim : List.of("Ho preparato una proposta di cancellazione per Rossi.", "Ho creato la prenotazione per Rossi.",
+                "I booked a table for Smith.", "The booking has been cancelled.", "Prenotazione cancellata.")) {
+            llm.script.add(say(claim));
+
+            AssistantReply reply = chat(Role.OWNER, "bianchi non viene piu");
+
+            assertThat(reply.reply()).as(claim).isEqualTo(AssistantService.NOTHING_CHANGED_REPLY);
+            assertThat(reply.notices()).as(claim).contains(AssistantTypes.NOTICE_NOTHING_CHANGED);
+            assertThat(reply.proposals()).isEmpty();
+        }
+    }
+
+    @Test
+    void offersQuestionsAndQuotedNotesAreNotTakenForClaimsOfAnAction() {
+        for (String fine : List.of("Posso preparare una nuova prenotazione per Rossi?", "Would you like me to book it?",
+                "Nessuna prenotazione trovata per Rossi.", "La nota dice \"ho prenotato io\".")) {
+            llm.script.add(say(fine));
+
+            AssistantReply reply = chat(Role.OWNER, "rossi?");
+
+            assertThat(reply.reply()).as(fine).isEqualTo(fine);
+            assertThat(reply.notices()).as(fine).doesNotContain(AssistantTypes.NOTICE_NOTHING_CHANGED);
+        }
+    }
+
+    @Test
+    void withARealProposalTheAnswerMayNotSayItIsAlreadyDone() {
+        llm.script.add(call("propose_create_reservation", VALID_CREATE));
+        llm.script.add(say("Ho creato la prenotazione per Rossi."));
+
+        AssistantReply reply = chat(Role.MANAGER, "rossi 4 dom 21");
+
+        assertThat(reply.reply()).isEqualTo(AssistantService.PREPARED_REPLY);
+        assertThat(reply.proposals()).hasSize(1);
+        assertThat(reply.notices()).doesNotContain(AssistantTypes.NOTICE_NOTHING_CHANGED);
     }
 
     @Test

@@ -498,5 +498,52 @@
       "MENU_ITEM_DELETED": "Dish deleted",
       "RETENTION_RUN": "Nightly privacy cleanup"
     }
+  },
+  "assistant": {
+    "title": "Assistant",
+    "open": "Open assistant",
+    "help": "Ask about bookings, tables, the kitchen queue or the menu. Booking and cancelling need your confirmation.",
+    "suggestionsLabel": "Ideas to ask",
+    "suggestions": {
+      "whoBookedTonight": "Who has booked tonight?",
+      "freeTables": "Which tables are free right now?",
+      "kitchenQueue": "What is in the kitchen queue?",
+      "menu": "What is on the menu?",
+      "bookExample": "Book a table for 4 tomorrow at 20:00"
+    },
+    "conversation": "Conversation",
+    "fromYou": "You",
+    "fromAssistant": "Assistant",
+    "thinking": "Thinking… this can take up to a minute.",
+    "cancel": "Cancel",
+    "inputLabel": "Message",
+    "placeholder": "Write a message…",
+    "send": "Send",
+    "charCount": "{count} / {max}",
+    "clear": "Clear conversation",
+    "error": "The assistant could not answer. Please try again.",
+    "cardCreate": "New booking",
+    "cardCancel": "Cancel booking",
+    "guests": "{count, plural, one {# guest} other {# guests}}",
+    "table": "Table {number}",
+    "noTable": "No table assigned yet",
+    "notes": "Note: {notes}",
+    "confirmCreate": "Confirm booking",
+    "confirmCancel": "Confirm cancellation",
+    "dismiss": "Dismiss",
+    "working": "Working…",
+    "doneCreate": "Done: booking for {guest}, {when}",
+    "doneCancel": "Cancelled: booking for {guest}, {when}",
+    "dismissed": "Dismissed",
+    "expired": "Expired. Ask again.",
+    "failedGone": "This proposal has expired. Ask again.",
+    "failedNetwork": "The connection was lost, so we do not know if it was done. Check the reservations before asking again.",
+    "failedGeneric": "That could not be done. Please try again.",
+    "notices": {
+      "ALLERGEN_CONFIRM_WITH_KITCHEN": "Allergens: always confirm with the kitchen.",
+      "SAFETY_CLAIM_REMOVED": "The assistant cannot confirm that a dish is safe for an allergy. Ask the kitchen.",
+      "TOO_MANY_STEPS": "The assistant could not finish. Try asking in a different way.",
+      "NOTHING_CHANGED": "Nothing was changed. Try the request again."
+    }
   }
 }

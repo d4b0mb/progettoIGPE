@@ -6,6 +6,9 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { RestaurantProvider } from "@/api/restaurant";
 import { useSession } from "@/api/session";
+import { AssistantButton } from "@/components/assistant/AssistantButton";
+import { AssistantPanel } from "@/components/assistant/AssistantPanel";
+import { AssistantProvider } from "@/components/assistant/AssistantProvider";
 import { Shell } from "@/components/Shell";
 import { mayOpen } from "@/components/nav";
 
@@ -30,6 +33,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const allowed = mayOpen(state.user.role, pathname);
   return (
     <RestaurantProvider>
+    {/* Keyed by the person: someone else signing in (or nobody) never inherits the conversation. */}
+    <AssistantProvider key={state.user.id} role={state.user.role}>
     <Shell user={state.user}>
       {allowed ? (
         children
@@ -42,6 +47,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         </div>
       )}
     </Shell>
+    <AssistantButton />
+    <AssistantPanel />
+    </AssistantProvider>
     </RestaurantProvider>
   );
 }

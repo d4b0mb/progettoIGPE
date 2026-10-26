@@ -498,5 +498,52 @@
       "MENU_ITEM_DELETED": "Piatto eliminato",
       "RETENTION_RUN": "Pulizia notturna della privacy"
     }
+  },
+  "assistant": {
+    "title": "Assistente",
+    "open": "Apri l'assistente",
+    "help": "Chiedi di prenotazioni, tavoli, coda della cucina o menu. Per prenotare o annullare serve la tua conferma.",
+    "suggestionsLabel": "Idee per chiedere",
+    "suggestions": {
+      "whoBookedTonight": "Chi ha prenotato stasera?",
+      "freeTables": "Quali tavoli sono liberi adesso?",
+      "kitchenQueue": "Cosa c'è in coda in cucina?",
+      "menu": "Cosa c'è nel menu?",
+      "bookExample": "Prenota un tavolo per 4 domani alle 20:00"
+    },
+    "conversation": "Conversazione",
+    "fromYou": "Tu",
+    "fromAssistant": "Assistente",
+    "thinking": "Sto pensando… può volerci fino a un minuto.",
+    "cancel": "Annulla",
+    "inputLabel": "Messaggio",
+    "placeholder": "Scrivi un messaggio…",
+    "send": "Invia",
+    "charCount": "{count} / {max}",
+    "clear": "Svuota la conversazione",
+    "error": "L'assistente non ha potuto rispondere. Riprova.",
+    "cardCreate": "Nuova prenotazione",
+    "cardCancel": "Annulla prenotazione",
+    "guests": "{count, plural, one {# coperto} other {# coperti}}",
+    "table": "Tavolo {number}",
+    "noTable": "Nessun tavolo ancora assegnato",
+    "notes": "Note: {notes}",
+    "confirmCreate": "Conferma prenotazione",
+    "confirmCancel": "Conferma annullamento",
+    "dismiss": "Scarta",
+    "working": "In corso…",
+    "doneCreate": "Fatto: prenotazione per {guest}, {when}",
+    "doneCancel": "Annullata: prenotazione per {guest}, {when}",
+    "dismissed": "Scartata",
+    "expired": "Scaduta. Chiedi di nuovo.",
+    "failedGone": "Questa proposta è scaduta. Chiedi di nuovo.",
+    "failedNetwork": "La connessione è caduta, quindi non sappiamo se è stato fatto. Controlla le prenotazioni prima di chiedere di nuovo.",
+    "failedGeneric": "Non è stato possibile farlo. Riprova.",
+    "notices": {
+      "ALLERGEN_CONFIRM_WITH_KITCHEN": "Allergeni: conferma sempre con la cucina.",
+      "SAFETY_CLAIM_REMOVED": "L'assistente non può confermare che un piatto sia sicuro per un'allergia. Chiedi alla cucina.",
+      "TOO_MANY_STEPS": "L'assistente non è riuscito a finire. Prova a chiederlo in un altro modo.",
+      "NOTHING_CHANGED": "Non è stato cambiato nulla. Riprova la richiesta."
+    }
   }
 }

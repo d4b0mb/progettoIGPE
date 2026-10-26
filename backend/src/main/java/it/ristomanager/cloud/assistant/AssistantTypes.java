@@ -18,6 +18,8 @@ public final class AssistantTypes {
     public static final String NOTICE_SAFETY_CLAIM_REMOVED = "SAFETY_CLAIM_REMOVED";
     /** The model kept asking for tools and never gave an answer. */
     public static final String NOTICE_TOO_MANY_STEPS = "TOO_MANY_STEPS";
+    /** The answer claimed an action that no proposal backs, so it was replaced: nothing was changed. */
+    public static final String NOTICE_NOTHING_CHANGED = "NOTHING_CHANGED";
 
     /**
      * One message from the person, with the earlier turns of the conversation. Only "user" and "assistant" turns are
@@ -25,7 +27,7 @@ public final class AssistantTypes {
      */
     public record AssistantRequest(
             @NotBlank @Size(max = 1000) String message,
-            @Size(max = 20) @Valid List<Turn> history) {
+            @Size(max = 20) List<@Valid Turn> history) {
     }
 
     public record Turn(@NotBlank String role, @Size(max = 1000) String content) {

@@ -17,3 +17,4 @@ decision changes, a new record supersedes the old one.
 | [0009](0009-double-booking-prevention.md) | Preventing double bookings in the database | Accepted |
 | [0010](0010-activity-log-recovery-retention.md) | Activity log, owner password recovery, guest-data retention | Accepted |
 | [0011](0011-servings.md) | Servings: the kitchen gets an order one serving at a time | Accepted |
+| [0012](0012-assistant-proposes-people-confirm.md) | The assistant proposes, a person confirms | Accepted |

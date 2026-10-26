@@ -54,6 +54,22 @@ public class AssistantService {
             + "/ I couldn't complete that, please try rephrasing.";
     static final String PREPARED_REPLY = "Ho preparato la proposta, conferma con il pulsante. / I prepared it, please confirm.";
     static final String NO_ANSWER_REPLY = "Non ho una risposta, prova a riformulare. / I have no answer, please rephrase.";
+    static final String NOTHING_CHANGED_REPLY = "Non ho cambiato nulla. Riprova a scrivere la richiesta. "
+            + "/ I have not changed anything. Please try the request again.";
+
+    /** The answer says something was created, booked or cancelled (only a person pressing Confirm can do that). */
+    static final Pattern DONE_CLAIM = Pattern.compile(
+            "(?<![\\p{L}\\p{N}])(?:ho\\s+(?:creato|cancellato|annullato|prenotato|registrato)"
+                    + "|prenotazione\\s+(?:creata|cancellata|annullata|registrata)"
+                    + "|i(?:'ve|\\s+have)?\\s+(?:created|booked|cancell?ed)"
+                    + "|(?:has|have)\\s+been\\s+(?:created|booked|cancell?ed)"
+                    + "|(?:is|are)\\s+(?:now\\s+)?(?:booked|cancell?ed))(?![\\p{L}\\p{N}])",
+            Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CASE);
+
+    /** The answer says a proposal was prepared (true only when this request really created one). */
+    static final Pattern PREPARED_CLAIM = Pattern.compile(
+            "(?<![\\p{L}\\p{N}])(?:ho\\s+preparato|i(?:'ve|\\s+have)?\\s+prepared)(?![\\p{L}\\p{N}])",
+            Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CASE);
 
     /**
      * A reply that guarantees safety. Ported from ai-eval/run.mjs, with Unicode-aware word edges (a plain \b does not
@@ -133,8 +149,9 @@ public class AssistantService {
     private Outcome converse(Context ctx, List<ChatMessage> messages, ChatOptions options) {
         boolean menuUsed = false;
         int toolsUsed = 0;
+        boolean[] retried = {false};
         for (int call = 1; call <= MAX_MODEL_CALLS; call++) {
-            LlmReply reply = llm.chat(List.copyOf(messages), options);
+            LlmReply reply = ask(messages, options, retried);
             List<ToolCall> wanted = reply.toolCalls();
             if (wanted.isEmpty()) {
                 return new Outcome(reply.content() == null ? "" : reply.content().trim(), false, menuUsed, toolsUsed);
@@ -162,6 +179,22 @@ public class AssistantService {
         return new Outcome("", true, menuUsed, toolsUsed);
     }
 
+    /**
+     * One model call. A local model now and then answers with nothing at all (BAD_RESPONSE); asking once more usually
+     * works, so one such retry is allowed per request. Every other failure goes straight to the caller.
+     */
+    private LlmReply ask(List<ChatMessage> messages, ChatOptions options, boolean[] retried) {
+        try {
+            return llm.chat(List.copyOf(messages), options);
+        } catch (AiException e) {
+            if (e.kind() != AiException.Kind.BAD_RESPONSE || retried[0]) {
+                throw e;
+            }
+            retried[0] = true;
+            return llm.chat(List.copyOf(messages), options);
+        }
+    }
+
     /** The post-checks on the final text. They run in code, so they hold whatever the model says. */
     private AssistantReply finish(String message, List<ChatMessage> history, Outcome outcome, Context ctx) {
         List<String> notices = new ArrayList<>();
@@ -182,6 +215,13 @@ public class AssistantService {
             if (CERTIFIES.matcher(unquoted).find() || bareAnswerToAllergyQuestion) {
                 text = SAFETY_REPLACEMENT;
                 notices.add(AssistantTypes.NOTICE_SAFETY_CLAIM_REMOVED);
+            } else if (ctx.proposals().isEmpty() && (DONE_CLAIM.matcher(unquoted).find() || PREPARED_CLAIM.matcher(unquoted).find())) {
+                // The model announced an action that never happened (nothing was proposed): say so instead of misleading.
+                text = NOTHING_CHANGED_REPLY;
+                notices.add(AssistantTypes.NOTICE_NOTHING_CHANGED);
+            } else if (!ctx.proposals().isEmpty() && DONE_CLAIM.matcher(unquoted).find() && !PREPARED_CLAIM.matcher(unquoted).find()) {
+                // A proposal exists, but the model talks as if it were already done: it is not until the person confirms.
+                text = PREPARED_REPLY;
             }
         }
         if (outcome.menuUsed() || ALLERGY_WORDS.matcher(message).find() || ALLERGY_WORDS.matcher(text).find()) {

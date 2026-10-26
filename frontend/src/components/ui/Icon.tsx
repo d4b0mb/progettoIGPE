@@ -15,6 +15,8 @@ const paths = {
   expand: "M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7",
   collapse: "M4 14h6v6M20 10h-6V4M14 10l7-7M3 21l7-7",
   logout: "M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9",
+  calendarX: "M8 2v4M16 2v4M3 9h18M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2zM10 13l4 4M14 13l-4 4",
+  sparkle: "M11 3l2 6 6 2-6 2-2 6-2-6-6-2 6-2zM19 3v4M17 5h4",
 } as const;
 
 export type IconName = keyof typeof paths;
