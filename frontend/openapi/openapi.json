@@ -1379,6 +1379,24 @@
         }
       }
     },
+    "/api/v1/ai/status" : {
+      "get" : {
+        "tags" : [ "ai-status-controller" ],
+        "operationId" : "aiStatus",
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AiStatusResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/staff/{id}" : {
       "delete" : {
         "tags" : [ "staff-controller" ],
@@ -2490,6 +2508,21 @@
           }
         },
         "required" : [ "action", "actorName", "details", "id", "occurredAt", "outcome" ]
+      },
+      "AiStatusResponse" : {
+        "type" : "object",
+        "properties" : {
+          "enabled" : {
+            "type" : "boolean"
+          },
+          "reachable" : {
+            "type" : "boolean"
+          },
+          "model" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "enabled", "model", "reachable" ]
       }
     }
   }

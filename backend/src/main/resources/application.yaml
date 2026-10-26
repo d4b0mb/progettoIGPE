@@ -30,6 +30,19 @@ app:
     guest-data-days: ${GUEST_DATA_DAYS:90}
     # Entries of the activity log (which include IP addresses) are deleted after this many days.
     audit-days: ${AUDIT_DAYS:365}
+  ai:
+    # Local language model through Ollama. Everything stays on the restaurant's own machine.
+    enabled: ${AI_ENABLED:true}
+    base-url: ${AI_BASE_URL:http://localhost:11434}
+    model: ${AI_MODEL:qwen3.5:9b}
+    # Low on purpose: the assistant must be predictable, not creative.
+    temperature: ${AI_TEMPERATURE:0.2}
+    context-tokens: ${AI_CONTEXT_TOKENS:8192}
+    # How long Ollama keeps the model in memory after the last request (avoids a slow reload).
+    keep-alive: ${AI_KEEP_ALIVE:30m}
+    think: ${AI_THINK:false}
+    connect-timeout: 3s
+    request-timeout: ${AI_REQUEST_TIMEOUT:60s}
 
 springdoc:
   # The machine-readable API description. Off unless asked for: it lists every

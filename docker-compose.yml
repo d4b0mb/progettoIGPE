@@ -39,6 +39,12 @@ services:
       JWT_SECRET: ${JWT_SECRET:-}
       # Plain HTTP on localhost, so the refresh cookie cannot be marked Secure here.
       COOKIE_SECURE: ${COOKIE_SECURE:-false}
+      # Local language model (Ollama running on the PC itself, outside Docker). Swap the model here or in .env.
+      AI_BASE_URL: ${AI_BASE_URL:-http://host.docker.internal:11434}
+      AI_MODEL: ${AI_MODEL:-qwen3.5:9b}
+    # Lets the container reach the PC on Linux too (Docker Desktop already provides this name).
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     restart: unless-stopped
     ports:
       - "127.0.0.1:8080:8080"
