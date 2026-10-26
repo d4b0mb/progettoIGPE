@@ -10,7 +10,9 @@
     "signOut": "Esci",
     "somethingWentWrong": "Qualcosa è andato storto. Riprova.",
     "noAccess": "Non hai accesso a questa schermata.",
-    "goHome": "Torna alla schermata iniziale"
+    "goHome": "Torna alla schermata iniziale",
+    "showPassword": "Mostra password",
+    "hidePassword": "Nascondi password"
   },
   "nav": {
     "reservations": "Prenotazioni",

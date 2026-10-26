@@ -54,7 +54,8 @@ production (Phase 3). GitHub Actions CI. Reasons for each choice: `docs/adr/`.
 10. Pizzeria trial: done. Orders can be split into servings (ADR 0011); a Pizza course and menu sections; per-restaurant
    look (`classic`, `duodecim`, owner picks it in Account); the real Duodecim Pizze menu (`scripts/menus/duodecim-pizze.txt`,
    98 items, imported by `scripts/import-menu.sh`) is seeded as a second demo restaurant with its own logins; home-screen
-   manifest and wake lock for the kitchen tablet. Guide: `docs/PIZZERIA_TRIAL.md`. 19 browser tests.
+   manifest and wake lock for the kitchen tablet. Guide: `docs/PIZZERIA_TRIAL.md`. 20 browser tests. The seed finishes a half-seeded Duodecim (rerun `docker compose run --rm seed`);
+   password boxes have a show/hide eye (in the shared Field component).
 
 Next phases (not started): Phase 3 Kubernetes (k3s), staging/production, monitoring; Phase 4 public
 booking site (Next.js, SEO, email confirmation).
@@ -98,6 +99,8 @@ ristomanager-cloud. Continue from the status list. Follow the rules in the hando
 Keep answers short and in plain English."
 
 ## Lessons worth remembering
+- The demo seed makes a reservation "10 minutes ago": on an old database the allergy e2e tests fail. Reset with `docker compose down -v` and reseed.
+- Playwright `getByLabel("Password")` also matches any button whose aria-label contains "password": give icon buttons screen-reader text instead of an aria-label.
 - A green build can hide skipped tests: always confirm tests actually ran (Failsafe for `*IT`).
 - Rebuilding the backend jar while it runs breaks the running JVM: restart after every rebuild.
 - `pkill -f <text>` kills your own shell if the text is in your command line: kill by process id or `fuser -k <port>/tcp`.

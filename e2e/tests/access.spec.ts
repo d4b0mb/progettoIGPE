@@ -66,3 +66,16 @@ test.describe("signing in", () => {
     expect(PASSWORD.length).toBeGreaterThanOrEqual(10);
   });
 });
+
+test("the password can be shown while typing and hidden again", async ({ page }) => {
+  await page.goto("/login");
+  await page.getByRole("button", { name: "EN" }).first().click();
+  const password = page.getByLabel("Password");
+  await password.fill("Secret-Phrase-1");
+  await expect(password).toHaveAttribute("type", "password");
+  await page.getByRole("button", { name: "Show password" }).click();
+  await expect(password).toHaveAttribute("type", "text");
+  await expect(password).toHaveValue("Secret-Phrase-1");
+  await page.getByRole("button", { name: "Hide password" }).click();
+  await expect(password).toHaveAttribute("type", "password");
+});

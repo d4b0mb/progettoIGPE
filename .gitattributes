@@ -1,0 +1,4 @@
+# Shell scripts and the menu data must keep Unix line endings, or they break inside the Linux containers
+# when Git on Windows converts them.
+*.sh text eol=lf
+scripts/menus/*.txt text eol=lf

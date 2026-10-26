@@ -93,22 +93,28 @@ seed_trattoria() {
 }
 
 # --- Duodecim Pizze: a real pizzeria's menu, in the pizzeria look
+# Safe to run again, and it finishes a restaurant that an earlier run left half done.
 seed_duodecim() {
   email="owner@duodecim.ristomanager.local"
   status=$(curl -s -o /tmp/signup2.json -w '%{http_code}' -X POST "$API/api/v1/auth/signup" \
     -H "Content-Type: application/json" \
     -d "{\"restaurantName\":\"Duodecim Pizze\",\"ownerName\":\"Titolare Duodecim\",\"email\":\"$email\",\"password\":\"$PASSWORD\"}")
-  if [ "$status" = "409" ]; then
-    echo "Duodecim Pizze already exists."
-    return 0
+  if [ "$status" = "201" ]; then
+    TOKEN=$(field accessToken < /tmp/signup2.json)
+  elif [ "$status" = "409" ]; then
+    echo "Duodecim Pizze already exists; checking that it is complete."
+    TOKEN=$(curl -sf -X POST "$API/api/v1/auth/login" -H "Content-Type: application/json" \
+      -d "{\"email\":\"$email\",\"password\":\"$PASSWORD\"}" | field accessToken)
+    [ -n "$TOKEN" ] || { echo "Duodecim exists but the demo password does not work for it; leaving it alone." >&2; return 0; }
+  else
+    echo "Duodecim sign-up failed with HTTP $status" >&2; cat /tmp/signup2.json >&2; exit 1
   fi
-  [ "$status" = "201" ] || { echo "Duodecim sign-up failed with HTTP $status" >&2; cat /tmp/signup2.json >&2; exit 1; }
-  TOKEN=$(field accessToken < /tmp/signup2.json)
 
+  # Staff accounts; one that already exists is simply skipped.
   for role in manager waiter kitchen; do
     upper=$(echo "$role" | tr 'a-z' 'A-Z')
-    post "$TOKEN" /api/v1/staff \
-      "{\"displayName\":\"Duodecim $role\",\"email\":\"$role@duodecim.ristomanager.local\",\"password\":\"$PASSWORD\",\"role\":\"$upper\"}" >/dev/null
+    curl -s -o /dev/null -X POST "$API/api/v1/staff" -H "Content-Type: application/json" -H "Authorization: Bearer $TOKEN" \
+      -d "{\"displayName\":\"Duodecim $role\",\"email\":\"$role@duodecim.ristomanager.local\",\"password\":\"$PASSWORD\",\"role\":\"$upper\"}" || true
   done
 
   # The look of the printed menu: green, tomato red, cream, serif titles.
@@ -116,15 +122,17 @@ seed_duodecim() {
     -d '{"theme":"DUODECIM"}' >/dev/null
 
   # A placeholder room so orders can be tried straight away. Draw the real one in the floor plan screen.
-  ROOM=$(post "$TOKEN" /api/v1/rooms '{"name":"Sala","widthMeters":10,"heightMeters":7}' | field id)
-  n=0
-  for pos in "2 2" "4.5 2" "7 2" "9 2" "2 5" "4.5 5" "7 5" "9 5"; do
-    set -- $pos
-    n=$((n + 1))
-    post "$TOKEN" "/api/v1/rooms/$ROOM/tables" \
-      "{\"xMeters\":$1,\"yMeters\":$2,\"widthMeters\":1.2,\"heightMeters\":1.2,\"shape\":\"RECTANGLE\",\"seats\":4}" >/dev/null
-  done
+  rooms=$(curl -sf "$API/api/v1/rooms" -H "Authorization: Bearer $TOKEN")
+  if [ "$rooms" = "[]" ]; then
+    ROOM=$(post "$TOKEN" /api/v1/rooms '{"name":"Sala","widthMeters":10,"heightMeters":7}' | field id)
+    for pos in "2 2" "4.5 2" "7 2" "9 2" "2 5" "4.5 5" "7 5" "9 5"; do
+      set -- $pos
+      post "$TOKEN" "/api/v1/rooms/$ROOM/tables" \
+        "{\"xMeters\":$1,\"yMeters\":$2,\"widthMeters\":1.2,\"heightMeters\":1.2,\"shape\":\"RECTANGLE\",\"seats\":4}" >/dev/null
+    done
+  fi
 
+  # Dishes already on the menu are skipped, so this only fills what is missing.
   EMAIL="$email" sh "$HERE/import-menu.sh" "$HERE/menus/duodecim-pizze.txt"
   echo
   echo "Duodecim Pizze ready."

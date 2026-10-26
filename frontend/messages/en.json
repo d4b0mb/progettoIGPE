@@ -10,7 +10,9 @@
     "signOut": "Sign out",
     "somethingWentWrong": "Something went wrong. Please try again.",
     "noAccess": "You do not have access to this screen.",
-    "goHome": "Go to the home screen"
+    "goHome": "Go to the home screen",
+    "showPassword": "Show password",
+    "hidePassword": "Hide password"
   },
   "nav": {
     "reservations": "Reservations",
