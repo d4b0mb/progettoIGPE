@@ -40,11 +40,19 @@ Some Wi-Fi networks stop devices from talking to each other ("client isolation")
 Fallback that needs nothing from the router: on the laptop turn on Windows "Mobile hotspot", connect the
 tablet and phones to it, and use the address the laptop shows for itself on that hotspot (usually 192.168.137.1).
 
+## Which login is which
+Two restaurants live in the system. **Duodecim Pizze** uses `owner@`, `manager@`, `waiter@`, `kitchen@` + `duodecim.ristomanager.local`.
+The `demo.ristomanager.local` logins belong to a different restaurant ("Trattoria Demo") and see none of the pizzeria's data.
+The name under the logo in the menu shows which restaurant you are in.
+
 ## How an order works
 - The waiter picks the table, taps dishes, and can split the order into **servings** ("Portata 1, 2, 3"):
   tap "Add serving", then add dishes to it. Example: antipasti in serving 1, pizzas in serving 2, dessert in 3.
 - The kitchen sees serving 1 in full and the rest as "coming next". They tap Start, then Mark ready.
 - The waiter taps "Serving 1 of 3 served". The order stays, and serving 2 now appears as new in the kitchen.
+- **Toppings and notes:** each dish has a Customise button (pizzas) or Add note button (everything else). Tick the toppings or removals
+  (Bufala in cottura, Senza basilico, Non tagliata...), write anything else ("senza pepe", "con ghiaccio") and add it. Priced toppings add to
+  the estimate; toppings with allergens count in the kitchen's allergy alarm. The kitchen sees `+ Bufala in cottura` and the note on the ticket.
 - The search box and the course buttons on the order screen find a dish among the ~100 on the menu.
 
 ## Not covered (keep using the cashier PC for these)

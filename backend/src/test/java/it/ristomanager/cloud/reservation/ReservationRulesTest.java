@@ -120,6 +120,13 @@ class ReservationRulesTest {
     }
 
     @Test
+    void thePhoneNumberIsOptionalButMustBeRealWhenGiven() {
+        assertThatCode(() -> ReservationRules.validate(with(b -> { b.phone = null; return b; }), ROME, NOW, true)).doesNotThrowAnyException();
+        assertThatCode(() -> ReservationRules.validate(with(b -> { b.phone = ""; return b; }), ROME, NOW, true)).doesNotThrowAnyException();
+        assertThatCode(() -> ReservationRules.validate(with(b -> { b.phone = "  "; return b; }), ROME, NOW, true)).doesNotThrowAnyException();
+    }
+
+    @Test
     void phoneNeedsAtLeastSixDigits() {
         assertRejected(with(b -> { b.phone = "12345"; return b; }), true, "phone");
         assertRejected(with(b -> { b.phone = "abc"; return b; }), true, "phone");

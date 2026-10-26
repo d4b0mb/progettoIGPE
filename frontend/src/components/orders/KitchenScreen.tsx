@@ -51,7 +51,7 @@ export function KitchenScreen() {
             {connected ? t("live") : t("reconnecting")}
           </span>
         </div>
-        <span className="text-xl font-extrabold text-white/70 tabular-nums">{new Date(now).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
+        <span className="text-xl font-extrabold text-white/70 tabular-nums">{new Date(now).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hourCycle: "h23" })}</span>
       </header>
 
       {error ? (

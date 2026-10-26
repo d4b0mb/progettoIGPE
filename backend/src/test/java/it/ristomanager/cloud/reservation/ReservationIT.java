@@ -89,6 +89,19 @@ class ReservationIT {
     }
 
     @Test
+    void aReservationWithoutPhoneOrEndTimeIsAccepted() throws Exception {
+        // Only the date, the time, the number of people and a name are needed; no phone and no end time.
+        api.post(owner, "/api/v1/reservations", """
+                {"guestName":"Sconosciuto","startsAt":"%s","partySize":3}
+                """.formatted(at(20, 0))).andExpect(status().isCreated())
+                .andExpect(jsonPath("$.phone").value(""))
+                .andExpect(jsonPath("$.durationMinutes").value(120));
+        api.post(owner, "/api/v1/reservations", """
+                {"guestName":"Sconosciuto","phone":"","startsAt":"%s","partySize":3}
+                """.formatted(at(22, 30))).andExpect(status().isCreated()).andExpect(jsonPath("$.phone").value(""));
+    }
+
+    @Test
     void invalidReservationsAreRejectedWithTheOffendingField() throws Exception {
         api.post(owner, "/api/v1/reservations", """
                 {"guestName":" ","phone":"+39 333 000 1111","startsAt":"%s","partySize":2}
@@ -272,5 +285,21 @@ class ReservationIT {
                 {"status":"ARRIVED"}
                 """).andExpect(status().isOk());
         api.get(owner, "/api/v1/rooms/" + room + "/layout").andExpect(jsonPath("$.tables[0].liveStatus").value("OCCUPIED"));
+    }
+
+    @Test
+    void aPartyMarkedAsSittingMakesTheTableOccupiedEvenIfTheBookingIsForLater() throws Exception {
+        String table = addTable(4);
+        OffsetDateTime evening = OffsetDateTime.now().plusHours(5);
+        String id = ApiClient.read(api.post(owner, "/api/v1/reservations", booking("Rossi", evening.toString(), 2, table, "CONFIRMED"))
+                .andExpect(status().isCreated()), "$.id");
+        // Booked for much later: nothing to show yet.
+        api.get(owner, "/api/v1/rooms/" + room + "/layout").andExpect(jsonPath("$.tables[0].liveStatus").value("FREE"));
+        // They sit down early: the table is taken now.
+        api.patch(owner, "/api/v1/reservations/" + id + "/status", "{\"status\":\"ARRIVED\"}").andExpect(status().isOk());
+        api.get(owner, "/api/v1/rooms/" + room + "/layout").andExpect(jsonPath("$.tables[0].liveStatus").value("OCCUPIED"));
+        // Marking them done frees it.
+        api.patch(owner, "/api/v1/reservations/" + id + "/status", "{\"status\":\"COMPLETED\"}").andExpect(status().isOk());
+        api.get(owner, "/api/v1/rooms/" + room + "/layout").andExpect(jsonPath("$.tables[0].liveStatus").value("FREE"));
     }
 }

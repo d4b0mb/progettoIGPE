@@ -58,15 +58,19 @@ public final class OrderTypes {
         }
     }
 
-    /** {@code serving} is 1 to 9 (blank means 1): lines of serving 2 reach the kitchen after serving 1 is served. */
-    public record LineRequest(UUID menuItemId, Integer quantity, String note, Integer serving) {
+    /**
+     * {@code serving} is 1 to 9 (blank means 1): lines of serving 2 reach the kitchen after serving 1 is served.
+     * {@code modifierIds} are toppings and options of the dish's course; their allergens join the dish's own.
+     */
+    public record LineRequest(UUID menuItemId, Integer quantity, String note, Integer serving, List<UUID> modifierIds) {
     }
 
     public record OrderRequest(UUID tableId, UUID reservationId, Priority priority, String note, List<LineRequest> items) {
     }
 
     public record ItemView(UUID id, @Schema(nullable = true) UUID menuItemId, String name, int quantity, Course course,
-                           List<Allergen> allergens, List<Allergen> conflicts, String note, int serving) {
+                           List<Allergen> allergens, List<Allergen> conflicts, String note, int serving,
+                           List<String> modifiers, int modifierCents) {
     }
 
     /**

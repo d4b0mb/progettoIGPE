@@ -11,7 +11,8 @@ import { Button } from "@/components/ui/Button";
 import { SelectField, TextareaField } from "@/components/ui/Controls";
 import { Field } from "@/components/ui/Field";
 import { useRemote } from "@/lib/useRemote";
-import { dateOf, timeOf, toInstant } from "./time";
+import { TimeField } from "@/components/ui/TimeField";
+import { addMinutes, dateOf, humanDuration, minutesBetween, parseTime, timeOf, toInstant } from "./time";
 
 type Reservation = components["schemas"]["Reservation"];
 type Draft = components["schemas"]["ReservationRequest"];
@@ -23,6 +24,9 @@ const num = (value: string, fallback = 0) => (value === "" || Number.isNaN(Numbe
  * the list of free tables is refreshed (smallest table that fits first) so staff
  * only ever pick a table that will be accepted.
  */
+/** What the server assumes when no end time is given. */
+const DEFAULT_STAY_MINUTES = 120;
+
 export function ReservationForm({
   existing,
   defaultDate,
@@ -43,7 +47,9 @@ export function ReservationForm({
   const [email, setEmail] = useState(existing?.email ?? "");
   const [date, setDate] = useState(existing ? dateOf(existing.startsAt) : defaultDate);
   const [time, setTime] = useState(existing ? timeOf(existing.startsAt) : "20:00");
-  const [duration, setDuration] = useState(String(existing?.durationMinutes ?? 120));
+  // The end time is what staff type; the server stores a length. Left empty, the usual stay of two hours applies.
+  const [endText, setEndText] = useState(existing ? addMinutes(timeOf(existing.startsAt), existing.durationMinutes) : "22:00");
+  const [endTouched, setEndTouched] = useState(existing !== undefined);
   const [partySize, setPartySize] = useState(String(existing?.partySize ?? 2));
   const [highChairs, setHighChairs] = useState(String(existing?.highChairs ?? 0));
   const [strollers, setStrollers] = useState(String(existing?.strollerSpaces ?? 0));
@@ -53,29 +59,57 @@ export function ReservationForm({
   const [status, setStatus] = useState<NonNullable<Draft["status"]>>(existing?.status ?? "CONFIRMED");
   const [problem, setProblem] = useState<ApiError | null>(null);
   const [busy, setBusy] = useState(false);
+  const [prompt, setPrompt] = useState<"name" | "phone" | null>(null);
+  const [phoneOk, setPhoneOk] = useState(false);
 
-  const when = date && time ? toInstant(date, time) : null;
+  const start = parseTime(time);
+  const endParsed = endText.trim() === "" ? null : parseTime(endText);
+  const endInvalid = endText.trim() !== "" && endParsed === null;
+  const when = date && start ? toInstant(date, start) : null;
   const guests = num(partySize);
-  const minutes = num(duration, 120);
+  // undefined means "no end time given": the server uses the usual two hours.
+  const minutes = start && endParsed ? minutesBetween(start, endParsed) : undefined;
 
   const loadTables = useCallback(async () => {
     if (!when || guests < 1 || guests > 40) return [];
     return unwrap(
       api.GET("/api/v1/reservations/available-tables", {
-        params: { query: { startsAt: when, durationMinutes: minutes, partySize: guests, excludeReservationId: existing?.id } },
+        params: { query: { startsAt: when, durationMinutes: minutes ?? DEFAULT_STAY_MINUTES, partySize: guests, excludeReservationId: existing?.id } },
       }),
     );
   }, [when, guests, minutes, existing?.id]);
   const tables = useRemote(loadTables);
 
-  async function onSubmit(event: FormEvent) {
+  /**
+   * Only the date, the start time and the number of people are truly required. A missing name or phone number is
+   * pointed out first, and the person can carry on anyway: a generic name for the first, and a plain yes for the second.
+   */
+  function attempt(name: string = guestName, phoneConfirmed: boolean = phoneOk) {
+    if (!when || endInvalid) return;
+    if (name.trim() === "") {
+      setPrompt("name");
+      return;
+    }
+    if (phone.trim() === "" && !phoneConfirmed) {
+      setPrompt("phone");
+      return;
+    }
+    setPrompt(null);
+    void save(name);
+  }
+
+  function onSubmit(event: FormEvent) {
     event.preventDefault();
+    attempt();
+  }
+
+  async function save(name: string) {
     if (!when) return;
     setBusy(true);
     setProblem(null);
     const body: Draft = {
-      guestName,
-      phone,
+      guestName: name.trim(),
+      phone: phone.trim(),
       email: email.trim() || undefined,
       startsAt: when,
       durationMinutes: minutes,
@@ -108,15 +142,34 @@ export function ReservationForm({
 
   return (
     <form onSubmit={onSubmit} className="flex flex-col gap-4" noValidate>
-      <Field label={t("guestName")} value={guestName} onChange={(e) => setGuestName(e.target.value)} required maxLength={120} error={fe.guestName} />
+      <Field label={t("guestName")} value={guestName} onChange={(e) => setGuestName(e.target.value)} maxLength={120} error={fe.guestName} />
       <div className="grid gap-4 sm:grid-cols-2">
-        <Field label={t("phone")} type="tel" inputMode="tel" autoComplete="off" value={phone} onChange={(e) => setPhone(e.target.value)} required error={fe.phone} />
+        <Field label={t("phone")} type="tel" inputMode="tel" autoComplete="off" value={phone} onChange={(e) => setPhone(e.target.value)} error={fe.phone} />
         <Field label={t("email")} type="email" value={email} onChange={(e) => setEmail(e.target.value)} error={fe.email} />
       </div>
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
         <Field label={t("date")} type="date" value={date} onChange={(e) => setDate(e.target.value)} required error={fe.startsAt} />
-        <Field label={t("time")} type="time" value={time} onChange={(e) => setTime(e.target.value)} required />
-        <Field label={t("duration")} type="number" inputMode="numeric" min={15} max={720} step={15} value={duration} onChange={(e) => setDuration(e.target.value)} error={fe.durationMinutes} />
+        <TimeField
+          label={t("startTime")}
+          value={time}
+          required
+          onChange={(v) => {
+            setTime(v);
+            // Until the end time is typed by hand, it keeps the same stay as the start moves.
+            const parsed = parseTime(v);
+            if (!endTouched && parsed) setEndText(addMinutes(parsed, DEFAULT_STAY_MINUTES));
+          }}
+        />
+        <TimeField
+          label={t("endTime")}
+          value={endText}
+          onChange={(v) => {
+            setEndTouched(true);
+            setEndText(v);
+          }}
+          hint={minutes ? t("stayHint", { duration: humanDuration(minutes) }) : t("stayDefault", { duration: humanDuration(DEFAULT_STAY_MINUTES) })}
+          error={fe.durationMinutes}
+        />
       </div>
       <div className="grid grid-cols-3 gap-4">
         <Field label={t("partySize")} type="number" inputMode="numeric" min={1} max={40} value={partySize} onChange={(e) => setPartySize(e.target.value)} required error={fe.partySize} />
@@ -153,6 +206,42 @@ export function ReservationForm({
         <p role="alert" className="rounded-lg bg-danger-soft px-3 py-2 text-sm font-semibold text-danger-ink">
           {general}
         </p>
+      ) : null}
+      {prompt === "name" ? (
+        <div role="alert" className="flex flex-col gap-3 rounded-xl border-2 border-amber-600 bg-warn-soft p-4 text-warn-ink">
+          <p className="text-sm font-bold">{t("namePrompt")}</p>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              onClick={() => {
+                setGuestName(t("genericName"));
+                attempt(t("genericName"));
+              }}
+            >
+              {t("useGeneric", { name: t("genericName") })}
+            </Button>
+            <Button variant="secondary" onClick={() => setPrompt(null)}>
+              {t("typeName")}
+            </Button>
+          </div>
+        </div>
+      ) : null}
+      {prompt === "phone" ? (
+        <div role="alert" className="flex flex-col gap-3 rounded-xl border-2 border-amber-600 bg-warn-soft p-4 text-warn-ink">
+          <p className="text-sm font-bold">{t("phonePrompt")}</p>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              onClick={() => {
+                setPhoneOk(true);
+                attempt(guestName, true);
+              }}
+            >
+              {t("saveAnyway")}
+            </Button>
+            <Button variant="secondary" onClick={() => setPrompt(null)}>
+              {t("addPhone")}
+            </Button>
+          </div>
+        </div>
       ) : null}
       <div className="flex flex-wrap justify-end gap-3">
         <Button variant="secondary" onClick={onCancel}>

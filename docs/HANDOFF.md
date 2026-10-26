@@ -2,7 +2,7 @@
 
 Read this first when starting a new session or switching models. It says what this
 project is, where it stands, how to run it, and the rules to keep.
-Last updated: 2026-10-26, after Block 11 (floor plan editor, dark look).
+Last updated: 2026-10-26, after Block 12 (pizza options and notes, reservation rules, live floor plan).
 
 ## What this is
 RistoManager Cloud: a multi-tenant web service for restaurants (reservations, floor plan,
@@ -62,6 +62,20 @@ production (Phase 3). GitHub Actions CI. Reasons for each choice: `docs/adr/`.
    handles on the room's right/bottom edges to stretch the room, an Expand button (plan fills the window, Esc returns). Room settings changes show without a reload. Sun/moon button
    (light/dark, remembered per device, follows the device setting first time) for both looks. 25 browser tests, 78 frontend tests.
    Maths is in `floor/geometry.ts` (tested); the gesture code is in `FloorCanvas.tsx`.
+12. Options, notes and reservation rules: done.
+   - Options (toppings, removals, variants) per course with a price and allergens: table `menu_modifier`, API `/api/v1/menu/modifiers`
+     (owner/manager edit, everyone reads), tab "Toppings and options" on the Menu screen, 48 pizza options of Duodecim in
+     `scripts/menus/duodecim-modifiers.txt`. An order line carries `modifierIds`; the server copies names, price total and
+     allergens onto the ticket (option allergens join the dish's, so the kitchen's allergy alarm sees them). "Senza ..." never
+     removes an allergen. Any dish also takes a free note (200 characters). Order screen: Customise button per dish, cart logic
+     in `orders/cart.ts` (tested), kitchen ticket shows `+ options` and the note.
+   - Reservations: start and optional end time on the 24-hour clock (`TimeField`, no AM/PM, also on the kitchen clock and the
+     activity log); no end time = the usual 2 hours; end earlier than start = after midnight. Phone is optional (warning, can
+     continue); a missing name offers "Sconosciuto"/"John Doe". Server: blank phone accepted, a given phone still needs 6 digits.
+   - Floor plan: refreshes itself every 10 s and when the tab regains focus; a party marked as arrived makes its table occupied
+     whatever the booked time; the next booking time shows on each table; bookings with no table are counted under the plan.
+     Zoom controls moved into a bar above the plan. Send on the order screen always explains what is missing.
+   118 backend tests, 94 frontend tests, 29 browser tests.
 
 Next phases (not started): Phase 3 Kubernetes (k3s), staging/production, monitoring; Phase 4 public
 booking site (Next.js, SEO, email confirmation).
@@ -85,6 +99,8 @@ Hosting provider and budget; which restaurants to pilot with; final product name
 Italian is the default UI language; English is available.
 
 ## Known gaps (be honest about these)
+- Two restaurants share one system (Trattoria Demo and Duodecim Pizze) with look-alike logins: edits made as `owner@duodecim...` are invisible to `waiter@demo...`. Use the `duodecim` logins for the pizzeria.
+- Options have no per-dish restriction (they apply to a whole course) and no "required choice"; a bill total is only an estimate on the order screen.
 - The Duodecim allergens are a draft from ingredient lists; the pizzeria must confirm them.
 - Servings are strictly in order (no "send serving 2 now"). Menu order is insertion order (no drag to reorder).
 - Wake lock needs https or localhost; on plain http the tablet's own screen timeout applies.

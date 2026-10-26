@@ -134,6 +134,7 @@ seed_duodecim() {
 
   # Dishes already on the menu are skipped, so this only fills what is missing.
   EMAIL="$email" sh "$HERE/import-menu.sh" "$HERE/menus/duodecim-pizze.txt"
+  EMAIL="$email" KIND=modifiers sh "$HERE/import-menu.sh" "$HERE/menus/duodecim-modifiers.txt"
   echo
   echo "Duodecim Pizze ready."
   echo "  Owner:    $email   (manager@, waiter@, kitchen@ + duodecim.ristomanager.local)"

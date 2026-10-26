@@ -15,7 +15,7 @@ test("the manager books a table, and the same table is no longer offered at that
     await page.getByRole("button", { name: "New reservation" }).click();
     const dialog = page.getByRole("dialog");
     await dialog.getByLabel("Date").fill(day);
-    await dialog.getByLabel("Time").fill("12:30");
+    await dialog.getByLabel("From (24 h)").fill("12:30");
     await dialog.getByLabel("Guests", { exact: true }).fill("3");
     return dialog;
   }

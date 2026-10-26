@@ -9,6 +9,8 @@ import { useSession } from "@/api/session";
 import { Button } from "@/components/ui/Button";
 import { Dialog } from "@/components/ui/Dialog";
 import { useRemote } from "@/lib/useRemote";
+import Link from "next/link";
+import { timeOf, todayLocal } from "@/components/reservations/time";
 import { FloorCanvas, LIVE_STATUSES, liveSwatch, type Selection } from "./FloorCanvas";
 import { clamp, defaultObstacleSize, snap, tidy, type Geom, type ObstacleType } from "./geometry";
 import { EmptyInspector, OBSTACLE_TYPES, ObstacleInspector, TableInspector } from "./Inspector";
@@ -16,6 +18,7 @@ import { RoomForm } from "./RoomForm";
 
 type Room = components["schemas"]["Room"];
 type Layout = components["schemas"]["Layout"];
+type Reservation = components["schemas"]["Reservation"];
 
 export function FloorScreen() {
   const t = useTranslations("floor");
@@ -191,6 +194,38 @@ function RoomView({ room, canEdit, onRoomChanged }: { room: Room; canEdit: boole
     }
   }, [fetchLayout]);
 
+  // Today's reservations: the next booking time on each table, and how many have no table yet.
+  const [today, setToday] = useState<Reservation[]>([]);
+  const refreshBookings = useCallback(async () => {
+    try {
+      setToday(await unwrap(api.GET("/api/v1/reservations", { params: { query: { date: todayLocal() } } })));
+    } catch {
+      // The plan still works without the booking times.
+    }
+  }, []);
+
+  // The plan keeps itself up to date: a booking made or a party seated on another device appears within seconds,
+  // and again the moment you come back to this tab.
+  useEffect(() => {
+    let cancelled = false;
+    unwrap(api.GET("/api/v1/reservations", { params: { query: { date: todayLocal() } } })).then(
+      (list) => !cancelled && setToday(list),
+      () => undefined,
+    );
+    const tick = () => {
+      if (document.visibilityState !== "visible") return;
+      void refresh();
+      void refreshBookings();
+    };
+    const timer = window.setInterval(tick, 10_000);
+    document.addEventListener("visibilitychange", tick);
+    return () => {
+      cancelled = true;
+      window.clearInterval(timer);
+      document.removeEventListener("visibilitychange", tick);
+    };
+  }, [refresh, refreshBookings]);
+
   if (!layout) return <p className="text-muted">…</p>;
   const grid = layout.room.gridStepMeters;
 
@@ -341,6 +376,18 @@ function RoomView({ room, canEdit, onRoomChanged }: { room: Room; canEdit: boole
     }
   }
 
+  // The earliest booking still to come (or running late) at each table, and the bookings with no table.
+  const nextBooking: Record<string, string> = {};
+  let withoutTable = 0;
+  for (const r of [...today].sort((a, b) => a.startsAt.localeCompare(b.startsAt))) {
+    if (r.status === "CANCELLED" || r.status === "COMPLETED" || r.status === "NO_SHOW") continue;
+    if (!r.tableId) {
+      withoutTable += 1;
+    } else if ((r.status === "PENDING" || r.status === "CONFIRMED") && nextBooking[r.tableId] === undefined) {
+      nextBooking[r.tableId] = timeOf(r.startsAt);
+    }
+  }
+
   const selectedTable = selection?.kind === "table" ? layout.tables.find((v) => v.table.id === selection.id) : undefined;
   const selectedObstacle = selection?.kind === "obstacle" ? layout.obstacles.find((o) => o.id === selection.id) : undefined;
   const selectedGeom = selectedTable ? geomOf(selectedTable.table) : selectedObstacle ? geomOf(selectedObstacle) : null;
@@ -431,7 +478,16 @@ function RoomView({ room, canEdit, onRoomChanged }: { room: Room; canEdit: boole
             }}
             fill={expanded}
             onToggleFill={() => setExpanded((v) => !v)}
+            bookings={nextBooking}
           />
+          {withoutTable > 0 ? (
+            <p className="text-sm font-semibold text-warn-ink">
+              {t("withoutTable", { count: withoutTable })}{" "}
+              <Link href="/reservations" className="underline">
+                {t("openReservations")}
+              </Link>
+            </p>
+          ) : null}
           <ul className="flex flex-wrap gap-x-4 gap-y-2 text-xs text-muted" aria-label={t("live")}>
             {LIVE_STATUSES.map((s) => (
               <li key={s} className="flex items-center gap-1.5">
@@ -448,7 +504,7 @@ function RoomView({ room, canEdit, onRoomChanged }: { room: Room; canEdit: boole
 
         {selectedTable ? (
           <TableInspector
-            key={JSON.stringify(selectedTable)}
+            key={JSON.stringify(selectedTable.table)}
             table={selectedTable.table}
             live={selectedTable.liveStatus}
             canEdit={canEdit}

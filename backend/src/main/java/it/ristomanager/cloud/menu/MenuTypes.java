@@ -29,4 +29,9 @@ public final class MenuTypes {
     public record MenuItem(UUID id, String name, String description, Course course, String section,
                            @Schema(nullable = true) Integer priceCents, List<Allergen> allergens, boolean available) {
     }
+
+    /** An option for the dishes of one course: a topping, a removal, a variant. It may bring allergens and a price. */
+    public record Modifier(UUID id, String name, Course course, String section, int priceCents, List<Allergen> allergens,
+                           boolean available) {
+    }
 }

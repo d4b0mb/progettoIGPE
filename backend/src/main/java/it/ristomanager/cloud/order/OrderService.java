@@ -7,6 +7,8 @@ import it.ristomanager.cloud.floor.FloorRepository;
 import it.ristomanager.cloud.floor.FloorTypes.DiningTable;
 import it.ristomanager.cloud.menu.MenuRepository;
 import it.ristomanager.cloud.menu.MenuTypes.MenuItem;
+import it.ristomanager.cloud.menu.MenuTypes.Modifier;
+import it.ristomanager.cloud.menu.ModifierRepository;
 import it.ristomanager.cloud.order.OrderTypes.LineRequest;
 import it.ristomanager.cloud.order.OrderTypes.OrderRequest;
 import it.ristomanager.cloud.order.OrderTypes.Priority;
@@ -32,20 +34,23 @@ public class OrderService {
     static final int MAX_LINES = 50;
     static final int MAX_QUANTITY = 99;
     static final int MAX_SERVINGS = 9;
+    static final int MAX_MODIFIERS = 20;
 
     private final OrderRepository orders;
     private final MenuRepository menu;
+    private final ModifierRepository modifierOptions;
     private final FloorRepository floor;
     private final ReservationRepository reservations;
     private final RestaurantRepository restaurants;
     private final TicketEvents events;
     private final AuditLog audit;
 
-    OrderService(OrderRepository orders, MenuRepository menu, FloorRepository floor,
+    OrderService(OrderRepository orders, MenuRepository menu, ModifierRepository modifierOptions, FloorRepository floor,
                  ReservationRepository reservations, RestaurantRepository restaurants, TicketEvents events,
                  AuditLog audit) {
         this.orders = orders;
         this.menu = menu;
+        this.modifierOptions = modifierOptions;
         this.floor = floor;
         this.reservations = reservations;
         this.restaurants = restaurants;
@@ -87,6 +92,29 @@ public class OrderService {
                 throw ApiException.invalid("items", "A line note is too long");
             }
         }
+        // Options come from the menu, never from the client: same rule as the dishes' allergens.
+        // Kept in the menu's own order, so a ticket always lists the options the same way whatever order they were tapped in.
+        Map<UUID, Modifier> options = new java.util.LinkedHashMap<>();
+        modifierOptions.findAll(rid, lines.stream().flatMap(l -> chosen(l).stream()).distinct().toList())
+                .forEach(m -> options.put(m.id(), m));
+        for (LineRequest line : lines) {
+            if (chosen(line).size() > MAX_MODIFIERS) {
+                throw ApiException.invalid("items", "A dish can have at most " + MAX_MODIFIERS + " options");
+            }
+            for (UUID id : chosen(line)) {
+                Modifier option = options.get(id);
+                MenuItem dish = dishes.get(line.menuItemId());
+                if (option == null) {
+                    throw ApiException.invalid("items", "An option in this order is not on the menu");
+                }
+                if (!option.available()) {
+                    throw ApiException.invalid("items", option.name() + " is not available");
+                }
+                if (option.course() != dish.course()) {
+                    throw ApiException.invalid("items", option.name() + " cannot be added to " + dish.name());
+                }
+            }
+        }
         if (req.note() != null && req.note().length() > 500) {
             throw ApiException.invalid("note", "The note is too long");
         }
@@ -107,8 +135,13 @@ public class OrderService {
                 priority, req.note() == null ? "" : req.note().trim());
         for (LineRequest line : lines) {
             MenuItem dish = dishes.get(line.menuItemId());
-            orders.insertItem(rid, ticketId, dish.id(), dish.name(), line.quantity(), dish.course(), dish.allergens(),
-                    line.note() == null ? "" : line.note().trim(), servingOf(line));
+            List<Modifier> picked = options.values().stream().filter(m -> chosen(line).contains(m.id())).toList();
+            // The option's allergens join the dish's own, so the kitchen's allergy alarm sees what is really on the plate.
+            List<Allergen> allergens = java.util.stream.Stream.concat(dish.allergens().stream(),
+                    picked.stream().flatMap(m -> m.allergens().stream())).distinct().toList();
+            orders.insertItem(rid, ticketId, dish.id(), dish.name(), line.quantity(), dish.course(), allergens,
+                    line.note() == null ? "" : line.note().trim(), servingOf(line),
+                    picked.stream().map(Modifier::name).toList(), picked.stream().mapToInt(Modifier::priceCents).sum());
         }
         orders.startAtServing(rid, ticketId, firstServing);
         TicketView view = orders.find(rid, ticketId).orElseThrow();
@@ -116,6 +149,10 @@ public class OrderService {
         audit.record("ORDER_CREATED", "order", ticketId.toString(),
                 Map.of("code", view.code(), "table", String.valueOf(table.number()), "lines", String.valueOf(lines.size())));
         return view;
+    }
+
+    private static List<UUID> chosen(LineRequest line) {
+        return line.modifierIds() == null ? List.of() : line.modifierIds().stream().distinct().toList();
     }
 
     private static int servingOf(LineRequest line) {

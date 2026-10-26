@@ -282,10 +282,65 @@
         }
       }
     },
+    "/api/v1/menu/modifiers/{id}" : {
+      "put" : {
+        "tags" : [ "modifier-controller" ],
+        "operationId" : "update_1",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ModifierRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Modifier"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete" : {
+        "tags" : [ "modifier-controller" ],
+        "operationId" : "delete_1",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK"
+          }
+        }
+      }
+    },
     "/api/v1/menu/items/{id}" : {
       "put" : {
         "tags" : [ "menu-controller" ],
-        "operationId" : "update_1",
+        "operationId" : "update_2",
         "parameters" : [ {
           "name" : "id",
           "in" : "path",
@@ -320,7 +375,7 @@
       },
       "delete" : {
         "tags" : [ "menu-controller" ],
-        "operationId" : "delete_1",
+        "operationId" : "delete_2",
         "parameters" : [ {
           "name" : "id",
           "in" : "path",
@@ -626,10 +681,57 @@
         }
       }
     },
+    "/api/v1/menu/modifiers" : {
+      "get" : {
+        "tags" : [ "modifier-controller" ],
+        "operationId" : "list_2",
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/Modifier"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post" : {
+        "tags" : [ "modifier-controller" ],
+        "operationId" : "create_3",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ModifierRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Modifier"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/menu/items" : {
       "get" : {
         "tags" : [ "menu-controller" ],
-        "operationId" : "list_2",
+        "operationId" : "list_3",
         "responses" : {
           "200" : {
             "description" : "OK",
@@ -648,7 +750,7 @@
       },
       "post" : {
         "tags" : [ "menu-controller" ],
-        "operationId" : "create_3",
+        "operationId" : "create_4",
         "requestBody" : {
           "content" : {
             "application/json" : {
@@ -1217,7 +1319,7 @@
     "/api/v1/audit" : {
       "get" : {
         "tags" : [ "audit-controller" ],
-        "operationId" : "list_3",
+        "operationId" : "list_4",
         "parameters" : [ {
           "name" : "from",
           "in" : "query",
@@ -1693,6 +1795,76 @@
         },
         "required" : [ "heightMeters", "id", "name", "roomId", "rotationDegrees", "type", "widthMeters", "xMeters", "yMeters" ]
       },
+      "ModifierRequest" : {
+        "type" : "object",
+        "properties" : {
+          "name" : {
+            "type" : "string",
+            "maxLength" : 120,
+            "minLength" : 0
+          },
+          "course" : {
+            "type" : "string",
+            "enum" : [ "DRINK", "STARTER", "PIZZA", "FIRST", "SECOND", "SIDE", "DESSERT" ]
+          },
+          "section" : {
+            "type" : "string",
+            "maxLength" : 60,
+            "minLength" : 0
+          },
+          "priceCents" : {
+            "type" : "integer",
+            "format" : "int32",
+            "maximum" : 100000,
+            "minimum" : 0
+          },
+          "allergens" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string",
+              "enum" : [ "GLUTEN", "CRUSTACEANS", "EGGS", "FISH", "PEANUTS", "SOYBEANS", "MILK", "TREE_NUTS", "CELERY", "MUSTARD", "SESAME", "SULPHITES", "LUPIN", "MOLLUSCS" ]
+            }
+          },
+          "available" : {
+            "type" : "boolean"
+          }
+        },
+        "required" : [ "course", "name" ]
+      },
+      "Modifier" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "course" : {
+            "type" : "string",
+            "enum" : [ "DRINK", "STARTER", "PIZZA", "FIRST", "SECOND", "SIDE", "DESSERT" ]
+          },
+          "section" : {
+            "type" : "string"
+          },
+          "priceCents" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "allergens" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string",
+              "enum" : [ "GLUTEN", "CRUSTACEANS", "EGGS", "FISH", "PEANUTS", "SOYBEANS", "MILK", "TREE_NUTS", "CELERY", "MUSTARD", "SESAME", "SULPHITES", "LUPIN", "MOLLUSCS" ]
+            }
+          },
+          "available" : {
+            "type" : "boolean"
+          }
+        },
+        "required" : [ "allergens", "available", "course", "id", "name", "priceCents", "section" ]
+      },
       "MenuItemRequest" : {
         "type" : "object",
         "properties" : {
@@ -1871,6 +2043,13 @@
           "serving" : {
             "type" : "integer",
             "format" : "int32"
+          },
+          "modifierIds" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string",
+              "format" : "uuid"
+            }
           }
         }
       },
@@ -1942,9 +2121,19 @@
           "serving" : {
             "type" : "integer",
             "format" : "int32"
+          },
+          "modifiers" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          },
+          "modifierCents" : {
+            "type" : "integer",
+            "format" : "int32"
           }
         },
-        "required" : [ "allergens", "conflicts", "course", "id", "name", "note", "quantity", "serving" ]
+        "required" : [ "allergens", "conflicts", "course", "id", "modifierCents", "modifiers", "name", "note", "quantity", "serving" ]
       },
       "TicketView" : {
         "type" : "object",

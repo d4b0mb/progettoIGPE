@@ -67,12 +67,15 @@ public class OrderRepository {
     }
 
     public void insertItem(UUID rid, UUID ticketId, UUID menuItemId, String name, int quantity, Course course,
-                           List<Allergen> allergens, String note, int serving) {
-        jdbc.sql("insert into ticket_item (restaurant_id, ticket_id, menu_item_id, name, quantity, course, allergens, note, serving) "
-                        + "values (:rid, :ticket, :menu, :name, :qty, :course, cast(:allergens as text[]), :note, :serving)")
+                           List<Allergen> allergens, String note, int serving, List<String> modifiers, int modifierCents) {
+        jdbc.sql("insert into ticket_item (restaurant_id, ticket_id, menu_item_id, name, quantity, course, allergens, note, serving, "
+                        + "modifiers, modifier_cents) "
+                        + "values (:rid, :ticket, :menu, :name, :qty, :course, cast(:allergens as text[]), :note, :serving, "
+                        + "cast(:modifiers as text[]), :modifierCents)")
                 .param("rid", rid).param("ticket", ticketId).param("menu", menuItemId).param("name", name)
                 .param("qty", quantity).param("course", course.name()).param("allergens", names(allergens))
-                .param("note", note).param("serving", serving).update();
+                .param("note", note).param("serving", serving)
+                .param("modifiers", modifiers.toArray(String[]::new)).param("modifierCents", modifierCents).update();
     }
 
     /** A new ticket begins at its lowest serving (normally 1), whatever numbers the waiter used. */
@@ -129,7 +132,7 @@ public class OrderRepository {
         Map<UUID, List<ItemView>> itemsByTicket = new HashMap<>();
         Map<UUID, Row> byId = new HashMap<>();
         rows.forEach(r -> byId.put(r.id(), r));
-        jdbc.sql("select ticket_id, id, menu_item_id, name, quantity, course, allergens, note, serving from ticket_item "
+        jdbc.sql("select ticket_id, id, menu_item_id, name, quantity, course, allergens, note, serving, modifiers, modifier_cents from ticket_item "
                         + "where restaurant_id = :rid and ticket_id = any(:ids) order by serving, name")
                 .param("rid", rid).param("ids", ids)
                 .query((rs, n) -> {
@@ -139,7 +142,8 @@ public class OrderRepository {
                     return Map.entry(ticketId, new ItemView(rs.getObject("id", UUID.class),
                             rs.getObject("menu_item_id", UUID.class), rs.getString("name"), rs.getInt("quantity"),
                             Course.valueOf(rs.getString("course")), dish, OrderTypes.conflictsOf(dish, guest),
-                            rs.getString("note"), rs.getInt("serving")));
+                            rs.getString("note"), rs.getInt("serving"),
+                            Arrays.asList((String[]) rs.getArray("modifiers").getArray()), rs.getInt("modifier_cents")));
                 }).list()
                 .forEach(e -> itemsByTicket.computeIfAbsent(e.getKey(), k -> new ArrayList<>()).add(e.getValue()));
 

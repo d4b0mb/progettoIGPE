@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/Button";
 import { Dialog } from "@/components/ui/Dialog";
 import { useRemote } from "@/lib/useRemote";
 import { COURSES, MenuForm } from "./MenuForm";
+import { ModifierManager } from "./ModifierManager";
 import { formatCents } from "./money";
 import { groupBySection } from "./sections";
 
@@ -25,6 +26,7 @@ export function MenuScreen() {
   const { state } = useSession();
   const [editing, setEditing] = useState<MenuItem | "new" | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [tab, setTab] = useState<"dishes" | "options">("dishes");
 
   const load = useCallback(() => unwrap(api.GET("/api/v1/menu/items")), []);
   const menu = useRemote(load);
@@ -55,17 +57,33 @@ export function MenuScreen() {
           <h1 className="text-2xl font-extrabold tracking-tight">{t("title")}</h1>
           <p className="text-sm text-muted">{canEdit ? t("subtitle") : t("readOnly")}</p>
         </div>
-        {canEdit ? <Button onClick={() => setEditing("new")}>{t("add")}</Button> : null}
+        {canEdit && tab === "dishes" ? <Button onClick={() => setEditing("new")}>{t("add")}</Button> : null}
       </div>
 
-      {error ? (
+      <div role="group" aria-label={t("title")} className="flex flex-wrap gap-2">
+        {(["dishes", "options"] as const).map((k) => (
+          <button
+            key={k}
+            type="button"
+            aria-pressed={tab === k}
+            onClick={() => setTab(k)}
+            className={`min-h-11 rounded-full border px-4 text-sm font-bold ${tab === k ? "border-primary bg-primary text-on-primary" : "border-line-strong bg-surface text-ink"}`}
+          >
+            {k === "dishes" ? t("tabDishes") : t("tabOptions")}
+          </button>
+        ))}
+      </div>
+
+      {tab === "options" ? <ModifierManager canEdit={canEdit} /> : null}
+
+      {tab === "dishes" && error ? (
         <p role="alert" className="rounded-lg bg-danger-soft px-3 py-2 text-sm font-semibold text-danger-ink">
           {error}
         </p>
       ) : null}
-      {menu.data && items.length === 0 ? <p className="rounded-2xl border border-dashed border-line-strong p-8 text-center text-muted">{t("empty")}</p> : null}
+      {tab === "dishes" && menu.data && items.length === 0 ? <p className="rounded-2xl border border-dashed border-line-strong p-8 text-center text-muted">{t("empty")}</p> : null}
 
-      {COURSES.map((course) => {
+      {(tab === "dishes" ? COURSES : []).map((course) => {
         const inCourse = items.filter((i) => i.course === course);
         if (inCourse.length === 0) return null;
         return (

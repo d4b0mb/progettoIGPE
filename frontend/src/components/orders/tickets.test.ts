@@ -66,7 +66,7 @@ describe("waiting time", () => {
 });
 
 describe("servings", () => {
-  const item = (serving: number) => ({ id: `i${serving}`, menuItemId: null, name: "x", quantity: 1, course: "PIZZA" as const, allergens: [], conflicts: [], note: "", serving });
+  const item = (serving: number) => ({ id: `i${serving}`, menuItemId: null, name: "x", quantity: 1, course: "PIZZA" as const, allergens: [], conflicts: [], note: "", serving, modifiers: [], modifierCents: 0 });
 
   it("says which serving is being cooked out of how many", () => {
     const t = ticket({ items: [item(1), item(2), item(2), item(3)], currentServing: 2 });

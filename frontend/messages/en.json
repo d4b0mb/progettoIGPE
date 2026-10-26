@@ -14,7 +14,8 @@
     "showPassword": "Show password",
     "hidePassword": "Hide password",
     "darkMode": "Switch to dark look",
-    "lightMode": "Switch to light look"
+    "lightMode": "Switch to light look",
+    "timeInvalid": "Use 24-hour time, like 20:30"
   },
   "nav": {
     "reservations": "Reservations",
@@ -142,7 +143,18 @@
     "strollersCount": "{count} stroller(s)",
     "allergyLabel": "Allergy: {list}",
     "saved": "Reservation saved.",
-    "unassignedWarning": "No table yet"
+    "unassignedWarning": "No table yet",
+    "startTime": "From (24 h)",
+    "endTime": "To (24 h, optional)",
+    "stayHint": "Stay: {duration}",
+    "stayDefault": "Empty = the usual {duration}",
+    "genericName": "John Doe",
+    "namePrompt": "No name was entered. A reservation needs a name: use a generic one, or type the guest’s name.",
+    "useGeneric": "Use “{name}”",
+    "typeName": "I’ll type a name",
+    "phonePrompt": "There is no phone number. If something changes you will not be able to reach the guest. Save anyway?",
+    "saveAnyway": "Save without a phone number",
+    "addPhone": "I’ll add a phone number"
   },
   "menu": {
     "title": "Menu",
@@ -161,7 +173,21 @@
     "noAllergens": "No declared allergens",
     "readOnly": "Only the owner and managers can change the menu.",
     "section": "Section (optional, e.g. Beers)",
-    "sectionHint": "Groups items inside a course."
+    "sectionHint": "Groups items inside a course.",
+    "tabDishes": "Dishes",
+    "tabOptions": "Toppings and options",
+    "optionsHelp": "Toppings, removals and variants that can be added to the dishes of one kind (for example pizzas). Each can have a price and the allergens it brings, which reach the kitchen’s allergy alarm.",
+    "addOption": "Add option",
+    "editOption": "Edit option",
+    "optionName": "Name",
+    "optionCourse": "Applies to",
+    "optionCourseHint": "Only dishes of this kind can have it.",
+    "optionPrice": "Price added (EUR, empty = free)",
+    "optionSectionHint": "Groups options, for example “Aggiunte” or “Senza e varianti”.",
+    "optionAllergens": "Allergens it brings",
+    "optionsEmpty": "No options yet. Add the first one.",
+    "deleteOptionConfirm": "Delete the option {name}?",
+    "free": "free"
   },
   "courses": {
     "DRINK": "Drinks",
@@ -234,7 +260,9 @@
     "undo": "Undo",
     "deleteConfirm": "Delete the selected item?",
     "expandPlan": "Expand the plan to fill the screen",
-    "collapsePlan": "Back to the normal view"
+    "collapsePlan": "Back to the normal view",
+    "withoutTable": "{count, plural, one {# reservation today has no table yet, so it cannot show on the plan.} other {# reservations today have no table yet, so they cannot show on the plan.}}",
+    "openReservations": "Open reservations"
   },
   "elements": {
     "WALL": "Wall",
@@ -297,7 +325,26 @@
     "servingSummary": "Serving {n}: {count, plural, one {# item} other {# items}}",
     "search": "Search the menu",
     "allCourses": "All",
-    "noMatches": "Nothing matches your search."
+    "noMatches": "Nothing matches your search.",
+    "customise": "Customise",
+    "addNote": "Add note",
+    "customiseTitle": "Options and notes: {name}",
+    "customiseDish": "Customise {name}",
+    "noOptions": "There are no options for this kind of dish. You can still write a note.",
+    "options": "Options",
+    "lineNote": "Note for this item",
+    "lineNoteHint": "For example: no pepper, with ice",
+    "quantityOf": "Amount of {name}",
+    "fewer": "One fewer",
+    "more": "One more",
+    "addToOrder": "Add to order",
+    "saveLine": "Save changes",
+    "cancelLine": "Cancel",
+    "editLine": "Edit",
+    "removeLine": "Remove this line",
+    "customLines": "Customised {name}",
+    "errNoTable": "Choose a table first: tap its number at the top.",
+    "errEmptyOrder": "The order is empty. Add at least one dish."
   },
   "kitchen": {
     "title": "Kitchen",

@@ -26,7 +26,7 @@ class OpenApiConfig {
     /** Shapes the API returns. Everything else is a request body or a helper type. */
     private static final Set<String> RESPONSES = Set.of(
             "Room", "DiningTable", "Obstacle", "TableView", "Layout",
-            "Reservation", "MenuItem", "UserView", "ItemView", "TicketView",
+            "Reservation", "MenuItem", "Modifier", "UserView", "ItemView", "TicketView",
             "TokenResponse", "StatusResponse", "AuditEntry","RestaurantView", "RecoveryStatus", "RecoveryQuestionsResponse");
 
     @Bean

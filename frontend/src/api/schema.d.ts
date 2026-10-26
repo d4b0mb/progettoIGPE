@@ -84,7 +84,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/menu/items/{id}": {
+    "/api/v1/menu/modifiers/{id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -95,6 +95,22 @@ export interface paths {
         put: operations["update_1"];
         post?: never;
         delete: operations["delete_1"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/menu/items/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["update_2"];
+        post?: never;
+        delete: operations["delete_2"];
         options?: never;
         head?: never;
         patch?: never;
@@ -212,7 +228,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/menu/items": {
+    "/api/v1/menu/modifiers": {
         parameters: {
             query?: never;
             header?: never;
@@ -222,6 +238,22 @@ export interface paths {
         get: operations["list_2"];
         put?: never;
         post: operations["create_3"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/menu/items": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["list_3"];
+        put?: never;
+        post: operations["create_4"];
         delete?: never;
         options?: never;
         head?: never;
@@ -555,7 +587,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["list_3"];
+        get: operations["list_4"];
         put?: never;
         post?: never;
         delete?: never;
@@ -755,6 +787,28 @@ export interface components {
              */
             rotationDegrees: number;
         };
+        ModifierRequest: {
+            name: string;
+            /** @enum {string} */
+            course: "DRINK" | "STARTER" | "PIZZA" | "FIRST" | "SECOND" | "SIDE" | "DESSERT";
+            section?: string;
+            /** Format: int32 */
+            priceCents?: number;
+            allergens?: ("GLUTEN" | "CRUSTACEANS" | "EGGS" | "FISH" | "PEANUTS" | "SOYBEANS" | "MILK" | "TREE_NUTS" | "CELERY" | "MUSTARD" | "SESAME" | "SULPHITES" | "LUPIN" | "MOLLUSCS")[];
+            available?: boolean;
+        };
+        Modifier: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+            /** @enum {string} */
+            course: "DRINK" | "STARTER" | "PIZZA" | "FIRST" | "SECOND" | "SIDE" | "DESSERT";
+            section: string;
+            /** Format: int32 */
+            priceCents: number;
+            allergens: ("GLUTEN" | "CRUSTACEANS" | "EGGS" | "FISH" | "PEANUTS" | "SOYBEANS" | "MILK" | "TREE_NUTS" | "CELERY" | "MUSTARD" | "SESAME" | "SULPHITES" | "LUPIN" | "MOLLUSCS")[];
+            available: boolean;
+        };
         MenuItemRequest: {
             name: string;
             description?: string;
@@ -813,6 +867,7 @@ export interface components {
             note?: string;
             /** Format: int32 */
             serving?: number;
+            modifierIds?: string[];
         };
         OrderRequest: {
             /** Format: uuid */
@@ -839,6 +894,9 @@ export interface components {
             note: string;
             /** Format: int32 */
             serving: number;
+            modifiers: string[];
+            /** Format: int32 */
+            modifierCents: number;
         };
         TicketView: {
             /** Format: uuid */
@@ -1217,6 +1275,52 @@ export interface operations {
         };
         requestBody: {
             content: {
+                "application/json": components["schemas"]["ModifierRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["Modifier"];
+                };
+            };
+        };
+    };
+    delete_1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    update_2: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
                 "application/json": components["schemas"]["MenuItemRequest"];
             };
         };
@@ -1232,7 +1336,7 @@ export interface operations {
             };
         };
     };
-    delete_1: {
+    delete_2: {
         parameters: {
             query?: never;
             header?: never;
@@ -1519,12 +1623,56 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "*/*": components["schemas"]["MenuItem"][];
+                    "*/*": components["schemas"]["Modifier"][];
                 };
             };
         };
     };
     create_3: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ModifierRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["Modifier"];
+                };
+            };
+        };
+    };
+    list_3: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["MenuItem"][];
+                };
+            };
+        };
+    };
+    create_4: {
         parameters: {
             query?: never;
             header?: never;
@@ -1999,7 +2147,7 @@ export interface operations {
             };
         };
     };
-    list_3: {
+    list_4: {
         parameters: {
             query?: {
                 from?: string;

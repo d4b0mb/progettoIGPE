@@ -67,7 +67,8 @@ export function TicketCard({ ticket, now, actions }: { ticket: Ticket; now: numb
               <span className="ml-2 text-xs font-bold text-white/50">{tc(item.course)}</span>
             </span>
             {item.allergens.length > 0 ? <span className="text-xs text-white/60">{item.allergens.map((a) => ta(a)).join(" · ")}</span> : null}
-            {item.note ? <span className="text-sm text-amber-200">{item.note}</span> : null}
+            {item.modifiers.length > 0 ? <span className="text-[15px] font-extrabold text-amber-300">+ {item.modifiers.join(" · ")}</span> : null}
+            {item.note ? <span className="text-sm text-amber-200">“{item.note}”</span> : null}
           </li>
         ))}
       </ul>

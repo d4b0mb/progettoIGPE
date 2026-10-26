@@ -1,0 +1,51 @@
+# Options for the pizzas of Duodecim Pizze: toppings with their price, free extras, and removals or variants.
+# Columns (separated by |): name, course, section, price in cents, allergens (comma separated).
+# ALLERGENS ARE A DRAFT worked out from the ingredient names: the kitchen must check them.
+Bufala in cottura|PIZZA|Aggiunte|300|MILK
+Bufala in uscita|PIZZA|Aggiunte|300|MILK
+Scaglie di Cacioricotta di capra|PIZZA|Aggiunte|150|MILK
+Carciofini grigliati|PIZZA|Aggiunte|250|
+Cipolla rossa in Agrodolce|PIZZA|Aggiunte|200|SULPHITES
+Prosciutto Cotto|PIZZA|Aggiunte|250|
+Erba cipollina|PIZZA|Aggiunte|50|
+Crema di Cipolla|PIZZA|Aggiunte|200|MILK
+Prosciutto Crudo di Parma 20 mesi Dop|PIZZA|Aggiunte|350|
+Datterino giallo|PIZZA|Aggiunte|150|
+Datterino rosso|PIZZA|Aggiunte|150|
+Datterino misto|PIZZA|Aggiunte|200|
+Patate dippers|PIZZA|Aggiunte|300|
+Fior di latte|PIZZA|Aggiunte|200|MILK
+Fior di latte in uscita|PIZZA|Aggiunte|200|MILK
+Filetti di alici|PIZZA|Aggiunte|250|FISH
+Filetti di tonno Alalunga|PIZZA|Aggiunte|300|FISH
+Fiori di zucca|PIZZA|Aggiunte|150|
+Fonduta di grana 20 mesi|PIZZA|Aggiunte|200|MILK
+Gorgonzola Dop|PIZZA|Aggiunte|200|MILK
+Granella di nocciole di Giffoni IGP|PIZZA|Aggiunte|100|TREE_NUTS
+Granella di pistacchio|PIZZA|Aggiunte|150|TREE_NUTS
+Guanciale saltato in padella|PIZZA|Aggiunte|150|
+Mayo al basilico|PIZZA|Aggiunte|150|EGGS
+Miele Millefiori|PIZZA|Aggiunte|100|
+N’duja|PIZZA|Aggiunte|150|
+Olive taggiasche|PIZZA|Aggiunte|200|
+Olive verdi schiacciate|PIZZA|Aggiunte|200|
+Pacchetelle gialle|PIZZA|Aggiunte|250|
+Passata gialla|PIZZA|Aggiunte|250|
+Pesto di basilico|PIZZA|Aggiunte|150|TREE_NUTS,MILK
+Pomodoro|PIZZA|Aggiunte|150|
+Crema Ricotta di bufala|PIZZA|Aggiunte|200|MILK
+Ricotta salata grattugiata|PIZZA|Aggiunte|150|MILK
+Rucola|PIZZA|Aggiunte|150|
+Salame piccante stagionato|PIZZA|Aggiunte|250|
+Scaglie grana|PIZZA|Aggiunte|150|MILK
+Semi di papavero|PIZZA|Aggiunte|50|
+Stracciata|PIZZA|Aggiunte|350|MILK
+Tarallo a mandorle sbricciolato|PIZZA|Aggiunte|100|GLUTEN,TREE_NUTS
+Origano|PIZZA|Senza costo|0|
+Peperoncino frantumato|PIZZA|Senza costo|0|
+Basilico abbondante|PIZZA|Senza costo|0|
+Baby|PIZZA|Senza e varianti|0|
+Senza pomodoro|PIZZA|Senza e varianti|0|
+Senza mozzarella|PIZZA|Senza e varianti|0|
+Senza basilico|PIZZA|Senza e varianti|0|
+Non tagliata|PIZZA|Senza e varianti|0|

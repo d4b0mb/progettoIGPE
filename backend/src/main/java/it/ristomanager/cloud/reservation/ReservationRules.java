@@ -64,7 +64,8 @@ public final class ReservationRules {
         if (strollers < 0 || strollers > MAX_STROLLERS) {
             throw invalid("strollerSpaces", "That number of strollers is not plausible");
         }
-        if (d.phone() == null || d.phone().replaceAll("\\D", "").length() < 6) {
+        // A phone number is welcome but not required: the screen warns when it is missing. If one is given, it must be real.
+        if (d.phone() != null && !d.phone().isBlank() && d.phone().replaceAll("\\D", "").length() < 6) {
             throw invalid("phone", "Enter a valid phone number (at least 6 digits)");
         }
         if (d.email() != null && !d.email().isBlank() && !EMAIL.matcher(d.email().trim()).matches()) {

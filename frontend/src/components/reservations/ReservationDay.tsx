@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/Button";
 import { Dialog } from "@/components/ui/Dialog";
 import { useRemote } from "@/lib/useRemote";
 import { ReservationForm } from "./ReservationForm";
-import { timeOf } from "./time";
+import { endTime, timeOf } from "./time";
 
 type Reservation = components["schemas"]["Reservation"];
 type Status = Reservation["status"];
@@ -103,7 +103,10 @@ export function ReservationDay({ date, canEdit, creating, onCloseCreate }: { dat
         {shown.map((r) => (
           <li key={r.id} className="flex flex-col gap-3 rounded-2xl border border-line bg-surface p-4 sm:flex-row sm:items-center">
             <div className="flex items-baseline gap-4 sm:w-64">
-              <span className="text-2xl font-extrabold tabular-nums">{timeOf(r.startsAt)}</span>
+              <span className="flex flex-col leading-tight">
+                <span className="text-2xl font-extrabold tabular-nums">{timeOf(r.startsAt)}</span>
+                <span className="text-sm font-semibold text-muted tabular-nums">– {endTime(r.startsAt, r.durationMinutes)}</span>
+              </span>
               <div className="flex min-w-0 flex-col">
                 <span className="truncate text-base font-bold">{r.guestName}</span>
                 <span className="text-sm text-muted">{t("guests", { count: r.partySize })}</span>

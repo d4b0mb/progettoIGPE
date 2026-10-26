@@ -49,7 +49,7 @@ public class ReservationRepository {
                     :party, :chairs, :strollers, :status, cast(:allergens as text[]), :notes, :by)
                 returning\s""" + COLS)
                 .param("rid", rid).param("table", r.tableId()).param("guest", r.guestName().trim())
-                .param("phone", r.phone().trim()).param("email", blankToNull(r.email()))
+                .param("phone", r.phone() == null ? "" : r.phone().trim()).param("email", blankToNull(r.email()))
                 .param("starts", utc(r.startsAt())).param("ends", utc(r.endsAt()))
                 .param("party", r.partySize()).param("chairs", r.highChairs()).param("strollers", r.strollerSpaces())
                 .param("status", r.status().name()).param("allergens", allergenNames(r.allergens()))
@@ -66,7 +66,7 @@ public class ReservationRepository {
                 where restaurant_id = :rid and id = :id
                 returning\s""" + COLS)
                 .param("rid", rid).param("id", id).param("table", r.tableId()).param("guest", r.guestName().trim())
-                .param("phone", r.phone().trim()).param("email", blankToNull(r.email()))
+                .param("phone", r.phone() == null ? "" : r.phone().trim()).param("email", blankToNull(r.email()))
                 .param("starts", utc(r.startsAt())).param("ends", utc(r.endsAt()))
                 .param("party", r.partySize()).param("chairs", r.highChairs()).param("strollers", r.strollerSpaces())
                 .param("status", r.status().name()).param("allergens", allergenNames(r.allergens()))
@@ -131,14 +131,18 @@ public class ReservationRepository {
     }
 
     /**
-     * What each table looks like at {@code now}: occupied if a guest has arrived,
-     * reserved if a booking starts within the next hour.
+     * What each table looks like at {@code now}. A party marked as arrived is sitting there: the table is occupied
+     * until they are marked completed, whatever time the booking said (they may have come early, or stayed late).
+     * A booking that has not arrived shows the table as reserved only when it starts within the next hour.
      */
     public Map<UUID, LiveStatus> liveStatuses(UUID rid, Instant now) {
         Map<UUID, LiveStatus> result = new HashMap<>();
-        jdbc.sql("select table_id, status from reservation where restaurant_id = :rid and table_id is not null "
-                        + "and " + LIVE + " and starts_at < :horizon and ends_at > :now")
+        jdbc.sql("select table_id, status from reservation where restaurant_id = :rid and table_id is not null and ("
+                        + "(status in ('PENDING', 'CONFIRMED') and starts_at < :horizon and ends_at > :now) "
+                        // 12 hours either side keeps a forgotten, never-completed booking from blocking a table for good.
+                        + "or (status = 'ARRIVED' and starts_at < :arrivedUntil and starts_at > :arrivedSince))")
                 .param("rid", rid).param("now", utc(now)).param("horizon", utc(now.plusSeconds(3600)))
+                .param("arrivedUntil", utc(now.plusSeconds(12 * 3600L))).param("arrivedSince", utc(now.minusSeconds(12 * 3600L)))
                 .query((rs, n) -> Map.entry(rs.getObject("table_id", UUID.class), rs.getString("status")))
                 .list()
                 .forEach(e -> {

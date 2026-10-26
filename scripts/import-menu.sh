@@ -1,6 +1,8 @@
 #!/bin/sh
 # Loads a menu file into an existing restaurant. The file has one dish per line, fields separated by |:
 #   name | course | section | price in cents | allergens (comma separated) | description
+# Set KIND=modifiers to load a file of options (toppings, removals) instead, with one fewer column (no description):
+#   name | course | section | price in cents | allergens
 # Lines starting with # are comments. Existing dishes with the same name are left as they are.
 # Usage: API_URL=http://localhost:8080 EMAIL=owner@... PASSWORD=... sh scripts/import-menu.sh scripts/menus/duodecim-pizze.txt
 set -eu
@@ -18,6 +20,9 @@ TOKEN=$(curl -sf -X POST "$API/api/v1/auth/login" -H "Content-Type: application/
   -d "{\"email\":\"$(esc "$EMAIL")\",\"password\":\"$(esc "$PASSWORD")\"}" | field accessToken)
 [ -n "$TOKEN" ] || { echo "Could not sign in as $EMAIL" >&2; exit 1; }
 
+KIND="${KIND:-dishes}"
+if [ "$KIND" = "modifiers" ]; then ENDPOINT="/api/v1/menu/modifiers"; else ENDPOINT="/api/v1/menu/items"; fi
+
 added=0
 skipped=0
 while IFS='|' read -r name course section price allergens description; do
@@ -26,9 +31,14 @@ while IFS='|' read -r name course section price allergens description; do
   if [ -n "$allergens" ]; then
     list=$(printf '%s' "$allergens" | sed 's/[^,][^,]*/"&"/g')
   fi
-  status=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$API/api/v1/menu/items" \
+  if [ "$KIND" = "modifiers" ]; then
+    extra=""
+  else
+    extra=",\"description\":\"$(esc "$description")\""
+  fi
+  status=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$API$ENDPOINT" \
     -H "Content-Type: application/json" -H "Authorization: Bearer $TOKEN" \
-    -d "{\"name\":\"$(esc "$name")\",\"course\":\"$course\",\"section\":\"$(esc "$section")\",\"priceCents\":$price,\"allergens\":[$list],\"description\":\"$(esc "$description")\"}")
+    -d "{\"name\":\"$(esc "$name")\",\"course\":\"$course\",\"section\":\"$(esc "$section")\",\"priceCents\":$price,\"allergens\":[$list]$extra}")
   case "$status" in
     201) added=$((added + 1)) ;;
     409) skipped=$((skipped + 1)) ;;
@@ -36,4 +46,4 @@ while IFS='|' read -r name course section price allergens description; do
   esac
 done < "$FILE"
 
-echo "Menu imported: $added added, $skipped already there."
+echo "Menu ($KIND) imported: $added added, $skipped already there."

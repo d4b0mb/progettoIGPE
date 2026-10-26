@@ -69,7 +69,7 @@ export function ActivityScreen() {
   }
 
   const shown = entries ? filterEntries(entries, category, failuresOnly) : [];
-  const when = new Intl.DateTimeFormat(locale, { dateStyle: "medium", timeStyle: "medium" });
+  const when = new Intl.DateTimeFormat(locale, { dateStyle: "medium", timeStyle: "medium", hourCycle: "h23" });
 
   return (
     <div className="flex max-w-5xl flex-col gap-5">

@@ -14,7 +14,8 @@
     "showPassword": "Mostra password",
     "hidePassword": "Nascondi password",
     "darkMode": "Passa al tema scuro",
-    "lightMode": "Passa al tema chiaro"
+    "lightMode": "Passa al tema chiaro",
+    "timeInvalid": "Usa l’orario a 24 ore, ad esempio 20:30"
   },
   "nav": {
     "reservations": "Prenotazioni",
@@ -142,7 +143,18 @@
     "strollersCount": "{count} passeggino/i",
     "allergyLabel": "Allergia: {list}",
     "saved": "Prenotazione salvata.",
-    "unassignedWarning": "Nessun tavolo"
+    "unassignedWarning": "Nessun tavolo",
+    "startTime": "Dalle (24 h)",
+    "endTime": "Alle (24 h, facoltativo)",
+    "stayHint": "Permanenza: {duration}",
+    "stayDefault": "Vuoto = la solita {duration}",
+    "genericName": "Sconosciuto",
+    "namePrompt": "Non è stato inserito un nome. Una prenotazione ha bisogno di un nome: usane uno generico oppure scrivi il nome del cliente.",
+    "useGeneric": "Usa “{name}”",
+    "typeName": "Scrivo un nome",
+    "phonePrompt": "Manca il numero di telefono. Se qualcosa cambia non potrai avvisare il cliente. Salvare lo stesso?",
+    "saveAnyway": "Salva senza telefono",
+    "addPhone": "Aggiungo il telefono"
   },
   "menu": {
     "title": "Menù",
@@ -161,7 +173,21 @@
     "noAllergens": "Nessun allergene dichiarato",
     "readOnly": "Solo il titolare e i responsabili possono modificare il menù.",
     "section": "Sezione (facoltativa, es. Birre)",
-    "sectionHint": "Raggruppa i piatti dentro una categoria."
+    "sectionHint": "Raggruppa i piatti dentro una categoria.",
+    "tabDishes": "Piatti",
+    "tabOptions": "Aggiunte e opzioni",
+    "optionsHelp": "Aggiunte, rimozioni e varianti che si possono applicare ai piatti di un tipo (ad esempio le pizze). Ognuna può avere un prezzo e gli allergeni che porta, che arrivano all’allarme allergie della cucina.",
+    "addOption": "Aggiungi opzione",
+    "editOption": "Modifica opzione",
+    "optionName": "Nome",
+    "optionCourse": "Si applica a",
+    "optionCourseHint": "Solo i piatti di questo tipo possono averla.",
+    "optionPrice": "Prezzo aggiunto (EUR, vuoto = gratis)",
+    "optionSectionHint": "Raggruppa le opzioni, ad esempio “Aggiunte” o “Senza e varianti”.",
+    "optionAllergens": "Allergeni che porta",
+    "optionsEmpty": "Nessuna opzione. Aggiungi la prima.",
+    "deleteOptionConfirm": "Eliminare l’opzione {name}?",
+    "free": "gratis"
   },
   "courses": {
     "DRINK": "Bevande",
@@ -234,7 +260,9 @@
     "undo": "Annulla",
     "deleteConfirm": "Eliminare l’elemento selezionato?",
     "expandPlan": "Ingrandisci la pianta a tutto schermo",
-    "collapsePlan": "Torna alla vista normale"
+    "collapsePlan": "Torna alla vista normale",
+    "withoutTable": "{count, plural, one {# prenotazione di oggi non ha ancora un tavolo, quindi non compare in pianta.} other {# prenotazioni di oggi non hanno ancora un tavolo, quindi non compaiono in pianta.}}",
+    "openReservations": "Apri prenotazioni"
   },
   "elements": {
     "WALL": "Muro",
@@ -297,7 +325,26 @@
     "servingSummary": "Portata {n}: {count, plural, one {# articolo} other {# articoli}}",
     "search": "Cerca nel menu",
     "allCourses": "Tutte",
-    "noMatches": "Nessun risultato."
+    "noMatches": "Nessun risultato.",
+    "customise": "Personalizza",
+    "addNote": "Aggiungi nota",
+    "customiseTitle": "Aggiunte e note: {name}",
+    "customiseDish": "Personalizza {name}",
+    "noOptions": "Non ci sono aggiunte per questo tipo di piatto. Puoi comunque scrivere una nota.",
+    "options": "Opzioni",
+    "lineNote": "Nota per questo piatto",
+    "lineNoteHint": "Ad esempio: senza pepe, con ghiaccio",
+    "quantityOf": "Quantità di {name}",
+    "fewer": "Uno in meno",
+    "more": "Uno in più",
+    "addToOrder": "Aggiungi all’ordine",
+    "saveLine": "Salva le modifiche",
+    "cancelLine": "Annulla",
+    "editLine": "Modifica",
+    "removeLine": "Rimuovi questa riga",
+    "customLines": "{name} personalizzati",
+    "errNoTable": "Scegli prima un tavolo: tocca il suo numero in alto.",
+    "errEmptyOrder": "L’ordine è vuoto. Aggiungi almeno un piatto."
   },
   "kitchen": {
     "title": "Cucina",

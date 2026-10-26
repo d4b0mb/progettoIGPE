@@ -82,6 +82,7 @@ export function FloorCanvas({
   onViewCenter,
   fill = false,
   onToggleFill,
+  bookings,
 }: {
   layout: Layout;
   selection: Selection;
@@ -95,6 +96,8 @@ export function FloorCanvas({
   /** Use the whole height of the window (expanded view) instead of leaving room for the page around it. */
   fill?: boolean;
   onToggleFill?: () => void;
+  /** The time of the next booking at each table (by table id), shown on the table. */
+  bookings?: Record<string, string>;
 }) {
   const t = useTranslations("floor");
   const te = useTranslations("elements");
@@ -380,7 +383,41 @@ export function FloorCanvas({
   const selectedObstacle = selection?.kind === "obstacle" ? layout.obstacles.find((o) => o.id === selection.id) : undefined;
 
   return (
-    <div className="relative">
+    <div className="flex flex-col gap-2">
+      {/* The controls sit above the drawing, not on it, so they never cover the grid or the tables. */}
+      <div className="flex items-center justify-between gap-2">
+        {onToggleFill ? (
+          <button
+            type="button"
+            aria-pressed={fill}
+            onClick={onToggleFill}
+            className="flex min-h-11 min-w-11 items-center justify-center rounded-xl border border-line-strong bg-surface shadow-sm hover:bg-canvas"
+          >
+            <Icon name={fill ? "collapse" : "expand"} />
+            <span className="sr-only">{fill ? t("collapsePlan") : t("expandPlan")}</span>
+          </button>
+        ) : (
+          <span />
+        )}
+        <div className="flex overflow-hidden rounded-xl border border-line-strong bg-surface shadow-sm" role="group" aria-label={t("fit")}>
+          <button type="button" aria-label={t("zoomOut")} onClick={() => zoomBy(1 / 1.4)} className="flex min-h-11 min-w-11 items-center justify-center text-xl font-bold hover:bg-canvas">
+            −
+          </button>
+          <button
+            type="button"
+            aria-label={t("fit")}
+            title={t("fit")}
+            disabled={level === 1 && view.x === fitView(W, H).x}
+            onClick={() => setView(fitView(W, H))}
+            className="flex min-h-11 min-w-16 items-center justify-center border-x border-line text-xs font-extrabold hover:bg-canvas disabled:opacity-40"
+          >
+            {Math.round(level * 100)}%
+          </button>
+          <button type="button" aria-label={t("zoomIn")} onClick={() => zoomBy(1.4)} className="flex min-h-11 min-w-11 items-center justify-center text-xl font-bold hover:bg-canvas">
+            +
+          </button>
+        </div>
+      </div>
       <svg
         ref={svgRef}
         viewBox={`${view.x} ${view.y} ${view.width} ${view.height}`}
@@ -388,7 +425,7 @@ export function FloorCanvas({
         aria-label={room.name}
         className={`block w-full rounded-2xl border border-line bg-surface select-none ${pan ? "cursor-grabbing" : "cursor-default"}`}
         // Always fits the screen's height; the drawing keeps its shape inside.
-        style={{ aspectRatio: `${view.width} / ${view.height}`, maxHeight: fill ? "calc(100dvh - 2rem)" : "calc(100dvh - 12rem)", minHeight: 280, touchAction: "pan-y" }}
+        style={{ aspectRatio: `${view.width} / ${view.height}`, maxHeight: fill ? "calc(100dvh - 6rem)" : "calc(100dvh - 15rem)", minHeight: 280, touchAction: "pan-y" }}
         onPointerDownCapture={() => setActive(true)}
         onPointerDown={onBackgroundDown}
         onPointerMove={onBackgroundMove}
@@ -497,12 +534,26 @@ export function FloorCanvas({
                   <rect x={-ringW / 2} y={-ringH / 2} width={ringW} height={ringH} rx="0.18" fill="none" stroke={SELECTED} strokeWidth="0.06" strokeDasharray="0.15 0.1" className="opacity-0 group-focus-visible:opacity-100" />
                 )}
               </g>
-              <text textAnchor="middle" y={-0.02} fontSize={label} fontWeight="800" fill={style.text} style={{ pointerEvents: "none" }}>
-                {table.number}
-              </text>
-              <text textAnchor="middle" y={label * 0.9} fontSize={label * 0.62} fontWeight="600" fill={style.text} style={{ pointerEvents: "none" }}>
-                {t("seatsShort", { count: table.seats })}
-              </text>
+              {(() => {
+                // With a booking time to show, the three lines sit a little higher so they all stay inside the table.
+                const booked = bookings?.[table.id];
+                const shift = booked ? -0.1 : 0;
+                return (
+                  <>
+                    <text textAnchor="middle" y={-0.02 + shift} fontSize={label} fontWeight="800" fill={style.text} style={{ pointerEvents: "none" }}>
+                      {table.number}
+                    </text>
+                    <text textAnchor="middle" y={label * 0.9 + shift} fontSize={label * 0.62} fontWeight="600" fill={style.text} style={{ pointerEvents: "none" }}>
+                      {t("seatsShort", { count: table.seats })}
+                    </text>
+                    {booked ? (
+                      <text textAnchor="middle" y={label * 0.9 + shift + label * 0.62} fontSize={label * 0.6} fontWeight="800" fill={style.text} style={{ pointerEvents: "none" }}>
+                        {booked}
+                      </text>
+                    ) : null}
+                  </>
+                );
+              })()}
             </g>
           );
         })}
@@ -547,36 +598,6 @@ export function FloorCanvas({
         </g>
       </svg>
 
-      {onToggleFill ? (
-        <button
-          type="button"
-          aria-pressed={fill}
-          onClick={onToggleFill}
-          className="absolute top-3 left-3 flex min-h-11 min-w-11 items-center justify-center rounded-xl border border-line-strong bg-surface shadow-sm hover:bg-canvas"
-        >
-          <Icon name={fill ? "collapse" : "expand"} />
-          <span className="sr-only">{fill ? t("collapsePlan") : t("expandPlan")}</span>
-        </button>
-      ) : null}
-
-      <div className="absolute top-3 right-3 flex flex-col overflow-hidden rounded-xl border border-line-strong bg-surface shadow-sm" role="group" aria-label={t("fit")}>
-        <button type="button" aria-label={t("zoomIn")} onClick={() => zoomBy(1.4)} className="flex min-h-11 min-w-11 items-center justify-center text-xl font-bold hover:bg-canvas">
-          +
-        </button>
-        <button type="button" aria-label={t("zoomOut")} onClick={() => zoomBy(1 / 1.4)} className="flex min-h-11 min-w-11 items-center justify-center border-t border-line text-xl font-bold hover:bg-canvas">
-          −
-        </button>
-        <button
-          type="button"
-          aria-label={t("fit")}
-          title={t("fit")}
-          disabled={level === 1 && view.x === fitView(W, H).x}
-          onClick={() => setView(fitView(W, H))}
-          className="flex min-h-11 min-w-11 items-center justify-center border-t border-line text-xs font-extrabold hover:bg-canvas disabled:opacity-40"
-        >
-          {Math.round(level * 100)}%
-        </button>
-      </div>
     </div>
   );
 }
