@@ -26,6 +26,7 @@ export function FloorScreen() {
   const { state } = useSession();
   const [chosen, setChosen] = useState<string | null>(null);
   const [roomDialog, setRoomDialog] = useState<"new" | "edit" | null>(null);
+  const [dragged, setDragged] = useState<{ room: Room; basedOn: Room[] | undefined } | null>(null);
 
   const loadRooms = useCallback(() => unwrap(api.GET("/api/v1/rooms")), []);
   const rooms = useRemote(loadRooms);
@@ -33,7 +34,9 @@ export function FloorScreen() {
   if (state.status !== "authenticated") return null;
   const canEdit = state.user.role === "OWNER" || state.user.role === "MANAGER";
   const list = rooms.data ?? [];
-  const room: Room | undefined = list.find((r) => r.id === chosen) ?? list[0];
+  const listed: Room | undefined = list.find((r) => r.id === chosen) ?? list[0];
+  // A size just dragged on the plan, so the room settings show it at once instead of the old size until the list is fetched again.
+  const room = listed && dragged && dragged.basedOn === rooms.data && dragged.room.id === listed.id ? dragged.room : listed;
 
   return (
     <div className="flex flex-col gap-5">
@@ -75,7 +78,7 @@ export function FloorScreen() {
       ) : null}
 
       {room ? (
-        <RoomView key={room.id} room={room} canEdit={canEdit} onRoomChanged={rooms.reload} />
+        <RoomView key={room.id} room={room} canEdit={canEdit} onRoomChanged={(resized) => (resized ? setDragged({ room: resized, basedOn: rooms.data }) : rooms.reload())} />
       ) : null}
 
       <Dialog open={roomDialog === "new"} onClose={() => setRoomDialog(null)} title={t("newRoom")}>
@@ -150,7 +153,7 @@ const TABLE_KINDS: { shape: TableShape; width: number; height: number; label: "t
 ];
 
 /** One room: the drawing, the palette to add things to it, and the details of whatever is selected. */
-function RoomView({ room, canEdit, onRoomChanged }: { room: Room; canEdit: boolean; onRoomChanged: () => void }) {
+function RoomView({ room, canEdit, onRoomChanged }: { room: Room; canEdit: boolean; onRoomChanged: (resized?: Room) => void }) {
   const t = useTranslations("floor");
   const te = useTranslations("elements");
   const [layout, setLayout] = useState<Layout | null>(null);
@@ -324,6 +327,7 @@ function RoomView({ room, canEdit, onRoomChanged }: { room: Room; canEdit: boole
   async function resizeRoomTo(width: number, height: number) {
     setError(null);
     setLayout((l) => l && { ...l, room: { ...l.room, widthMeters: width, heightMeters: height } });
+    onRoomChanged({ ...layout!.room, widthMeters: width, heightMeters: height });
     try {
       await unwrap(api.PUT("/api/v1/rooms/{id}", { params: { path: { id: room.id } }, body: { name: layout!.room.name, widthMeters: width, heightMeters: height, gridStepMeters: layout!.room.gridStepMeters } }));
     } catch (e) {
