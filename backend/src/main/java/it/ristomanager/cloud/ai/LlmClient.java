@@ -8,8 +8,13 @@ import java.util.List;
  */
 public interface LlmClient {
 
-    /** Sends the conversation and waits for the full answer. Throws {@link AiException} on any failure. */
-    LlmReply chat(List<ChatMessage> messages);
+    /** Sends the conversation with the configured settings and waits for the full answer. Throws {@link AiException} on any failure. */
+    default LlmReply chat(List<ChatMessage> messages) {
+        return chat(messages, ChatOptions.defaults());
+    }
+
+    /** Like {@link #chat(List)}, with per-request overrides. Throws {@link AiException} on any failure. */
+    LlmReply chat(List<ChatMessage> messages, ChatOptions options);
 
     /** Whether the model server answers right now. Never throws. */
     boolean isReachable();

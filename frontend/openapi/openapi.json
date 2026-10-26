@@ -597,6 +597,57 @@
         }
       }
     },
+    "/api/v1/rooms/{roomId}/floor-draft" : {
+      "post" : {
+        "tags" : [ "floor-draft-controller" ],
+        "operationId" : "floorDraft",
+        "parameters" : [ {
+          "name" : "roomId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "name" : "roomWidthMeters",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "type" : "number",
+            "format" : "double"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "multipart/form-data" : {
+              "schema" : {
+                "type" : "object",
+                "properties" : {
+                  "image" : {
+                    "type" : "string",
+                    "format" : "binary"
+                  }
+                },
+                "required" : [ "image" ]
+              }
+            }
+          }
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/FloorDraft"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/reservations" : {
       "get" : {
         "tags" : [ "reservation-controller" ],
@@ -2043,6 +2094,107 @@
           }
         },
         "required" : [ "active", "displayName", "email", "id", "restaurantId", "role" ]
+      },
+      "DraftElement" : {
+        "type" : "object",
+        "properties" : {
+          "type" : {
+            "type" : "string"
+          },
+          "xMeters" : {
+            "type" : "number",
+            "format" : "double",
+            "description" : "Centre of the element, in metres from the room's top-left corner"
+          },
+          "yMeters" : {
+            "type" : "number",
+            "format" : "double",
+            "description" : "Centre of the element, in metres from the room's top-left corner"
+          },
+          "widthMeters" : {
+            "type" : "number",
+            "format" : "double"
+          },
+          "heightMeters" : {
+            "type" : "number",
+            "format" : "double"
+          },
+          "rotationDegrees" : {
+            "type" : "number",
+            "format" : "double",
+            "description" : "Clockwise rotation around the centre"
+          }
+        },
+        "required" : [ "heightMeters", "rotationDegrees", "type", "widthMeters", "xMeters", "yMeters" ]
+      },
+      "DraftTable" : {
+        "type" : "object",
+        "properties" : {
+          "shape" : {
+            "type" : "string"
+          },
+          "xMeters" : {
+            "type" : "number",
+            "format" : "double",
+            "description" : "Centre of the table, in metres from the room's top-left corner"
+          },
+          "yMeters" : {
+            "type" : "number",
+            "format" : "double",
+            "description" : "Centre of the table, in metres from the room's top-left corner"
+          },
+          "widthMeters" : {
+            "type" : "number",
+            "format" : "double"
+          },
+          "heightMeters" : {
+            "type" : "number",
+            "format" : "double"
+          },
+          "rotationDegrees" : {
+            "type" : "number",
+            "format" : "double",
+            "description" : "Clockwise rotation around the centre"
+          },
+          "seats" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        },
+        "required" : [ "heightMeters", "rotationDegrees", "seats", "shape", "widthMeters", "xMeters", "yMeters" ]
+      },
+      "FloorDraft" : {
+        "type" : "object",
+        "properties" : {
+          "widthMeters" : {
+            "type" : "number",
+            "format" : "double"
+          },
+          "heightMeters" : {
+            "type" : "number",
+            "format" : "double"
+          },
+          "tables" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/DraftTable"
+            }
+          },
+          "elements" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/DraftElement"
+            }
+          },
+          "warnings" : {
+            "type" : "array",
+            "description" : "Things the owner should know before trusting the draft, as plain sentences",
+            "items" : {
+              "type" : "string"
+            }
+          }
+        },
+        "required" : [ "elements", "heightMeters", "tables", "warnings", "widthMeters" ]
       },
       "LineRequest" : {
         "type" : "object",

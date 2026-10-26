@@ -16,6 +16,11 @@ spring:
     url: ${FLYWAY_URL:${DB_URL:jdbc:postgresql://localhost:5432/ristomanager}}
     user: ${FLYWAY_USER:ristomanager}
     password: ${FLYWAY_PASSWORD:ristomanager}
+  # Photos of rooms are uploaded for the floor plan draft.
+  servlet:
+    multipart:
+      max-file-size: 8MB
+      max-request-size: 9MB
 
 app:
   version: "@project.version@"

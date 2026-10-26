@@ -28,7 +28,7 @@ class OpenApiConfig {
             "Room", "DiningTable", "Obstacle", "TableView", "Layout",
             "Reservation", "MenuItem", "Modifier", "UserView", "ItemView", "TicketView",
             "TokenResponse", "StatusResponse", "AuditEntry","RestaurantView", "RecoveryStatus", "RecoveryQuestionsResponse",
-            "AiStatusResponse");
+            "AiStatusResponse", "FloorDraft", "DraftTable", "DraftElement");
 
     @Bean
     @SuppressWarnings({"rawtypes", "unchecked"})

@@ -196,6 +196,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/rooms/{roomId}/floor-draft": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["floorDraft"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/reservations": {
         parameters: {
             query?: never;
@@ -874,6 +890,62 @@ export interface components {
             /** @enum {string} */
             role: "OWNER" | "MANAGER" | "WAITER" | "KITCHEN";
             active: boolean;
+        };
+        DraftElement: {
+            type: string;
+            /**
+             * Format: double
+             * @description Centre of the element, in metres from the room's top-left corner
+             */
+            xMeters: number;
+            /**
+             * Format: double
+             * @description Centre of the element, in metres from the room's top-left corner
+             */
+            yMeters: number;
+            /** Format: double */
+            widthMeters: number;
+            /** Format: double */
+            heightMeters: number;
+            /**
+             * Format: double
+             * @description Clockwise rotation around the centre
+             */
+            rotationDegrees: number;
+        };
+        DraftTable: {
+            shape: string;
+            /**
+             * Format: double
+             * @description Centre of the table, in metres from the room's top-left corner
+             */
+            xMeters: number;
+            /**
+             * Format: double
+             * @description Centre of the table, in metres from the room's top-left corner
+             */
+            yMeters: number;
+            /** Format: double */
+            widthMeters: number;
+            /** Format: double */
+            heightMeters: number;
+            /**
+             * Format: double
+             * @description Clockwise rotation around the centre
+             */
+            rotationDegrees: number;
+            /** Format: int32 */
+            seats: number;
+        };
+        FloorDraft: {
+            /** Format: double */
+            widthMeters: number;
+            /** Format: double */
+            heightMeters: number;
+            tables: components["schemas"]["DraftTable"][];
+            elements: components["schemas"]["DraftElement"][];
+            /** @description Things the owner should know before trusting the draft, as plain sentences */
+            warnings: string[];
         };
         LineRequest: {
             /** Format: uuid */
@@ -1555,6 +1627,37 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["Obstacle"];
+                };
+            };
+        };
+    };
+    floorDraft: {
+        parameters: {
+            query: {
+                roomWidthMeters: number;
+            };
+            header?: never;
+            path: {
+                roomId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "multipart/form-data": {
+                    /** Format: binary */
+                    image: string;
+                };
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["FloorDraft"];
                 };
             };
         };

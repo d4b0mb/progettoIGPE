@@ -138,8 +138,67 @@ class OllamaClientTest {
         assertThat(client(true, deadUrl(), Duration.ofSeconds(5)).isReachable()).isFalse();
     }
 
+    @Test
+    void imagesAreSentOnlyOnTheMessagesThatHaveThem() throws Exception {
+        start("/api/chat", 200, OLLAMA_REPLY, 0);
+
+        client(true, baseUrl(), Duration.ofSeconds(5)).chat(List.of(
+                ChatMessage.system("Be brief"), ChatMessage.userWithImages("Look", List.of("QUJD", "REVG"))));
+
+        JsonNode messages = JsonMapper.builder().build().readTree(chatBody.get()).path("messages");
+        assertThat(messages.get(0).has("images")).isFalse();
+        JsonNode images = messages.get(1).path("images");
+        assertThat(images.size()).isEqualTo(2);
+        assertThat(images.get(0).textValue()).isEqualTo("QUJD");
+        assertThat(images.get(1).textValue()).isEqualTo("REVG");
+    }
+
+    @Test
+    void formatIsSentOnlyWhenGiven() throws Exception {
+        start("/api/chat", 200, OLLAMA_REPLY, 0);
+        JsonMapper json = JsonMapper.builder().build();
+        JsonNode schema = json.readTree("{\"type\":\"object\",\"required\":[\"a\"]}");
+
+        client(true, baseUrl(), Duration.ofSeconds(5))
+                .chat(List.of(ChatMessage.user("Hi")), new ChatOptions(schema, null, null));
+        JsonNode withFormat = json.readTree(chatBody.get());
+        client(true, baseUrl(), Duration.ofSeconds(5)).chat(List.of(ChatMessage.user("Hi")), ChatOptions.defaults());
+        JsonNode withoutFormat = json.readTree(chatBody.get());
+
+        assertThat(withFormat.path("format").path("type").textValue()).isEqualTo("object");
+        assertThat(withFormat.path("format").path("required").get(0).textValue()).isEqualTo("a");
+        assertThat(withoutFormat.has("format")).isFalse();
+    }
+
+    @Test
+    void optionsThinkOverridesTheConfiguredValue() throws Exception {
+        start("/api/chat", 200, OLLAMA_REPLY, 0);
+        OllamaClient client = client(true, baseUrl(), Duration.ofSeconds(5), true);
+        JsonMapper json = JsonMapper.builder().build();
+
+        client.chat(List.of(ChatMessage.user("Hi")));
+        assertThat(json.readTree(chatBody.get()).path("think").toString()).isEqualTo("true");
+
+        client.chat(List.of(ChatMessage.user("Hi")), new ChatOptions(null, false, null));
+        assertThat(json.readTree(chatBody.get()).path("think").toString()).isEqualTo("false");
+    }
+
+    @Test
+    void optionsTimeoutOverridesTheConfiguredValue() throws Exception {
+        start("/api/chat", 200, OLLAMA_REPLY, 1500);
+        OllamaClient client = client(true, baseUrl(), Duration.ofSeconds(30));
+
+        assertThatThrownBy(() -> client.chat(List.of(ChatMessage.user("Hi")),
+                new ChatOptions(null, null, Duration.ofMillis(300))))
+                .isInstanceOfSatisfying(AiException.class, e -> assertThat(e.kind()).isEqualTo(Kind.TIMEOUT));
+    }
+
     private static OllamaClient client(boolean enabled, String baseUrl, Duration requestTimeout) {
-        return new OllamaClient(new AiProperties(enabled, baseUrl, "test-model", 0.2, 8192, "30m", false,
+        return client(enabled, baseUrl, requestTimeout, false);
+    }
+
+    private static OllamaClient client(boolean enabled, String baseUrl, Duration requestTimeout, boolean think) {
+        return new OllamaClient(new AiProperties(enabled, baseUrl, "test-model", 0.2, 8192, "30m", think,
                 Duration.ofSeconds(2), requestTimeout));
     }
 

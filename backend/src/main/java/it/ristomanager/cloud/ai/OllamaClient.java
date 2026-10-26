@@ -38,16 +38,16 @@ public class OllamaClient implements LlmClient {
     }
 
     @Override
-    public LlmReply chat(List<ChatMessage> messages) {
+    public LlmReply chat(List<ChatMessage> messages, ChatOptions options) {
         if (!props.enabled()) {
             throw new AiException(Kind.DISABLED, "The language model is disabled");
         }
         long start = System.nanoTime();
         try {
             HttpRequest request = HttpRequest.newBuilder(endpoint("/api/chat"))
-                    .timeout(props.requestTimeout())
+                    .timeout(options.timeout() != null ? options.timeout() : props.requestTimeout())
                     .header("Content-Type", "application/json")
-                    .POST(HttpRequest.BodyPublishers.ofString(requestBody(messages)))
+                    .POST(HttpRequest.BodyPublishers.ofString(requestBody(messages, options)))
                     .build();
             HttpResponse<String> response = http.send(request, HttpResponse.BodyHandlers.ofString());
             long millis = (System.nanoTime() - start) / 1_000_000;
@@ -103,15 +103,23 @@ public class OllamaClient implements LlmClient {
         return URI.create((base.endsWith("/") ? base.substring(0, base.length() - 1) : base) + path);
     }
 
-    private String requestBody(List<ChatMessage> messages) {
+    private String requestBody(List<ChatMessage> messages, ChatOptions options) {
         ObjectNode body = mapper.createObjectNode();
         body.put("model", props.model());
         ArrayNode array = body.putArray("messages");
         for (ChatMessage message : messages) {
-            array.addObject().put("role", message.role()).put("content", message.content());
+            ObjectNode node = array.addObject();
+            node.put("role", message.role()).put("content", message.content());
+            if (!message.images().isEmpty()) {
+                ArrayNode images = node.putArray("images");
+                message.images().forEach(images::add);
+            }
         }
         body.put("stream", false);
-        body.put("think", props.think());
+        body.put("think", options.think() != null ? options.think() : props.think());
+        if (options.format() != null) {
+            body.set("format", options.format());
+        }
         body.put("keep_alive", props.keepAlive());
         body.putObject("options")
                 .put("temperature", props.temperature())
