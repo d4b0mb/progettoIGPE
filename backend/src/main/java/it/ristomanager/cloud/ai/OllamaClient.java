@@ -1,5 +1,6 @@
 package it.ristomanager.cloud.ai;
 
+import it.ristomanager.cloud.common.Json;
 import it.ristomanager.cloud.ai.AiException.Kind;
 import java.io.IOException;
 import java.net.URI;
@@ -8,6 +9,7 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.net.http.HttpTimeoutException;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -56,8 +58,9 @@ public class OllamaClient implements LlmClient {
             }
             LlmReply reply = parse(response.body(), millis);
             // Only sizes and timings are logged: prompts and replies can hold guests' personal data.
-            log.info("Language model answered: model={} durationMillis={} promptTokens={} outputTokens={}",
-                    reply.model(), reply.durationMillis(), reply.promptTokens(), reply.outputTokens());
+            log.info("Language model answered: model={} durationMillis={} promptTokens={} outputTokens={} toolCalls={}",
+                    reply.model(), reply.durationMillis(), reply.promptTokens(), reply.outputTokens(),
+                    reply.toolCalls().size());
             return reply;
         } catch (AiException e) {
             log.warn("Language model call failed: kind={}", e.kind());
@@ -109,10 +112,30 @@ public class OllamaClient implements LlmClient {
         ArrayNode array = body.putArray("messages");
         for (ChatMessage message : messages) {
             ObjectNode node = array.addObject();
-            node.put("role", message.role()).put("content", message.content());
+            node.put("role", message.role()).put("content", message.content() == null ? "" : message.content());
             if (!message.images().isEmpty()) {
                 ArrayNode images = node.putArray("images");
                 message.images().forEach(images::add);
+            }
+            if (!message.toolCalls().isEmpty()) {
+                ArrayNode calls = node.putArray("tool_calls");
+                for (ToolCall call : message.toolCalls()) {
+                    ObjectNode function = calls.addObject().putObject("function");
+                    function.put("name", call.name());
+                    function.set("arguments", call.arguments());
+                }
+            }
+            if (message.toolName() != null) {
+                node.put("tool_name", message.toolName());
+            }
+        }
+        if (options.tools() != null && !options.tools().isEmpty()) {
+            ArrayNode toolArray = body.putArray("tools");
+            for (ToolDefinition tool : options.tools()) {
+                ObjectNode function = toolArray.addObject().put("type", "function").putObject("function");
+                function.put("name", tool.name());
+                function.put("description", tool.description() == null ? "" : tool.description());
+                function.set("parameters", tool.parameters() != null ? tool.parameters() : mapper.createObjectNode());
             }
         }
         body.put("stream", false);
@@ -129,13 +152,46 @@ public class OllamaClient implements LlmClient {
 
     private LlmReply parse(String json, long durationMillis) {
         JsonNode root = mapper.readTree(json);
-        String content = root.path("message").path("content").textValue();
-        if (content == null) {
+        JsonNode message = root.path("message");
+        String content = Json.text(message.path("content"));
+        List<ToolCall> toolCalls = toolCalls(message.path("tool_calls"));
+        // Words, tool calls or both are an answer. Neither is nothing the caller can use.
+        if ((content == null || content.isBlank()) && toolCalls.isEmpty()) {
             throw new AiException(Kind.BAD_RESPONSE, "Model server answer has no message content");
         }
-        String model = root.path("model").textValue();
-        return new LlmReply(content, model == null ? props.model() : model,
-                root.path("prompt_eval_count").asLong(0), root.path("eval_count").asLong(0), durationMillis);
+        String model = Json.text(root.path("model"));
+        return new LlmReply(content == null ? "" : content, model == null ? props.model() : model,
+                root.path("prompt_eval_count").asLong(0), root.path("eval_count").asLong(0), durationMillis, toolCalls);
+    }
+
+    /**
+     * Reads {@code message.tool_calls}. The arguments are normally an object; some models send them as a string holding
+     * JSON, which is parsed too. Anything else becomes an empty object, so the tool answers "missing argument" and the
+     * model can try again. Entries without a function name are skipped.
+     */
+    private List<ToolCall> toolCalls(JsonNode node) {
+        if (!node.isArray()) {
+            return List.of();
+        }
+        List<ToolCall> calls = new ArrayList<>();
+        for (JsonNode entry : node) {
+            JsonNode function = entry.path("function");
+            String name = Json.text(function.path("name"));
+            if (name == null || name.isBlank()) {
+                continue;
+            }
+            JsonNode arguments = function.path("arguments");
+            String asText = Json.text(arguments);
+            if (asText != null) {
+                try {
+                    arguments = mapper.readTree(asText);
+                } catch (JacksonException e) {
+                    arguments = null;
+                }
+            }
+            calls.add(new ToolCall(name, arguments));
+        }
+        return calls;
     }
 
     private static AiException failed(Kind kind, String message, Throwable cause) {

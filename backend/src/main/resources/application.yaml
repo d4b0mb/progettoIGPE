@@ -49,6 +49,10 @@ app:
     think: ${AI_THINK:true}
     connect-timeout: 3s
     request-timeout: ${AI_REQUEST_TIMEOUT:60s}
+    # How much the one local model may be used: calls running at once, and requests one person may start per minute.
+    limits:
+      max-concurrent: ${AI_MAX_CONCURRENT:2}
+      per-user-per-minute: ${AI_PER_USER_PER_MINUTE:12}
 
 springdoc:
   # The machine-readable API description. Off unless asked for: it lists every

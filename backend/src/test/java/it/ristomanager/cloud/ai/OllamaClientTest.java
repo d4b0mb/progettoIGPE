@@ -193,6 +193,161 @@ class OllamaClientTest {
                 .isInstanceOfSatisfying(AiException.class, e -> assertThat(e.kind()).isEqualTo(Kind.TIMEOUT));
     }
 
+    // ---- tool calling
+
+    private static final JsonMapper JSON = JsonMapper.builder().build();
+
+    private static ToolDefinition findReservationsTool() {
+        return new ToolDefinition("find_reservations", "Look up bookings.", JSON.readTree("""
+                {"type":"object","properties":{"date":{"type":"string"}},"required":[]}"""));
+    }
+
+    /** A JSON string value (not an object), the way some models send tool arguments. */
+    private static JsonNode jsonString(String text) {
+        return JSON.readTree(JSON.writeValueAsString(text));
+    }
+
+    /** A reply whose message carries one tool call; {@code arguments} is put in as given (object or string). */
+    private static String replyWithToolCall(String content, JsonNode arguments) {
+        var message = JSON.createObjectNode();
+        message.put("role", "assistant");
+        if (content != null) {
+            message.put("content", content);
+        }
+        var function = message.putArray("tool_calls").addObject().putObject("function");
+        function.put("name", "find_reservations");
+        function.set("arguments", arguments);
+        var root = JSON.createObjectNode();
+        root.put("model", "test-model");
+        root.set("message", message);
+        root.put("done", true);
+        return JSON.writeValueAsString(root);
+    }
+
+    @Test
+    void toolsAreSerialisedAsFunctions() throws Exception {
+        start("/api/chat", 200, OLLAMA_REPLY, 0);
+
+        client(true, baseUrl(), Duration.ofSeconds(5)).chat(List.of(ChatMessage.user("Hi")),
+                ChatOptions.withTools(List.of(findReservationsTool())));
+
+        JsonNode tool = JSON.readTree(chatBody.get()).path("tools").get(0);
+        assertThat(tool.path("type").textValue()).isEqualTo("function");
+        assertThat(tool.path("function").path("name").textValue()).isEqualTo("find_reservations");
+        assertThat(tool.path("function").path("description").textValue()).isEqualTo("Look up bookings.");
+        assertThat(tool.path("function").path("parameters").path("type").textValue()).isEqualTo("object");
+        assertThat(tool.path("function").path("parameters").path("properties").path("date").path("type").textValue())
+                .isEqualTo("string");
+    }
+
+    @Test
+    void noToolsKeyWhenNoToolsAreGiven() throws Exception {
+        start("/api/chat", 200, OLLAMA_REPLY, 0);
+        OllamaClient client = client(true, baseUrl(), Duration.ofSeconds(5));
+
+        client.chat(List.of(ChatMessage.user("Hi")));
+        assertThat(JSON.readTree(chatBody.get()).has("tools")).isFalse();
+
+        client.chat(List.of(ChatMessage.user("Hi")), ChatOptions.withTools(List.of()));
+        assertThat(JSON.readTree(chatBody.get()).has("tools")).isFalse();
+    }
+
+    @Test
+    void replayedToolCallsAndToolResultsAreSerialised() throws Exception {
+        start("/api/chat", 200, OLLAMA_REPLY, 0);
+        ToolCall call = new ToolCall("find_reservations", JSON.readTree("{\"date\":\"2026-10-26\"}"));
+
+        client(true, baseUrl(), Duration.ofSeconds(5)).chat(List.of(
+                ChatMessage.user("Who is coming tonight?"),
+                ChatMessage.assistantToolCalls(List.of(call)),
+                ChatMessage.toolResult("find_reservations", "{\"count\":0}")));
+
+        JsonNode messages = JSON.readTree(chatBody.get()).path("messages");
+        JsonNode replayed = messages.get(1);
+        assertThat(replayed.path("role").textValue()).isEqualTo("assistant");
+        assertThat(replayed.path("content").textValue()).isEmpty();
+        assertThat(replayed.path("tool_calls").size()).isEqualTo(1);
+        assertThat(replayed.path("tool_calls").get(0).path("function").path("name").textValue())
+                .isEqualTo("find_reservations");
+        assertThat(replayed.path("tool_calls").get(0).path("function").path("arguments").path("date").textValue())
+                .isEqualTo("2026-10-26");
+        JsonNode result = messages.get(2);
+        assertThat(result.path("role").textValue()).isEqualTo("tool");
+        assertThat(result.path("tool_name").textValue()).isEqualTo("find_reservations");
+        assertThat(result.path("content").textValue()).isEqualTo("{\"count\":0}");
+        // Plain turns carry neither field.
+        assertThat(messages.get(0).has("tool_calls")).isFalse();
+        assertThat(messages.get(0).has("tool_name")).isFalse();
+    }
+
+    @Test
+    void toolCallsInTheReplyAreParsedWithObjectArguments() throws Exception {
+        start("/api/chat", 200, replyWithToolCall("", JSON.readTree("{\"date\":\"2026-10-26\",\"name\":\"rossi\"}")), 0);
+
+        LlmReply reply = client(true, baseUrl(), Duration.ofSeconds(5)).chat(List.of(ChatMessage.user("Hi")));
+
+        assertThat(reply.toolCalls()).hasSize(1);
+        assertThat(reply.toolCalls().get(0).name()).isEqualTo("find_reservations");
+        assertThat(reply.toolCalls().get(0).arguments().path("date").textValue()).isEqualTo("2026-10-26");
+        assertThat(reply.toolCalls().get(0).arguments().path("name").textValue()).isEqualTo("rossi");
+    }
+
+    @Test
+    void toolCallArgumentsGivenAsAJsonStringAreParsed() throws Exception {
+        start("/api/chat", 200, replyWithToolCall("", jsonString("{\"date\":\"2026-10-27\"}")), 0);
+
+        LlmReply reply = client(true, baseUrl(), Duration.ofSeconds(5)).chat(List.of(ChatMessage.user("Hi")));
+
+        assertThat(reply.toolCalls()).hasSize(1);
+        assertThat(reply.toolCalls().get(0).arguments().isObject()).isTrue();
+        assertThat(reply.toolCalls().get(0).arguments().path("date").textValue()).isEqualTo("2026-10-27");
+    }
+
+    @Test
+    void unreadableToolCallArgumentsBecomeAnEmptyObject() throws Exception {
+        start("/api/chat", 200, replyWithToolCall("", jsonString("this is not json")), 0);
+
+        LlmReply reply = client(true, baseUrl(), Duration.ofSeconds(5)).chat(List.of(ChatMessage.user("Hi")));
+
+        assertThat(reply.toolCalls()).hasSize(1);
+        assertThat(reply.toolCalls().get(0).arguments().isObject()).isTrue();
+        assertThat(reply.toolCalls().get(0).arguments().size()).isZero();
+    }
+
+    @Test
+    void toolCallsWithEmptyOrMissingContentAreAccepted() throws Exception {
+        String arguments = "{\"date\":\"2026-10-26\"}";
+        start("/api/chat", 200, replyWithToolCall("", JSON.readTree(arguments)), 0);
+        LlmReply empty = client(true, baseUrl(), Duration.ofSeconds(5)).chat(List.of(ChatMessage.user("Hi")));
+        server.stop(0);
+
+        start("/api/chat", 200, replyWithToolCall(null, JSON.readTree(arguments)), 0);
+        LlmReply missing = client(true, baseUrl(), Duration.ofSeconds(5)).chat(List.of(ChatMessage.user("Hi")));
+
+        assertThat(empty.content()).isEmpty();
+        assertThat(empty.toolCalls()).hasSize(1);
+        assertThat(missing.content()).isEmpty();
+        assertThat(missing.toolCalls()).hasSize(1);
+    }
+
+    @Test
+    void aReplyWithoutToolCallsHasAnEmptyList() throws Exception {
+        start("/api/chat", 200, OLLAMA_REPLY, 0);
+
+        LlmReply reply = client(true, baseUrl(), Duration.ofSeconds(5)).chat(List.of(ChatMessage.user("Hi")));
+
+        assertThat(reply.toolCalls()).isNotNull().isEmpty();
+    }
+
+    @Test
+    void neitherContentNorToolCallsIsBadResponse() throws Exception {
+        start("/api/chat", 200,
+                "{\"model\":\"test-model\",\"message\":{\"role\":\"assistant\",\"content\":\"\",\"tool_calls\":[]}}", 0);
+
+        assertThatThrownBy(() -> client(true, baseUrl(), Duration.ofSeconds(5)).chat(List.of(ChatMessage.user("Hi"))))
+                .isInstanceOfSatisfying(AiException.class, e -> assertThat(e.kind()).isEqualTo(Kind.BAD_RESPONSE));
+    }
+
     private static OllamaClient client(boolean enabled, String baseUrl, Duration requestTimeout) {
         return client(enabled, baseUrl, requestTimeout, false);
     }

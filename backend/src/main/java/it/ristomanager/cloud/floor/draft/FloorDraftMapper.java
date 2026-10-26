@@ -1,5 +1,6 @@
 package it.ristomanager.cloud.floor.draft;
 
+import it.ristomanager.cloud.common.Json;
 import it.ristomanager.cloud.floor.FloorTypes.ObstacleType;
 import it.ristomanager.cloud.floor.FloorTypes.TableShape;
 import it.ristomanager.cloud.floor.TableRules;
@@ -110,7 +111,7 @@ final class FloorDraftMapper {
         addCount(warnings, dropped.duplicates, "Ignored %d duplicate table%s");
         addCount(warnings, dropped.tablesOverCap, "Ignored %d table%s beyond the limit of " + MAX_TABLES);
         addCount(warnings, dropped.elementsOverCap, "Ignored %d element%s beyond the limit of " + MAX_ELEMENTS);
-        String note = modelAnswer.path("notes").textValue();
+        String note = Json.text(modelAnswer.path("notes"));
         if (note != null && !note.isBlank()) {
             String trimmed = note.strip();
             warnings.add("Model note: " + (trimmed.length() > MAX_NOTE_LENGTH ? trimmed.substring(0, MAX_NOTE_LENGTH) : trimmed));
@@ -124,7 +125,7 @@ final class FloorDraftMapper {
             return tables;
         }
         for (JsonNode node : nodes) {
-            TableShape shape = enumOf(TableShape.class, node.path("shape").textValue());
+            TableShape shape = enumOf(TableShape.class, Json.text(node.path("shape")));
             if (shape == null) {
                 dropped.unknownKind++;
                 continue;
@@ -163,7 +164,7 @@ final class FloorDraftMapper {
             return elements;
         }
         for (JsonNode node : nodes) {
-            ObstacleType type = enumOf(ObstacleType.class, node.path("type").textValue());
+            ObstacleType type = enumOf(ObstacleType.class, Json.text(node.path("type")));
             if (type == null) {
                 dropped.unknownKind++;
                 continue;

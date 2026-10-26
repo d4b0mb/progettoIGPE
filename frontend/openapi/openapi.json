@@ -1004,6 +1004,60 @@
         }
       }
     },
+    "/api/v1/assistant/proposals/{id}/confirm" : {
+      "post" : {
+        "tags" : [ "assistant-controller" ],
+        "operationId" : "confirm",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ConfirmResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/assistant/chat" : {
+      "post" : {
+        "tags" : [ "assistant-controller" ],
+        "operationId" : "chat",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/AssistantRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AssistantReply"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/tables/{id}/service-status" : {
       "patch" : {
         "tags" : [ "floor-controller" ],
@@ -1459,6 +1513,25 @@
           "schema" : {
             "type" : "string",
             "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/assistant/proposals/{id}" : {
+      "delete" : {
+        "tags" : [ "assistant-controller" ],
+        "operationId" : "dismiss",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
           }
         } ],
         "responses" : {
@@ -2510,6 +2583,122 @@
           }
         },
         "required" : [ "email", "password" ]
+      },
+      "ConfirmResult" : {
+        "type" : "object",
+        "properties" : {
+          "kind" : {
+            "type" : "string"
+          },
+          "guestName" : {
+            "type" : "string"
+          },
+          "partySize" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "date" : {
+            "type" : "string"
+          },
+          "time" : {
+            "type" : "string"
+          },
+          "tableNumber" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int32"
+          }
+        },
+        "required" : [ "date", "guestName", "kind", "partySize", "time" ]
+      },
+      "AssistantRequest" : {
+        "type" : "object",
+        "properties" : {
+          "message" : {
+            "type" : "string",
+            "maxLength" : 1000,
+            "minLength" : 0
+          },
+          "history" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/Turn"
+            },
+            "maxItems" : 20,
+            "minItems" : 0
+          }
+        },
+        "required" : [ "message" ]
+      },
+      "Turn" : {
+        "type" : "object",
+        "properties" : {
+          "role" : {
+            "type" : "string",
+            "minLength" : 1
+          },
+          "content" : {
+            "type" : "string",
+            "maxLength" : 1000,
+            "minLength" : 0
+          }
+        },
+        "required" : [ "role" ]
+      },
+      "AssistantReply" : {
+        "type" : "object",
+        "properties" : {
+          "reply" : {
+            "type" : "string"
+          },
+          "proposals" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/ProposalView"
+            }
+          },
+          "notices" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          }
+        },
+        "required" : [ "notices", "proposals", "reply" ]
+      },
+      "ProposalView" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string"
+          },
+          "kind" : {
+            "type" : "string"
+          },
+          "guestName" : {
+            "type" : "string"
+          },
+          "partySize" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "date" : {
+            "type" : "string"
+          },
+          "time" : {
+            "type" : "string"
+          },
+          "tableNumber" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int32"
+          },
+          "notes" : {
+            "type" : "string"
+          },
+          "expiresAt" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "date", "expiresAt", "guestName", "id", "kind", "notes", "partySize", "time" ]
       },
       "ServiceStatusRequest" : {
         "type" : "object",

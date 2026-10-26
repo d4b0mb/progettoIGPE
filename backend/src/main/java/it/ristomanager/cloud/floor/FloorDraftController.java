@@ -1,6 +1,8 @@
 package it.ristomanager.cloud.floor;
 
 import it.ristomanager.cloud.ai.AiException;
+import it.ristomanager.cloud.assistant.AiErrors;
+import it.ristomanager.cloud.assistant.AiGate;
 import it.ristomanager.cloud.common.ApiException;
 import it.ristomanager.cloud.floor.draft.FloorDraft;
 import it.ristomanager.cloud.floor.draft.FloorDraftService;
@@ -31,10 +33,12 @@ class FloorDraftController {
 
     private final FloorRepository floor;
     private final FloorDraftService drafts;
+    private final AiGate aiGate;
 
-    FloorDraftController(FloorRepository floor, FloorDraftService drafts) {
+    FloorDraftController(FloorRepository floor, FloorDraftService drafts, AiGate aiGate) {
         this.floor = floor;
         this.drafts = drafts;
+        this.aiGate = aiGate;
     }
 
     @PostMapping(value = "/rooms/{roomId}/floor-draft", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
@@ -54,15 +58,12 @@ class FloorDraftController {
         } catch (IOException e) {
             throw ApiException.invalid("image", "The image could not be read");
         }
+        final byte[] photo = bytes;
         try {
-            return drafts.draft(bytes, roomWidthMeters);
+            // The gate keeps one person from flooding the single local model, and caps how many calls run at once.
+            return aiGate.run(CurrentUser.from(jwt).userId(), () -> drafts.draft(photo, roomWidthMeters));
         } catch (AiException e) {
-            throw switch (e.kind()) {
-                case DISABLED, UNREACHABLE ->
-                        new ApiException(HttpStatus.SERVICE_UNAVAILABLE, "The local AI model is not available");
-                case TIMEOUT -> new ApiException(HttpStatus.GATEWAY_TIMEOUT, "The AI model took too long");
-                case BAD_RESPONSE -> new ApiException(HttpStatus.BAD_GATEWAY, "The AI model gave an unusable answer");
-            };
+            throw AiErrors.toApi(e);
         } catch (IllegalArgumentException e) {
             throw new ApiException(HttpStatus.valueOf(422), "The room's walls could not be found in the photo");
         }

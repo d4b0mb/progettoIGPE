@@ -48,6 +48,15 @@ public class ReservationService {
         }
     }
 
+    /**
+     * Runs the same rules {@link #create} applies to a new reservation (name, day not in the past, party size, phone...)
+     * without writing anything (it only reads the restaurant's time zone). Lets a caller refuse a bad request early. It does not check the table: that check
+     * needs the table lock and only {@link #create} may decide it.
+     */
+    public void validateDraft(UUID rid, ReservationRequest draft) {
+        ReservationRules.validate(draft, restaurants.timezone(rid), Instant.now(), true);
+    }
+
     @Transactional
     public Reservation update(UUID rid, UUID id, ReservationRequest draft) {
         reservations.find(rid, id).orElseThrow(() -> ApiException.notFound("No such reservation"));
