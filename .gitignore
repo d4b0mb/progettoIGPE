@@ -24,3 +24,6 @@ Thumbs.db
 # Local environment
 .env
 deploy/.env
+
+# AI evaluation output
+ai-eval/results/

@@ -40,7 +40,8 @@ app:
     context-tokens: ${AI_CONTEXT_TOKENS:8192}
     # How long Ollama keeps the model in memory after the last request (avoids a slow reload).
     keep-alive: ${AI_KEEP_ALIVE:30m}
-    think: ${AI_THINK:false}
+    # On: measured 44/50 against 29/50 off on the ai-eval requests, and it stopped inventing actions. Costs about 1 s.
+    think: ${AI_THINK:true}
     connect-timeout: 3s
     request-timeout: ${AI_REQUEST_TIMEOUT:60s}
 
