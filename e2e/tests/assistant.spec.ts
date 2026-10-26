@@ -167,7 +167,7 @@ test.describe("staff assistant", () => {
     await context.close();
   });
 
-  test("a failed question shows the server's explanation in the panel", async ({ browser }) => {
+  test("a failed question shows a fixed notice in the panel, never the server's own text", async ({ browser }) => {
     const { context, page } = await signedIn(browser, demo.owner);
     await page.route("**/api/v1/assistant/chat", async (route) => {
       // The shape the API uses for every error (see errors.ts): the explanation is in "detail".
@@ -181,7 +181,8 @@ test.describe("staff assistant", () => {
 
     await openButton(page).click();
     await sheet(page).getByRole("button", { name: "Who has booked tonight?" }).click();
-    await expect(sheet(page).getByText("The local AI model is not available")).toBeVisible();
+    await expect(sheet(page).getByText(/The assistant is not available right now/)).toBeVisible();
+    await expect(sheet(page).getByText("The local AI model is not available")).toHaveCount(0);
     // Nothing is left spinning, and the person can try again.
     await expect(sheet(page).getByText(/Thinking/)).toHaveCount(0);
     await expect(sheet(page).getByLabel("Message", { exact: true })).toBeEnabled();

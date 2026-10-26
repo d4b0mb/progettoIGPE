@@ -7,12 +7,15 @@ import { Dialog } from "@/components/ui/Dialog";
 import { Icon } from "@/components/ui/Icon";
 import { useAssistant } from "./AssistantProvider";
 import {
+  canConfirm,
   describeProposalDate,
   isExpired,
+  listMaxHeight,
   MAX_MESSAGE_CHARS,
   proposalKind,
   suggestionsFor,
   type ChatMessage,
+  type ConfirmFailure,
   type ProposalCard,
   type ProposalState,
 } from "./chat";
@@ -53,19 +56,51 @@ function useNow(everyMs: number): number {
   return now;
 }
 
+/**
+ * The height of what is really visible, which on a phone is less than the window while the on-screen keyboard is up
+ * (the keyboard covers the window instead of shrinking it, so dvh units do not change).
+ */
+function useVisibleHeight(): number {
+  const [height, setHeight] = useState<number>(() => window.visualViewport?.height ?? window.innerHeight);
+  useEffect(() => {
+    const viewport = window.visualViewport;
+    if (!viewport) return;
+    const update = () => setHeight(viewport.height);
+    viewport.addEventListener("resize", update);
+    return () => viewport.removeEventListener("resize", update);
+  }, []);
+  return height;
+}
+
 function AssistantBody({ draft, setDraft }: { draft: string; setDraft: (text: string) => void }) {
   const t = useTranslations("assistant");
   const { role, messages, busy, send, cancel, confirm, dismiss, clear } = useAssistant();
   const now = useNow(CLOCK_MS);
+  const visibleHeight = useVisibleHeight();
   const inputId = useId();
   const listRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
-  // Always show the newest message (and the "thinking" line under it).
+  // Always show the newest message (and the "thinking" line under it), also when the keyboard changes the list's height.
   useEffect(() => {
     const list = listRef.current;
     if (list) list.scrollTop = list.scrollHeight;
-  }, [messages, busy]);
+  }, [messages, busy, visibleHeight]);
+
+  // When the sheet is opened again the list is first drawn while the dialog is still closed (it has no height yet),
+  // so scroll once more a tick later, when it is on screen.
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      const list = listRef.current;
+      if (list) list.scrollTop = list.scrollHeight;
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, []);
+
+  // With the keyboard up, keep the input in view.
+  useEffect(() => {
+    inputRef.current?.scrollIntoView({ block: "nearest" });
+  }, [visibleHeight]);
 
   // Focus the input when the sheet opens and again after every answer (a disabled field loses focus).
   // Deferred a tick: the sheet itself is opened by the Dialog just after this content first appears.
@@ -115,7 +150,8 @@ function AssistantBody({ draft, setDraft }: { draft: string; setDraft: (text: st
         aria-live="polite"
         aria-label={t("conversation")}
         tabIndex={0}
-        className="flex max-h-[55dvh] min-h-24 flex-col gap-3 overflow-y-auto"
+        style={{ maxHeight: listMaxHeight(visibleHeight) }}
+        className="flex min-h-24 flex-col gap-3 overflow-y-auto"
       >
         {messages.length === 0 ? (
           <div className="flex flex-col gap-3">
@@ -213,8 +249,9 @@ function MessageView({
     <div className="flex w-full max-w-[94%] flex-col gap-2 self-start">
       <span className="sr-only">{t("fromAssistant")}</span>
       {message.error ? (
-        <p className="rounded-2xl rounded-bl-md bg-danger-soft px-3.5 py-2 text-sm font-semibold whitespace-pre-wrap break-words text-danger-ink">
-          {message.text.trim() || t("error")}
+        // A fixed notice for the kind of failure; what the server said is never shown.
+        <p className="rounded-2xl rounded-bl-md bg-danger-soft px-3.5 py-2 text-sm font-semibold break-words text-danger-ink">
+          {t(`errors.${message.errorCode ?? "generic"}`)}
         </p>
       ) : message.text.trim() !== "" ? (
         <p className="rounded-2xl rounded-bl-md border border-line bg-canvas px-3.5 py-2 text-sm whitespace-pre-wrap break-words">{message.text}</p>
@@ -230,6 +267,16 @@ function MessageView({
     </div>
   );
 }
+
+/** The fixed line (a key in "assistant") for each way a Confirm can fail. */
+const FAILED_LINE = {
+  gone: "failedGone",
+  forbidden: "failedForbidden",
+  conflict: "failedConflict",
+  refused: "failedRefused",
+  network: "failedNetwork",
+  error: "failedGeneric",
+} as const satisfies Record<ConfirmFailure, string>;
 
 /**
  * What the assistant proposes, as a card. Nothing has happened yet: the booking is only made or cancelled
@@ -248,6 +295,8 @@ function ProposalCardView({
 }) {
   const t = useTranslations("assistant");
   const locale = useLocale();
+  const { role } = useAssistant();
+  const mayConfirm = canConfirm(role);
   const { proposal } = card;
   const kind = proposalKind(proposal.kind);
   if (kind === null) return null;
@@ -272,11 +321,7 @@ function ProposalCardView({
     case "failed":
       return (
         <p role="alert" className="rounded-lg bg-danger-soft px-3 py-2 text-sm font-semibold break-words text-danger-ink">
-          {state.reason === "gone"
-            ? t("failedGone")
-            : state.reason === "network"
-              ? t("failedNetwork")
-              : state.message?.trim() || t("failedGeneric")}
+          {t(FAILED_LINE[state.reason])}
         </p>
       );
     case "pending":
@@ -301,10 +346,16 @@ function ProposalCardView({
               <p className="text-sm whitespace-pre-wrap break-words">{t("notes", { notes: proposal.notes })}</p>
             ) : null}
           </div>
+          {/* The server only lets the owner and managers confirm: everyone else is told so instead of getting a button that always fails. */}
+          {mayConfirm ? null : (
+            <p className="rounded-lg bg-info-soft px-3 py-2 text-sm font-semibold text-info-ink">{t("onlyManagersConfirm")}</p>
+          )}
           <div className="flex flex-wrap gap-2">
-            <Button className="flex-1" disabled={working} onClick={() => onConfirm(proposal.id)}>
-              {working ? t("working") : kind === "cancel" ? t("confirmCancel") : t("confirmCreate")}
-            </Button>
+            {mayConfirm ? (
+              <Button className="flex-1" disabled={working} onClick={() => onConfirm(proposal.id)}>
+                {working ? t("working") : kind === "cancel" ? t("confirmCancel") : t("confirmCreate")}
+              </Button>
+            ) : null}
             <Button variant="secondary" className="flex-1" disabled={working} onClick={() => onDismiss(proposal.id)}>
               {t("dismiss")}
             </Button>

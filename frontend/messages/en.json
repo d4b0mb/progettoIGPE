@@ -521,7 +521,15 @@
     "send": "Send",
     "charCount": "{count} / {max}",
     "clear": "Clear conversation",
-    "error": "The assistant could not answer. Please try again.",
+    "errors": {
+      "unavailable": "The assistant is not available right now (switched off, unreachable or busy). Try again in a moment.",
+      "timeout": "The assistant took too long to answer. Please try again.",
+      "badAnswer": "The assistant gave an answer that cannot be used. Try again, maybe in other words.",
+      "rateLimited": "Too many requests in a short time. Wait a minute and try again.",
+      "network": "No connection to the server. Check the network and try again.",
+      "generic": "The assistant could not answer. Please try again."
+    },
+    "onlyManagersConfirm": "Only the owner or a manager can confirm. Ask one of them.",
     "cardCreate": "New booking",
     "cardCancel": "Cancel booking",
     "guests": "{count, plural, one {# guest} other {# guests}}",
@@ -536,7 +544,10 @@
     "doneCancel": "Cancelled: booking for {guest}, {when}",
     "dismissed": "Dismissed",
     "expired": "Expired. Ask again.",
-    "failedGone": "This proposal has expired. Ask again.",
+    "failedGone": "This proposal has expired or was already used. Ask again.",
+    "failedForbidden": "Only the owner or a manager can confirm.",
+    "failedConflict": "It was not done: things changed in the meantime (for example the table was just booked). Check the reservations and ask again.",
+    "failedRefused": "It was not done: the booking rules do not allow it (for example the day has already passed). Ask again.",
     "failedNetwork": "The connection was lost, so we do not know if it was done. Check the reservations before asking again.",
     "failedGeneric": "That could not be done. Please try again.",
     "notices": {

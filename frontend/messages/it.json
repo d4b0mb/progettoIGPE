@@ -521,7 +521,15 @@
     "send": "Invia",
     "charCount": "{count} / {max}",
     "clear": "Svuota la conversazione",
-    "error": "L'assistente non ha potuto rispondere. Riprova.",
+    "errors": {
+      "unavailable": "L'assistente non è disponibile in questo momento (spento, non raggiungibile o occupato). Riprova tra poco.",
+      "timeout": "L'assistente ci ha messo troppo a rispondere. Riprova.",
+      "badAnswer": "L'assistente ha dato una risposta che non si può usare. Riprova, magari con parole diverse.",
+      "rateLimited": "Troppe richieste in poco tempo. Aspetta un minuto e riprova.",
+      "network": "Nessuna connessione con il server. Controlla la rete e riprova.",
+      "generic": "L'assistente non ha potuto rispondere. Riprova."
+    },
+    "onlyManagersConfirm": "Solo il titolare o un responsabile può confermare. Chiedi a uno di loro.",
     "cardCreate": "Nuova prenotazione",
     "cardCancel": "Annulla prenotazione",
     "guests": "{count, plural, one {# coperto} other {# coperti}}",
@@ -536,7 +544,10 @@
     "doneCancel": "Annullata: prenotazione per {guest}, {when}",
     "dismissed": "Scartata",
     "expired": "Scaduta. Chiedi di nuovo.",
-    "failedGone": "Questa proposta è scaduta. Chiedi di nuovo.",
+    "failedGone": "Questa proposta è scaduta o è già stata usata. Chiedi di nuovo.",
+    "failedForbidden": "Solo il titolare o un responsabile può confermare.",
+    "failedConflict": "Non è stato fatto: nel frattempo la situazione è cambiata (per esempio il tavolo è stato appena prenotato). Controlla le prenotazioni e chiedi di nuovo.",
+    "failedRefused": "Non è stato fatto: le regole delle prenotazioni non lo permettono (per esempio il giorno è già passato). Chiedi di nuovo.",
     "failedNetwork": "La connessione è caduta, quindi non sappiamo se è stato fatto. Controlla le prenotazioni prima di chiedere di nuovo.",
     "failedGeneric": "Non è stato possibile farlo. Riprova.",
     "notices": {

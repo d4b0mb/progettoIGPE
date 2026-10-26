@@ -13,6 +13,12 @@ const nextConfig: NextConfig = {
   // Compression would buffer the live kitchen stream (server-sent events).
   // The reverse proxy in front compresses instead.
   compress: false,
+  experimental: {
+    // The default wait for the API is 30 s. The staff assistant can legitimately take longer (a local model, up to
+    // 5 calls of 60 s each in the worst case); cut off earlier, the person would see a bare 500 instead of the
+    // API's own 504 "took too long".
+    proxyTimeout: 300_000,
+  },
   async rewrites() {
     return [{ source: "/api/:path*", destination: `${backendUrl}/api/:path*` }];
   },

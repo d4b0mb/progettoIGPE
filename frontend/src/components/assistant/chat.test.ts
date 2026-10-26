@@ -1,5 +1,18 @@
 import { describe, expect, it } from "vitest";
-import { describeProposalDate, isExpired, knownNotices, proposalKind, showsAssistantButton, suggestionsFor, toHistory, type ChatMessage } from "./chat";
+import {
+  canConfirm,
+  chatErrorFor,
+  confirmFailureFor,
+  describeProposalDate,
+  isExpired,
+  knownNotices,
+  listMaxHeight,
+  proposalKind,
+  showsAssistantButton,
+  suggestionsFor,
+  toHistory,
+  type ChatMessage,
+} from "./chat";
 
 const user = (text: string): ChatMessage => ({ id: `u-${text}`, role: "user", text });
 const assistant = (text: string, extra: Partial<ChatMessage> = {}): ChatMessage => ({ id: `a-${text}`, role: "assistant", text, ...extra });
@@ -150,6 +163,66 @@ describe("suggestionsFor", () => {
 
   it("gives the kitchen only the queue and a menu question", () => {
     expect(suggestionsFor("KITCHEN")).toEqual(["kitchenQueue", "menu"]);
+  });
+});
+
+describe("chatErrorFor", () => {
+  it("gives each failure of the model its own fixed notice", () => {
+    expect(chatErrorFor(503)).toBe("unavailable");
+    expect(chatErrorFor(504)).toBe("timeout");
+    expect(chatErrorFor(502)).toBe("badAnswer");
+    expect(chatErrorFor(429)).toBe("rateLimited");
+  });
+
+  it("tells no answer at all from an answer that was an error", () => {
+    expect(chatErrorFor(null)).toBe("network");
+    expect(chatErrorFor(500)).toBe("generic");
+    expect(chatErrorFor(400)).toBe("generic");
+    expect(chatErrorFor(401)).toBe("generic");
+  });
+});
+
+describe("confirmFailureFor", () => {
+  it("reads an expired, used or foreign proposal as gone", () => {
+    expect(confirmFailureFor(404)).toBe("gone");
+    expect(confirmFailureFor(410)).toBe("gone");
+  });
+
+  it("separates the role refusal and the booking rules", () => {
+    expect(confirmFailureFor(403)).toBe("forbidden");
+    expect(confirmFailureFor(409)).toBe("conflict");
+    expect(confirmFailureFor(400)).toBe("refused");
+    expect(confirmFailureFor(422)).toBe("refused");
+  });
+
+  it("says nothing is known when no answer came back, and falls back to a general line", () => {
+    expect(confirmFailureFor(null)).toBe("network");
+    expect(confirmFailureFor(500)).toBe("error");
+    expect(confirmFailureFor(503)).toBe("error");
+  });
+});
+
+describe("canConfirm", () => {
+  it("is true for the owner and the manager only", () => {
+    expect(canConfirm("OWNER")).toBe(true);
+    expect(canConfirm("MANAGER")).toBe(true);
+    expect(canConfirm("WAITER")).toBe(false);
+    expect(canConfirm("KITCHEN")).toBe(false);
+  });
+});
+
+describe("listMaxHeight", () => {
+  it("is 55% of a tall window", () => {
+    expect(listMaxHeight(800)).toBe(440);
+  });
+
+  it("leaves room for the title, input and buttons when the keyboard shrinks the window", () => {
+    expect(listMaxHeight(500)).toBe(240);
+  });
+
+  it("never drops under 96 px", () => {
+    expect(listMaxHeight(300)).toBe(96);
+    expect(listMaxHeight(0)).toBe(96);
   });
 });
 

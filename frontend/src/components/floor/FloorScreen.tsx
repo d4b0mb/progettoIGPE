@@ -8,6 +8,7 @@ import type { components } from "@/api/schema";
 import { useSession } from "@/api/session";
 import { Button } from "@/components/ui/Button";
 import { Dialog } from "@/components/ui/Dialog";
+import { useOnReservationsChanged } from "@/lib/reservationsChanged";
 import { useRemote } from "@/lib/useRemote";
 import Link from "next/link";
 import { timeOf, todayLocal } from "@/components/reservations/time";
@@ -230,6 +231,12 @@ function RoomView({ room, canEdit, onRoomChanged }: { room: Room; canEdit: boole
       document.removeEventListener("visibilitychange", tick);
     };
   }, [refresh, refreshBookings]);
+
+  // A booking made or cancelled through the assistant shows on the plan at once, not at the next 10-second check.
+  useOnReservationsChanged(() => {
+    void refresh();
+    void refreshBookings();
+  });
 
   if (!layout) return <p className="text-muted">…</p>;
   const grid = layout.room.gridStepMeters;

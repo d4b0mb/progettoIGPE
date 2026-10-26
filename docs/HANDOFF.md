@@ -101,6 +101,20 @@ production (Phase 3). GitHub Actions CI. Reasons for each choice: `docs/adr/`.
    (reads the activity log for the tools called; needs the stack and Ollama up). Checked in the real browser: create then cancel through the cards,
    audit trail intact. 134 backend unit tests, 18 `AssistantIT`, 132 frontend tests, 35 browser tests (assistant ones use a mocked model).
 
+16. Assistant usable by hand, demo week, staff agents (2026-10-27, in progress):
+   - Chat box: fixed localised notices per error status (never server text), waiter/kitchen cards show "only owner or manager
+     can confirm" instead of a Confirm that fails, reservations list and floor plan refresh at once after a Confirm
+     (`lib/reservationsChanged.ts`), list height follows the on-screen keyboard, Next proxy timeout 300 s. Lint, typecheck,
+     build and 144 frontend tests pass; the edited e2e test (`assistant.spec.ts`) has not been run. Not yet tried on a real phone.
+   - `scripts/seed-week.mjs`: a week of reservations (today + 6 days) and tonight's orders for both demo restaurants,
+     through the API; days it already seeded are skipped. Run on 2026-10-26: 146 reservations, 8 orders.
+   - `.claude/agents/`: `chef`, `head-waiter`, `dish-runner` (haiku, Bash for curl only) act as staff through the API to make
+     the screens move. Every Bash call passes `staff-curl-guard.ps1` (allowlist; blocks staff, password, recovery, assistant).
+     Guard tested by hand (11 cases, after fixing a quote bug); the agents themselves have NOT been run yet.
+   - NOT done: the running containers are older than Block 15. `docker compose up --build -d` fails over SSH (Docker Desktop
+     cannot read Windows credentials without a desktop logon session); run it at the PC or over Remote Desktop.
+   - Later (AJ's idea, not started): a live 3D indie-game-style view of the floor with characters showing live activity.
+
 Next phases (not started): Phase 3 Kubernetes (k3s), staging/production, monitoring; Phase 4 public
 booking site (Next.js, SEO, email confirmation).
 

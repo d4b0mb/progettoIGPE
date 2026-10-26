@@ -23,14 +23,71 @@ export type ProposalState =
   | { status: "pending" }
   | { status: "confirming" }
   | { status: "done"; result: ConfirmResult }
-  /**
-   * "gone": the server no longer has it (expired, or not yours).
-   * "network": no answer came back, so nobody knows whether it was done.
-   * "error": the server refused, with its explanation in `message`.
-   */
-  | { status: "failed"; reason: "gone" | "network" | "error"; message?: string }
+  | { status: "failed"; reason: ConfirmFailure }
   | { status: "dismissed" }
   | { status: "expired" };
+
+/**
+ * Why a Confirm did not go through. The screen shows a fixed, translated line for each, never the server's own text.
+ * "gone": the server no longer has the proposal (expired, already used, or not yours; all one 404).
+ * "forbidden": the person's role may not confirm.
+ * "conflict": the booking rules refused (the table was just taken).
+ * "refused": the booking rules refused for another reason (for example the day has passed).
+ * "network": no answer came back, so nobody knows whether it was done.
+ * "error": anything else.
+ */
+export type ConfirmFailure = "gone" | "forbidden" | "conflict" | "refused" | "network" | "error";
+
+/** Maps the HTTP status of a failed confirm (null: no answer at all) to the line the card shows. */
+export function confirmFailureFor(status: number | null): ConfirmFailure {
+  switch (status) {
+    case null:
+      return "network";
+    case 404:
+    case 410:
+      return "gone";
+    case 403:
+      return "forbidden";
+    case 409:
+      return "conflict";
+    case 400:
+    case 422:
+      return "refused";
+    default:
+      return "error";
+  }
+}
+
+/** Only the owner and a manager can confirm a proposal (the server checks again). Everyone else sees a note instead of the button. */
+export function canConfirm(role: Role): boolean {
+  return role === "OWNER" || role === "MANAGER";
+}
+
+/**
+ * Why a question got no answer, as a key in the "assistant.errors" translations.
+ * "unavailable": the model is off, unreachable or busy (503). "timeout": it took too long (504).
+ * "badAnswer": it gave an unusable answer (502). "rateLimited": too many questions a minute (429).
+ * "network": no answer from the server at all. "generic": anything else.
+ */
+export type ChatErrorCode = "unavailable" | "timeout" | "badAnswer" | "rateLimited" | "network" | "generic";
+
+/** Maps the HTTP status of a failed question (null: no answer at all) to its fixed notice. */
+export function chatErrorFor(status: number | null): ChatErrorCode {
+  switch (status) {
+    case null:
+      return "network";
+    case 503:
+      return "unavailable";
+    case 504:
+      return "timeout";
+    case 502:
+      return "badAnswer";
+    case 429:
+      return "rateLimited";
+    default:
+      return "generic";
+  }
+}
 
 export interface ProposalCard {
   proposal: Proposal;
@@ -62,6 +119,8 @@ export interface ChatMessage {
   notices?: NoticeCode[];
   /** A message that says the assistant could not answer. Shown in the danger style and never sent back as history. */
   error?: boolean;
+  /** Which fixed notice an error message shows (its `text` is empty: the server's own words are never displayed). */
+  errorCode?: ChatErrorCode;
 }
 
 export interface HistoryTurn {
@@ -109,6 +168,15 @@ export function proposalKind(kind: string): "create" | "cancel" | null {
 export function showsAssistantButton(pathname: string): boolean {
   const hidden = ["/login", "/signup", "/recover", "/kitchen"];
   return !hidden.some((path) => pathname === path || pathname.startsWith(`${path}/`));
+}
+
+/**
+ * The tallest the message list may be, in pixels, for a visible window height. Normally 55% of it; when the on-screen
+ * keyboard has shrunk the visible window, what is left after the sheet's title, input and buttons (about 260 px), but
+ * never under 96 px (the sheet itself scrolls when even that does not fit).
+ */
+export function listMaxHeight(visibleHeight: number): number {
+  return Math.max(96, Math.round(Math.min(visibleHeight * 0.55, visibleHeight - 260)));
 }
 
 /** The starter questions, as keys in the "assistant.suggestions" translations. The chip's text is what gets sent. */

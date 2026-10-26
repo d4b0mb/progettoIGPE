@@ -8,6 +8,7 @@ import type { components } from "@/api/schema";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Dialog } from "@/components/ui/Dialog";
+import { useOnReservationsChanged } from "@/lib/reservationsChanged";
 import { useRemote } from "@/lib/useRemote";
 import { ReservationForm } from "./ReservationForm";
 import { endTime, timeOf } from "./time";
@@ -40,6 +41,8 @@ export function ReservationDay({ date, canEdit, creating, onCloseCreate }: { dat
     [date],
   );
   const list = useRemote(load);
+  // A booking made or cancelled through the assistant shows up at once.
+  useOnReservationsChanged(list.reload);
   const loadTables = useCallback(() => unwrap(api.GET("/api/v1/tables")), []);
   const tables = useRemote(loadTables);
   const numbers = useMemo(() => new Map((tables.data ?? []).map((tb) => [tb.id, tb.number])), [tables.data]);

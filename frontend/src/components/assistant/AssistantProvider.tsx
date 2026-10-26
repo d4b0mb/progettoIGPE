@@ -6,7 +6,11 @@ import { expectOk, unwrap } from "@/api/call";
 import { ApiError } from "@/api/errors";
 import type { components } from "@/api/schema";
 import type { Role } from "@/components/nav";
+import { announceReservationsChanged } from "@/lib/reservationsChanged";
 import {
+  canConfirm,
+  chatErrorFor,
+  confirmFailureFor,
   isExpired,
   knownNotices,
   MAX_MESSAGE_CHARS,
@@ -122,8 +126,9 @@ export function AssistantProvider({ role, children }: { role: Role; children: Re
         mutate((list) => [...list, assistantMessage(reply)]);
       } catch (e) {
         if (controller.signal.aborted) return;
-        // The server's own explanation when there is one; otherwise the panel shows a general message.
-        mutate((list) => [...list, { id: nextId(), role: "assistant", text: e instanceof ApiError ? e.message : "", error: true }]);
+        // Only the kind of failure is kept: the panel shows a fixed, translated notice, never the server's own words.
+        const errorCode = chatErrorFor(e instanceof ApiError ? e.status : null);
+        mutate((list) => [...list, { id: nextId(), role: "assistant", text: "", error: true, errorCode }]);
       } finally {
         if (abortRef.current === controller) {
           abortRef.current = null;
@@ -146,6 +151,8 @@ export function AssistantProvider({ role, children }: { role: Role; children: Re
       // Only a card that is waiting for an answer can be confirmed, and only once: this check and the
       // "confirming" mark below happen in the same breath, so a double tap cannot send it twice.
       if (!card || card.state.status !== "pending") return;
+      // The server refuses anyone else, and using the proposal up for nothing would only lose it.
+      if (!canConfirm(role)) return;
       if (isExpired(card.proposal.expiresAt, Date.now())) {
         setCard(proposalId, { status: "expired" });
         return;
@@ -157,18 +164,13 @@ export function AssistantProvider({ role, children }: { role: Role; children: Re
           api.POST("/api/v1/assistant/proposals/{id}/confirm", { params: { path: { id: proposalId } } }),
         );
         setCard(proposalId, { status: "done", result });
+        // The reservations list and the floor plan may be showing the old picture.
+        announceReservationsChanged();
       } catch (e) {
-        if (e instanceof ApiError) {
-          setCard(
-            proposalId,
-            e.status === 404 ? { status: "failed", reason: "gone" } : { status: "failed", reason: "error", message: e.message },
-          );
-        } else {
-          setCard(proposalId, { status: "failed", reason: "network" });
-        }
+        setCard(proposalId, { status: "failed", reason: confirmFailureFor(e instanceof ApiError ? e.status : null) });
       }
     },
-    [setCard],
+    [role, setCard],
   );
 
   const dismiss = useCallback(
