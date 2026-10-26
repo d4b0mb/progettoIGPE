@@ -259,7 +259,10 @@ class AssistantServiceTest {
         assertThat(system).contains("Monday 2026-10-26 (today, stasera/tonight)")
                 .contains("Tuesday 2026-10-27 (domani/tomorrow)")
                 .contains("Wednesday 2026-10-28 (dopodomani)")
-                .contains("Sunday 2026-11-08");
+                // Seven days, so every weekday name appears exactly once: Sunday 2026-11-01 is the last line.
+                .contains("Sunday 2026-11-01")
+                .doesNotContain("2026-11-02")
+                .doesNotContain("Saturday 2026-11-07");
         assertThat(system).contains("guest_written_").contains("NEVER say that a booking was made or cancelled");
     }
 
