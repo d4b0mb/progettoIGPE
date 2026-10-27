@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { demo, removeLeftovers, signedIn } from "./helpers";
+import { createReservation, dayFromNow, demo, removeLeftovers, signedIn } from "./helpers";
 
 test("the manager books a table, and the same table is no longer offered at that time", async ({ browser, baseURL }) => {
   // Book for tomorrow at lunch so the seeded evening reservations are out of the way.
@@ -52,12 +52,22 @@ test("the manager books a table, and the same table is no longer offered at that
   await removeLeftovers(baseURL!, day, "Playwright");
 });
 
-test("a waiter can mark a party as arrived but cannot edit or delete the booking", async ({ browser }) => {
+test("a waiter can mark a party as arrived but cannot edit or delete the booking", async ({ browser, baseURL }) => {
+  // Make the booking here, for tomorrow, instead of relying on the seeded "Greco": the seed puts him 90 minutes after
+  // whenever it ran, which after about 22:30 in Rome is already tomorrow and so not on today's list.
+  const day = dayFromNow(1);
+  const guest = `Playwright waiter ${Date.now()}`;
+  await removeLeftovers(baseURL!, day, "Playwright");
+  await createReservation(baseURL!, { guest, day });
+
   const { context, page } = await signedIn(browser, demo.waiter);
   await page.goto("/reservations");
-  const card = page.locator("li").filter({ hasText: "Greco" });
+  await page.locator("#day").fill(day);
+  const card = page.locator("li").filter({ hasText: guest });
+  await expect(card).toBeVisible();
   await expect(card.getByRole("button", { name: "Edit reservation" })).toHaveCount(0);
   await expect(card.getByRole("button", { name: "Delete" })).toHaveCount(0);
   await expect(card.getByRole("button", { name: "Arrived" })).toBeVisible();
   await context.close();
+  await removeLeftovers(baseURL!, day, "Playwright");
 });

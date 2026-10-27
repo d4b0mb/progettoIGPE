@@ -111,8 +111,12 @@ production (Phase 3). GitHub Actions CI. Reasons for each choice: `docs/adr/`.
    - `.claude/agents/`: `chef`, `head-waiter`, `dish-runner` (haiku, Bash for curl only) act as staff through the API to make
      the screens move. Every Bash call passes `staff-curl-guard.ps1` (allowlist; blocks staff, password, recovery, assistant).
      Guard tested by hand (11 cases, after fixing a quote bug); the agents themselves have NOT been run yet.
-   - NOT done: the running containers are older than Block 15. `docker compose up --build -d` fails over SSH (Docker Desktop
-     cannot read Windows credentials without a desktop logon session); run it at the PC or over Remote Desktop.
+   - Stack rebuilt at the PC on 2026-10-27 (`docker compose up --build -d` works from a desktop session, not over SSH).
+   - CI flake fixed: the browser test "a waiter can mark a party as arrived" used the seeded booking "Greco", which the seed
+     places 90 minutes after whenever it ran; after about 22:30 in Rome that is already tomorrow, so the test failed on CI runs
+     late in the evening. It now creates its own booking for tomorrow through the API (`createReservation`, `dayFromNow` in
+     `e2e/tests/helpers.ts`). The seed itself is unchanged: late in the evening the demo's seeded evening bookings still fall on
+     the next day's list.
    - Later (AJ's idea, not started): a live 3D indie-game-style view of the floor with characters showing live activity.
 
 Next phases (not started): Phase 3 Kubernetes (k3s), staging/production, monitoring; Phase 4 public
@@ -176,6 +180,7 @@ ristomanager-cloud. Continue from the status list. Follow the rules in the hando
 Keep answers short and in plain English."
 
 ## Lessons worth remembering
+- Browser tests must not depend on the time of day: make the data they need themselves, for a day that is always in the future (tomorrow), never on the seeded "later tonight" bookings.
 - Jackson 3: `JsonNode.textValue()` THROWS for a number or object (it does not return null). Read model or client JSON through `common/Json.text(node)`.
 - `docker compose up --build frontend` also rebuilds and restarts `backend` (it is a dependency), so the backend you test is the one in your working tree.
 - The browser pane's coordinate clicks are flaky while the page is still loading: focus a field with a script, then type; check results by reading the dialog text.
