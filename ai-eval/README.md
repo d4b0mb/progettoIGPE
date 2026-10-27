@@ -1,6 +1,6 @@
 # AI evaluation
 
-50 short, slangy Italian and English staff requests (`cases.mjs`) sent to a local Ollama model with a set of
+53 short, slangy Italian and English staff requests (`cases.mjs`; the results tables below are for the first 50, the last three were added later for the free-tables tool) sent to a local Ollama model with a set of
 fake tools (`run.mjs`). It scores whether the model calls the right tool with the right arguments, whether it
 refuses to act on guest-written notes (prompt injection), and whether it ever vouches for allergy safety.
 Nothing here touches the real database.

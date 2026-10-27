@@ -4,8 +4,9 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 A multi-tenant web service for restaurants. Staff run reservations, the floor plan
-and orders from a back-office; the kitchen sees every order live; guests book from
-a public page.
+and orders from a back-office; the kitchen sees every order live. A staff assistant,
+running on a local language model, answers questions and prepares bookings for a person to
+confirm. (A public booking page for guests is planned, not built.)
 
 It is the web rewrite of RistoManager, a desktop Java app that lives, frozen, on
 the [`uniVersion`](../../tree/uniVersion) branch. The domain model, rules and tests
@@ -20,13 +21,15 @@ carry over; the Swing interface is replaced by web apps.
 |-------|------|-------|
 | 0 | Foundations: Spring Boot, PostgreSQL, Docker, CI | Done ([notes](docs/phase-0.md)) |
 | 1-2 | Back-office and live kitchen: logins and roles, tenant isolation, floor plan, reservations, menu, orders, live kitchen screen | Done, running with end-to-end tests |
+| AI | A local language model (Ollama): floor plan drafted from a photo, and a staff assistant that can only propose changes (a person confirms), with a 53-request evaluation kit in `ai-eval/` | Working; not yet tried in the pizzeria. Why it is built this way: [ADR 0012](docs/adr/0012-assistant-proposes-people-confirm.md). Voice: research only ([notes](docs/VOICE_RESEARCH.md)) |
 | 3 | Production and pilot: Kubernetes (k3s), staging/production, monitoring | Next. A single-server setup is ready in [docs/DEPLOY.md](docs/DEPLOY.md) |
 | 4 | Public booking site | Planned |
 
 ## Stack
 
 Java 21 and Spring Boot 4 (API), PostgreSQL 17 with Flyway, Next.js 16 (one web app for staff
-and kitchen screens), Docker, GitHub Actions; Kubernetes (k3s) from Phase 3. The reasoning
+and kitchen screens), Docker, GitHub Actions, Ollama for the local language model (optional);
+Kubernetes (k3s) from Phase 3. The reasoning
 behind each choice is in [`docs/adr`](docs/adr/README.md).
 
 ## Try it
@@ -41,6 +44,11 @@ Open http://localhost:3000 and sign in as `owner@demo.ristomanager.local` with p
 `Demo-Password-2026` (also `manager@`, `waiter@`, `kitchen@`). A demo restaurant is created
 for you. Open `/orders` (as the waiter) and `/kitchen` (as the kitchen) side by side to watch an
 order travel live. More in [docs/DEPLOY.md](docs/DEPLOY.md).
+
+The assistant (button at the bottom right) and "from a photo" in the floor plan editor need
+[Ollama](https://ollama.com) running on the same PC with a model that handles tools and images
+(`ollama pull qwen3.5:9b`); everything else works without it, and `GET /api/v1/ai/status` says
+whether the model answers.
 
 ## Run the tests
 
@@ -63,6 +71,12 @@ No mocks stand in for the database: backend tests start a real PostgreSQL throug
   contain it are flagged before sending and the kitchen screen shows a conflict banner.
 - **The kitchen screen is live** (server-sent events), reconnects by itself, and shows priority and
   lateness.
+- **The assistant proposes, a person confirms.** It reads bookings, tables, the kitchen queue and the menu
+  with the signed-in person's own permissions. To create or cancel a booking it can only prepare a card; the
+  change happens when the person presses Confirm, never from anything typed in the chat. It never decides
+  whether food is safe for an allergy.
+- **Floor plan from a photo.** A vision model drafts tables and fixtures from a photo and the room width;
+  you review the draft and nothing is saved until you add it.
 - **Phone and desktop**: bottom navigation on phones, sidebar on desktop; Italian and English.
 
 ## Repository layout
@@ -73,7 +87,8 @@ frontend/        Next.js web app; openapi/ is the API contract the types are gen
 e2e/             Browser tests against the whole running stack
 deploy/          Single-server production setup (HTTPS, backups)
 infra/postgres/  Creates the restricted database role the API runs as
-scripts/         Demo data
+scripts/         Demo data (a restaurant, a week of bookings)
+ai-eval/         The 53 requests used to test the assistant, and the runners
 docs/            ADRs (why), HANDOFF.md (state of the project), DEPLOY.md, phase notes
 ```
 

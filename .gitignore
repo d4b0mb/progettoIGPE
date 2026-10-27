@@ -27,3 +27,6 @@ deploy/.env
 
 # AI evaluation output
 ai-eval/results/
+
+# Database backups made by hand (they hold real demo data)
+/backup*.sql
