@@ -1,0 +1,25 @@
+{
+  "stt": [
+    {
+      "name": "whisper-turbo",
+      "baseUrl": "http://localhost:8000",
+      "model": "Systran/faster-whisper-large-v3-turbo"
+    }
+  ],
+  "tts": [
+    {
+      "name": "kokoro-it-sara",
+      "baseUrl": "http://localhost:8880",
+      "model": "kokoro",
+      "voices": { "it": "if_sara", "en": "bm_george" },
+      "format": "mp3"
+    },
+    {
+      "name": "kokoro-it-nicola",
+      "baseUrl": "http://localhost:8880",
+      "model": "kokoro",
+      "voices": { "it": "im_nicola", "en": "bm_lewis" },
+      "format": "mp3"
+    }
+  ]
+}

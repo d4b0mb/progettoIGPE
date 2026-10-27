@@ -1,0 +1,3 @@
+# Everything the scripts produce (recordings of a real voice, audio, ratings) and your own engine settings.
+out/
+candidates.json

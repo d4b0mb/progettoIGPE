@@ -30,3 +30,7 @@ ai-eval/results/
 
 # Database backups made by hand (they hold real demo data)
 /backup*.sql
+
+# Voice lab output: recordings, generated audio, ratings, local engine settings
+voice-lab/out/
+voice-lab/candidates.json

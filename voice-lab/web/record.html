@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Voice lab - record the phrases</title>
+<style>
+  :root { color-scheme: light dark; --accent: #0b6bcb; --bad: #c62828; --good: #2e7d32; }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  body { font-family: system-ui, sans-serif; margin: 0; padding: 1rem; max-width: 56rem; margin-inline: auto; line-height: 1.4; }
+  header { display: flex; flex-wrap: wrap; gap: .75rem 1.5rem; align-items: center; justify-content: space-between; }
+  h1 { font-size: 1.1rem; margin: 0; }
+  label { font-size: .9rem; }
+  select, button { font: inherit; padding: .5rem .8rem; border-radius: .4rem; border: 1px solid #8887; cursor: pointer; }
+  progress { width: 100%; height: 1rem; margin-top: .5rem; }
+  #progressText { font-size: .9rem; opacity: .8; }
+  #phraseCard { margin: 1.25rem 0; padding: 1.5rem 1rem; border: 2px solid #8886; border-radius: .8rem; text-align: center; }
+  #phrase { font-size: clamp(1.8rem, 5vw, 3rem); font-weight: 600; line-height: 1.25; margin: .25rem 0 .75rem; }
+  #meta { font-size: .85rem; opacity: .8; min-height: 1.3em; }
+  .tag { display: inline-block; padding: .05rem .5rem; border-radius: 1rem; background: #8883; margin-inline: .25rem; }
+  .tag.hard { background: #ff980055; }
+  .tag.done { background: #2e7d3255; }
+  #controls { display: flex; flex-wrap: wrap; gap: .75rem; justify-content: center; margin: 1rem 0; }
+  #recordBtn { font-size: 1.3rem; padding: .8rem 2rem; background: var(--accent); color: #fff; border: none; }
+  #recordBtn.recording { background: var(--bad); animation: pulse 1s infinite; }
+  @keyframes pulse { 50% { opacity: .65; } }
+  #keepBtn { background: var(--good); color: #fff; border: none; }
+  button:disabled { opacity: .4; cursor: not-allowed; }
+  #meter { height: .6rem; background: #8883; border-radius: .3rem; overflow: hidden; max-width: 24rem; margin: .5rem auto; }
+  #meterBar { height: 100%; width: 0; background: var(--good); transition: width 60ms linear; }
+  #status { min-height: 1.5em; text-align: center; font-weight: 500; }
+  #status.error { color: var(--bad); }
+  #player { width: 100%; max-width: 30rem; display: block; margin: .5rem auto; }
+  #nav { display: flex; gap: .5rem; justify-content: center; align-items: center; flex-wrap: wrap; }
+  #jump { max-width: 22rem; }
+  footer { margin-top: 1.5rem; font-size: .85rem; opacity: .8; }
+  #helperMessage { margin: 1.5rem 0; padding: 1.5rem; border: 3px solid var(--bad); border-radius: .8rem; text-align: center; font-size: clamp(1.3rem, 3.5vw, 2rem); font-weight: 600; }
+  #helperMessage[hidden] { display: none; }
+  #helperMessage code { font-size: .9em; background: #8883; padding: .1rem .4rem; border-radius: .3rem; }
+  #helperMessage button { font-size: 1.1rem; margin-top: .5rem; }
+  kbd { border: 1px solid #8888; border-radius: .25rem; padding: 0 .35rem; font-size: .85em; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Voice lab: record the phrases</h1>
+  <label>Where are you right now?
+    <select id="noise">
+      <option value="quiet room">quiet room</option>
+      <option value="kitchen noise">kitchen noise</option>
+      <option value="music">music</option>
+      <option value="outdoors">outdoors</option>
+    </select>
+  </label>
+</header>
+
+<div id="progressBox">
+  <progress id="progress" value="0" max="1"></progress>
+  <div id="progressText"></div>
+</div>
+
+<div id="helperMessage" hidden>
+  <p>This page needs the voice lab helper running.</p>
+  <p>In a terminal in the project folder run: <code>node voice-lab/serve.mjs</code><br>then open <a href="http://127.0.0.1:8099/record.html">http://127.0.0.1:8099/record.html</a></p>
+  <button id="retryBtn" type="button">Retry</button>
+</div>
+
+<main id="phraseCard">
+  <div id="meta"></div>
+  <div id="phrase">Loading...</div>
+  <div id="meter" title="Microphone level"><div id="meterBar"></div></div>
+  <div id="controls">
+    <button id="recordBtn" type="button">Record</button>
+    <button id="redoBtn" type="button" disabled>Redo</button>
+    <button id="keepBtn" type="button" disabled>Keep</button>
+  </div>
+  <audio id="player" controls hidden></audio>
+  <div id="status" role="status" aria-live="polite"></div>
+</main>
+
+<div id="nav">
+  <button id="prevBtn" type="button">&larr; Previous</button>
+  <select id="jump" aria-label="Jump to a phrase"></select>
+  <button id="nextBtn" type="button">Next &rarr;</button>
+</div>
+
+<footer>
+  Say the phrase naturally, the way you would say it to the assistant at work. Keys:
+  <kbd>Space</kbd> record / stop, <kbd>Enter</kbd> keep, <kbd>R</kbd> redo, <kbd>P</kbd> play the take,
+  <kbd>&larr;</kbd> <kbd>&rarr;</kbd> previous / next phrase.
+  Takes are saved on this computer in voice-lab/out/recordings/. Pick the room setting above before you start and change it when you move.
+</footer>
+
+<!-- A classic (non-module) script on purpose: it still runs when record.js cannot load, for example when this
+     file was opened straight from disk (file://) instead of through node voice-lab/serve.mjs. -->
+<script>
+  function showHelperMessage() {
+    document.getElementById("helperMessage").hidden = false;
+    document.getElementById("phraseCard").hidden = true;
+    document.getElementById("progressBox").hidden = true;
+    document.getElementById("nav").hidden = true;
+  }
+  window.showHelperMessage = showHelperMessage;
+  document.getElementById("retryBtn").addEventListener("click", function () {
+    if (location.protocol === "file:") location.href = "http://127.0.0.1:8099/record.html";
+    else location.reload();
+  });
+  if (location.protocol === "file:") showHelperMessage();
+  // If the page script never started (still "Loading..." after a few seconds), say why.
+  setTimeout(function () {
+    if (document.getElementById("phrase").textContent === "Loading...") showHelperMessage();
+  }, 4000);
+</script>
+<script type="module" src="/record.js"></script>
+</body>
+</html>
