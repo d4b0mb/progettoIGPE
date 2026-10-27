@@ -123,6 +123,16 @@ production (Phase 3). GitHub Actions CI. Reasons for each choice: `docs/adr/`.
      the next day's list.
    - Later (AJ's idea, not started): a live 3D indie-game-style view of the floor with characters showing live activity.
 
+17. Voice skeleton (staff, 2026-10-27, off by default): the plan is `docs/VOICE_PLAN.md`, the decision ADR 0013 (proposed), the bigger goal (the same
+   agent facing customers on Telegram, WhatsApp, later the phone) `docs/CUSTOMER_AGENT_PLAN.md`. Backend package `voice`: `GET /api/v1/voice/status`,
+   `POST /transcribe` (multipart part `audio`), `POST /speak` (JSON text, returns audio); OpenAI-audio-API clients for any local engine (listening:
+   faster-whisper through speaches; speaking: Kokoro-FastAPI), `app.voice.*` with `VOICE_ENABLED=false` by default, its own rate limit (`voiceGate`),
+   nothing stored or logged. Panel: mic button (tap or hold), spoken replies, `useVoice.ts`; a transcript is sent as an ordinary message and voice can
+   never confirm a proposal. `voice-lab/` (recorder, blind listening page, STT accuracy, latency; `node --test "voice-lab/test/*.test.mjs"`) and
+   `docker-compose.voice.yml` (profiles `voice-gpu` and `voice-cpu`). NOT done: no engine has been started yet (the speaches CUDA image on the RTX 5080
+   is unverified), no listening test, no phone over https (needs Tailscale HTTPS certificates enabled in the admin console), no wake word, no spoken
+   confirmation (deliberately), no customer channels. Next step is "Tomorrow morning" in VOICE_PLAN.md section 6.
+
 Next phases (not started): Phase 3 Kubernetes (k3s), staging/production, monitoring; Phase 4 public
 booking site (Next.js, SEO, email confirmation).
 
@@ -186,6 +196,8 @@ ristomanager-cloud. Continue from the status list. Follow the rules in the hando
 Keep answers short and in plain English."
 
 ## Lessons worth remembering
+- Never cap the output of a long `docker run` with `Select-Object -First N` in PowerShell: when the cap is reached the pipe closes and the run is cut off (it looks like a failure, and the container may keep running on its own). Filter, then use `-Last`.
+- `node --test` on Windows needs a file pattern (`node --test "dir/*.test.mjs"`), not a folder. A raw U+2028 or U+2029 inside a JavaScript regex literal is a syntax error: write the escape.
 - Browser tests must not depend on the time of day: make the data they need themselves, for a day that is always in the future (tomorrow), never on the seeded "later tonight" bookings.
 - Jackson 3: `JsonNode.textValue()` THROWS for a number or object (it does not return null). Read model or client JSON through `common/Json.text(node)`.
 - `docker compose up --build frontend` also rebuilds and restarts `backend` (it is a dependency), so the backend you test is the one in your working tree.
