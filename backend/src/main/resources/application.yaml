@@ -53,6 +53,30 @@ app:
     limits:
       max-concurrent: ${AI_MAX_CONCURRENT:2}
       per-user-per-minute: ${AI_PER_USER_PER_MINUTE:12}
+  voice:
+    # Speaking to the assistant and hearing it. Off by default. Two local servers that speak the OpenAI audio API:
+    # for example faster-whisper / speaches to listen and Kokoro-FastAPI to speak. Nothing leaves the restaurant's machine.
+    enabled: ${VOICE_ENABLED:false}
+    stt:
+      base-url: ${VOICE_STT_URL:http://localhost:8000}
+      # The model name is whatever the listening server calls its model.
+      model: ${VOICE_STT_MODEL:whisper-1}
+      # it or en to force a language; empty lets the engine detect it.
+      language: ${VOICE_STT_LANGUAGE:}
+      timeout: 30s
+    tts:
+      base-url: ${VOICE_TTS_URL:http://localhost:8880}
+      model: ${VOICE_TTS_MODEL:kokoro}
+      voice-it: ${VOICE_TTS_VOICE_IT:if_sara}
+      voice-en: ${VOICE_TTS_VOICE_EN:af_heart}
+      format: ${VOICE_TTS_FORMAT:mp3}
+      timeout: 30s
+    # Voice has its own limits: one spoken turn is three calls (listen, think, speak) and must not use up the assistant's budget.
+    limits:
+      max-audio-bytes: 5242880
+      max-text-chars: 600
+      max-concurrent: 2
+      per-user-per-minute: 40
 
 springdoc:
   # The machine-readable API description. Off unless asked for: it lists every

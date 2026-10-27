@@ -1,11 +1,13 @@
 package it.ristomanager.cloud.ai;
 
-/** Placeholder used until a real speech-to-text engine is configured. */
-class NoSpeechRecognizer implements SpeechRecognizer {
+import it.ristomanager.cloud.ai.AiException.Kind;
+
+/** Used when voice is switched off: every call is refused with {@link Kind#DISABLED}. */
+public class NoSpeechRecognizer implements SpeechRecognizer {
 
     @Override
     public String transcribe(byte[] audio, String audioMimeType, String languageTag) {
-        throw new UnsupportedOperationException("No speech recognition engine configured");
+        throw new AiException(Kind.DISABLED, "Speech recognition is disabled");
     }
 
     @Override

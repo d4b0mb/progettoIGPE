@@ -4,7 +4,7 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-/** Chooses the model and speech implementations. Replace a bean here to change provider. */
+/** Chooses the language model implementation. Replace the bean here to change provider (speech: see VoiceConfig). */
 @Configuration
 @EnableConfigurationProperties(AiProperties.class)
 class AiConfig {
@@ -12,15 +12,5 @@ class AiConfig {
     @Bean
     LlmClient llmClient(AiProperties props) {
         return new OllamaClient(props);
-    }
-
-    @Bean
-    SpeechSynthesizer speechSynthesizer() {
-        return new NoSpeechSynthesizer();
-    }
-
-    @Bean
-    SpeechRecognizer speechRecognizer() {
-        return new NoSpeechRecognizer();
     }
 }

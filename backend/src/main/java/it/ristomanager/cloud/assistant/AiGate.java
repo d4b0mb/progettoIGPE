@@ -14,6 +14,7 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Primary;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
@@ -23,8 +24,12 @@ import org.springframework.stereotype.Service;
  * cannot get a slot within two seconds is turned away with a clear message instead of waiting.
  *
  * Held in memory, so the limits apply per running instance (the application runs as one instance).
+ *
+ * {@code @Primary}: this is the assistant's gate. Voice has its own instance (bean "voiceGate", see VoiceConfig) with
+ * its own limits, so by-type injection of an AiGate keeps meaning this one.
  */
 @Service
+@Primary
 public class AiGate {
 
     static final Duration WINDOW = Duration.ofSeconds(60);

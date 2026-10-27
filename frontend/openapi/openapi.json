@@ -429,6 +429,77 @@
         }
       }
     },
+    "/api/v1/voice/transcribe" : {
+      "post" : {
+        "tags" : [ "voice-controller" ],
+        "operationId" : "transcribe",
+        "parameters" : [ {
+          "name" : "language",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "multipart/form-data" : {
+              "schema" : {
+                "type" : "object",
+                "properties" : {
+                  "audio" : {
+                    "type" : "string",
+                    "format" : "binary"
+                  }
+                },
+                "required" : [ "audio" ]
+              }
+            }
+          }
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/TranscribeResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/voice/speak" : {
+      "post" : {
+        "tags" : [ "voice-controller" ],
+        "operationId" : "speak",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/SpeakRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "The spoken audio, in the format the engine produced",
+            "content" : {
+              "audio/*" : {
+                "schema" : {
+                  "type" : "string",
+                  "format" : "binary"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/staff" : {
       "get" : {
         "tags" : [ "staff-controller" ],
@@ -1199,6 +1270,24 @@
         }
       }
     },
+    "/api/v1/voice/status" : {
+      "get" : {
+        "tags" : [ "voice-controller" ],
+        "operationId" : "status_1",
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/VoiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/tables" : {
       "get" : {
         "tags" : [ "floor-controller" ],
@@ -1223,7 +1312,7 @@
     "/api/v1/status" : {
       "get" : {
         "tags" : [ "status-controller" ],
-        "operationId" : "status_1",
+        "operationId" : "status_2",
         "responses" : {
           "200" : {
             "description" : "OK",
@@ -2115,6 +2204,32 @@
         },
         "required" : [ "answer1", "answer2", "currentPassword", "question1", "question2" ]
       },
+      "TranscribeResult" : {
+        "type" : "object",
+        "properties" : {
+          "text" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "text" ]
+      },
+      "SpeakRequest" : {
+        "type" : "object",
+        "properties" : {
+          "text" : {
+            "type" : "string",
+            "maxLength" : 2000,
+            "minLength" : 0
+          },
+          "language" : {
+            "type" : "string"
+          },
+          "voice" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "text" ]
+      },
       "CreateStaffRequest" : {
         "type" : "object",
         "properties" : {
@@ -2737,6 +2852,21 @@
             "enum" : [ "NEW", "PREPARING", "READY", "SERVED", "CANCELLED" ]
           }
         }
+      },
+      "VoiceStatus" : {
+        "type" : "object",
+        "properties" : {
+          "enabled" : {
+            "type" : "boolean"
+          },
+          "speechToText" : {
+            "type" : "boolean"
+          },
+          "textToSpeech" : {
+            "type" : "boolean"
+          }
+        },
+        "required" : [ "enabled", "speechToText", "textToSpeech" ]
       },
       "StatusResponse" : {
         "type" : "object",

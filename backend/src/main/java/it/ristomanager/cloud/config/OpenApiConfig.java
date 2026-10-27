@@ -29,7 +29,7 @@ class OpenApiConfig {
             "Reservation", "MenuItem", "Modifier", "UserView", "ItemView", "TicketView",
             "TokenResponse", "StatusResponse", "AuditEntry","RestaurantView", "RecoveryStatus", "RecoveryQuestionsResponse",
             "AiStatusResponse", "FloorDraft", "DraftTable", "DraftElement",
-            "AssistantReply", "ProposalView", "ConfirmResult");
+            "AssistantReply", "ProposalView", "ConfirmResult", "VoiceStatus", "TranscribeResult");
 
     @Bean
     @SuppressWarnings({"rawtypes", "unchecked"})

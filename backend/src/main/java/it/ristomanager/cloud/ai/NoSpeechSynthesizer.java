@@ -1,11 +1,13 @@
 package it.ristomanager.cloud.ai;
 
-/** Placeholder used until a real speech engine is configured. */
-class NoSpeechSynthesizer implements SpeechSynthesizer {
+import it.ristomanager.cloud.ai.AiException.Kind;
+
+/** Used when voice is switched off: every call is refused with {@link Kind#DISABLED}. */
+public class NoSpeechSynthesizer implements SpeechSynthesizer {
 
     @Override
-    public byte[] speak(String text, String languageTag) {
-        throw new UnsupportedOperationException("No speech engine configured");
+    public SpeechAudio speak(String text, String languageTag, String voice) {
+        throw new AiException(Kind.DISABLED, "Speech synthesis is disabled");
     }
 
     @Override
