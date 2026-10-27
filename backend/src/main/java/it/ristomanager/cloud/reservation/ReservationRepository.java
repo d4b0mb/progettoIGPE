@@ -113,11 +113,24 @@ public class ReservationRepository {
                 .query(ReservationRepository::map).optional();
     }
 
-    /** The party currently seated at this table (arrived and not yet finished), if any. */
+    /**
+     * How far from now a party marked as arrived still counts as seated: 12 hours either side. The floor screen shows a
+     * table as occupied by the same rule ({@link #liveStatuses}), and an order must find the same party, or a guest who
+     * came early or is staying late gets an order with no allergy alarm while the table still shows as theirs.
+     */
+    static final long SEATED_WINDOW_SECONDS = 12 * 3600L;
+
+    /**
+     * The party seated at this table (marked as arrived and not yet finished), if any. If more than one is marked, the one
+     * whose booked time is nearest to now wins, so a forgotten booking from earlier never hides the current party.
+     */
     public Optional<Reservation> findArrivedAt(UUID rid, UUID tableId, Instant now) {
         return jdbc.sql("select " + COLS + " from reservation where restaurant_id = :rid and table_id = :table "
-                        + "and status = 'ARRIVED' and starts_at <= :now and ends_at > :now order by starts_at desc limit 1")
+                        + "and status = 'ARRIVED' and starts_at < :until and starts_at > :since "
+                        + "order by abs(extract(epoch from (starts_at - :now))) limit 1")
                 .param("rid", rid).param("table", tableId).param("now", utc(now))
+                .param("until", utc(now.plusSeconds(SEATED_WINDOW_SECONDS)))
+                .param("since", utc(now.minusSeconds(SEATED_WINDOW_SECONDS)))
                 .query(ReservationRepository::map).optional();
     }
 
@@ -142,7 +155,7 @@ public class ReservationRepository {
                         // 12 hours either side keeps a forgotten, never-completed booking from blocking a table for good.
                         + "or (status = 'ARRIVED' and starts_at < :arrivedUntil and starts_at > :arrivedSince))")
                 .param("rid", rid).param("now", utc(now)).param("horizon", utc(now.plusSeconds(3600)))
-                .param("arrivedUntil", utc(now.plusSeconds(12 * 3600L))).param("arrivedSince", utc(now.minusSeconds(12 * 3600L)))
+                .param("arrivedUntil", utc(now.plusSeconds(SEATED_WINDOW_SECONDS))).param("arrivedSince", utc(now.minusSeconds(SEATED_WINDOW_SECONDS)))
                 .query((rs, n) -> Map.entry(rs.getObject("table_id", UUID.class), rs.getString("status")))
                 .list()
                 .forEach(e -> {

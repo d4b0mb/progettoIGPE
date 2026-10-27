@@ -242,6 +242,60 @@ class ReservationIT {
         api.get(kitchen, "/api/v1/reservations?date=" + tomorrow()).andExpect(status().isForbidden());
     }
 
+    private void waiterSets(Actor waiter, String id, String status, int expectedHttp) throws Exception {
+        api.patch(waiter, "/api/v1/reservations/" + id + "/status", "{\"status\":\"" + status + "\"}")
+                .andExpect(status().is(expectedHttp));
+    }
+
+    private String statusOf(String id) throws Exception {
+        return ApiClient.read(api.get(owner, "/api/v1/reservations/" + id).andExpect(status().isOk()), "$.status");
+    }
+
+    @Test
+    void aWaiterCanOnlyMarkArrivedNoShowOrCompleted() throws Exception {
+        Actor waiter = api.staff(owner, "WAITER");
+        String id = ApiClient.read(api.post(owner, "/api/v1/reservations", booking("Rossi", at(20, 0), 2, null, "CONFIRMED"))
+                .andExpect(status().isCreated()), "$.id");
+
+        // Cancelling, resetting and the same status again are refused, and nothing changes.
+        waiterSets(waiter, id, "CANCELLED", 403);
+        waiterSets(waiter, id, "PENDING", 403);
+        waiterSets(waiter, id, "CONFIRMED", 403);
+        assertThat(statusOf(id)).isEqualTo("CONFIRMED");
+        api.patch(waiter, "/api/v1/reservations/" + id + "/status", "{}").andExpect(status().isForbidden());
+
+        // The moves the day screen offers.
+        waiterSets(waiter, id, "ARRIVED", 200);
+        waiterSets(waiter, id, "CANCELLED", 403);
+        waiterSets(waiter, id, "CONFIRMED", 403);
+        assertThat(statusOf(id)).isEqualTo("ARRIVED");
+        waiterSets(waiter, id, "COMPLETED", 200);
+        // A finished booking cannot be brought back by a waiter.
+        waiterSets(waiter, id, "ARRIVED", 403);
+        assertThat(statusOf(id)).isEqualTo("COMPLETED");
+    }
+
+    @Test
+    void aWaiterCannotReviveACancelledBookingButCanMarkANoShow() throws Exception {
+        Actor waiter = api.staff(owner, "WAITER");
+        String cancelled = ApiClient.read(api.post(owner, "/api/v1/reservations", booking("Verdi", at(20, 0), 2, null, "CONFIRMED"))
+                .andExpect(status().isCreated()), "$.id");
+        api.patch(owner, "/api/v1/reservations/" + cancelled + "/status", "{\"status\":\"CANCELLED\"}").andExpect(status().isOk());
+        waiterSets(waiter, cancelled, "ARRIVED", 403);
+        waiterSets(waiter, cancelled, "CONFIRMED", 403);
+        assertThat(statusOf(cancelled)).isEqualTo("CANCELLED");
+
+        String noShow = ApiClient.read(api.post(owner, "/api/v1/reservations", booking("Neri", at(21, 0), 2, null, "PENDING"))
+                .andExpect(status().isCreated()), "$.id");
+        waiterSets(waiter, noShow, "NO_SHOW", 200);
+        assertThat(statusOf(noShow)).isEqualTo("NO_SHOW");
+        waiterSets(waiter, java.util.UUID.randomUUID().toString(), "ARRIVED", 404);
+
+        // Owners and managers keep every move, including cancelling and reviving.
+        api.patch(owner, "/api/v1/reservations/" + noShow + "/status", "{\"status\":\"CANCELLED\"}").andExpect(status().isOk());
+        api.patch(owner, "/api/v1/reservations/" + noShow + "/status", "{\"status\":\"CONFIRMED\"}").andExpect(status().isOk());
+    }
+
     @Test
     void restaurantsCannotSeeOrTouchEachOthersReservations() throws Exception {
         String table = addTable(4);

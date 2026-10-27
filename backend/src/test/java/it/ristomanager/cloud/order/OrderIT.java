@@ -7,12 +7,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import it.ristomanager.cloud.support.ApiClient;
 import it.ristomanager.cloud.support.ApiClient.Actor;
+import it.ristomanager.cloud.support.OwnerDb;
 import it.ristomanager.cloud.support.PostgresTestConfig;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -24,6 +26,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.web.servlet.MockMvc;
+import org.testcontainers.postgresql.PostgreSQLContainer;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -32,6 +35,9 @@ class OrderIT {
 
     @Autowired
     MockMvc mvc;
+
+    @Autowired
+    PostgreSQLContainer postgres;
 
     ApiClient api;
     Actor owner;
@@ -106,6 +112,71 @@ class OrderIT {
                 .andExpect(jsonPath("$.hasAllergyConflicts").value(true))
                 .andExpect(jsonPath("$.items[?(@.name=='Pesto trofie')].conflicts[0]").value("TREE_NUTS"))
                 .andExpect(jsonPath("$.items[?(@.name=='Steak')].conflicts.length()").value(0));
+    }
+
+    /** A party with a nut allergy, marked as arrived at the table, booked to start at the given moment. Returns its id. */
+    private String arrivedParty(String name, OffsetDateTime startsAt) throws Exception {
+        return ApiClient.read(api.post(owner, "/api/v1/reservations", """
+                {"guestName":"%s","phone":"+39 333 000 3333","startsAt":"%s","partySize":2,"tableId":"%s",
+                 "status":"ARRIVED","allergens":["TREE_NUTS"]}
+                """.formatted(name, startsAt, table)).andExpect(status().isCreated()), "$.id");
+    }
+
+    /**
+     * Moves the booking so it started that long ago (and so ended two hours after that, the usual stay), as the database
+     * owner: the API refuses a booking on a day that has passed.
+     */
+    private void startedAgo(String reservationId, String interval) {
+        try (OwnerDb db = new OwnerDb(postgres)) {
+            db.run("update reservation set starts_at = now() - cast(? as interval), "
+                            + "ends_at = now() - cast(? as interval) + interval '2 hours' where id = ?",
+                    interval, interval, UUID.fromString(reservationId));
+        }
+    }
+
+    private void assertNutAllergyReachesTheKitchen(String guest) throws Exception {
+        api.post(waiter, "/api/v1/orders", order(table, "NORMAL", pesto, steak))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.guestName").value(guest))
+                .andExpect(jsonPath("$.guestAllergens[0]").value("TREE_NUTS"))
+                .andExpect(jsonPath("$.hasAllergyConflicts").value(true))
+                .andExpect(jsonPath("$.items[?(@.name=='Pesto trofie')].conflicts[0]").value("TREE_NUTS"));
+    }
+
+    @Test
+    void aPartyThatArrivedBeforeItsBookedTimeStillGetsTheAllergyAlarm() throws Exception {
+        arrivedParty("Early", OffsetDateTime.now().plusMinutes(45));
+
+        assertNutAllergyReachesTheKitchen("Early");
+    }
+
+    @Test
+    void aPartyStayingPastItsBookedEndStillGetsTheAllergyAlarm() throws Exception {
+        String id = arrivedParty("Late", OffsetDateTime.now().plusMinutes(1));
+        startedAgo(id, "3 hours"); // booked for 2 hours, so it ended an hour ago and the party is still at the table
+
+        assertNutAllergyReachesTheKitchen("Late");
+    }
+
+    @Test
+    void anArrivalForgottenOnTheFloorForHalfADayIsNotTakenForTheCurrentGuests() throws Exception {
+        String id = arrivedParty("Forgotten", OffsetDateTime.now().plusMinutes(1));
+        startedAgo(id, "14 hours");
+
+        api.post(waiter, "/api/v1/orders", order(table, "NORMAL", pesto))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.guestName").value(""))
+                .andExpect(jsonPath("$.guestAllergens.length()").value(0))
+                .andExpect(jsonPath("$.hasAllergyConflicts").value(false));
+    }
+
+    @Test
+    void whenAnOldPartyWasNeverClosedTheNearestOneIsTheCurrentGuest() throws Exception {
+        String old = arrivedParty("Old", OffsetDateTime.now().plusMinutes(1));
+        startedAgo(old, "3 hours");
+        arrivedParty("Current", OffsetDateTime.now().minusMinutes(5));
+
+        assertNutAllergyReachesTheKitchen("Current");
     }
 
     @Test

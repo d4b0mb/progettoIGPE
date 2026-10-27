@@ -1,9 +1,11 @@
 package it.ristomanager.cloud.reservation;
 
+import it.ristomanager.cloud.common.ApiException;
 import it.ristomanager.cloud.floor.FloorTypes.DiningTable;
 import it.ristomanager.cloud.reservation.ReservationTypes.ReservationRequest;
 import it.ristomanager.cloud.reservation.ReservationTypes.Reservation;
 import it.ristomanager.cloud.security.CurrentUser;
+import it.ristomanager.cloud.user.Role;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -74,10 +76,21 @@ class ReservationController {
         return service.update(CurrentUser.from(jwt).restaurantId(), id, draft);
     }
 
-    /** A waiter can mark a party as arrived without being able to edit the booking. */
+    /**
+     * A waiter can mark a party as arrived, a no-show or completed without being able to edit the booking; any other
+     * change of status (cancelling, reviving, resetting) is for the owner and managers.
+     */
     @PatchMapping("/{id}/status")
     Reservation changeStatus(@AuthenticationPrincipal Jwt jwt, @PathVariable UUID id, @RequestBody ReservationStatusChange body) {
-        return service.changeStatus(CurrentUser.from(jwt).restaurantId(), id, body.status());
+        CurrentUser me = CurrentUser.from(jwt);
+        if (me.role() == Role.WAITER) {
+            ReservationStatus from = service.get(me.restaurantId(), id).status();
+            if (body.status() == null || !from.waiterMayMoveTo(body.status())) {
+                throw new ApiException(HttpStatus.FORBIDDEN,
+                        "A waiter can mark a booking as arrived, no-show or completed, and nothing else");
+            }
+        }
+        return service.changeStatus(me.restaurantId(), id, body.status());
     }
 
     @DeleteMapping("/{id}")

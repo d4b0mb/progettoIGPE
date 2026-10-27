@@ -160,11 +160,13 @@ Italian is the default UI language; English is available.
 - Public booking site (Phase 4) and Kubernetes (Phase 3) are not started.
 
 ## Open issues (from the independent review, 2026-10-26; none fixed yet unless marked)
-Verified in the code by the author: F-1 and F-8. The rest are the reviewer's findings, not yet re-checked.
-- **F-1 (high, safety): the allergy alarm can be missing.** `ReservationRepository.findArrivedAt` only accepts an ARRIVED booking while `starts_at <= now < ends_at`;
-  `liveStatuses` uses a 12 h window. A guest who arrives early or stays late gives an order with no allergy link and no alarm. Fix: use the same window,
-  add an `OrderIT` case; consider copying reservation notes onto the ticket and showing "no reservation linked".
-- **F-8 (medium): a waiter can set any reservation status** (`PATCH /reservations/{id}/status`): cancel, no-show, revive. Restrict to ARRIVED (and maybe COMPLETED).
+F-1 and F-8 were verified by the author and are fixed. The rest are the reviewer's findings, not yet re-checked.
+- ~~F-1 (high, safety): the allergy alarm can be missing.~~ **Fixed 2026-10-27.** An order now links the party marked ARRIVED at the table within
+  12 hours either side of now (the same rule as the floor screen's "occupied"), nearest booked time first, so early arrivals and late stays get the
+  alarm. Tests in `OrderIT`. Still true: a party that is seated but still marked CONFIRMED is not linked (the waiter must press Arrived, or pick the
+  reservation on the order), and free-text allergy notes on a reservation never reach the ticket (only the declared allergens do).
+- ~~F-8 (medium): a waiter can set any reservation status.~~ **Fixed 2026-10-27.** A waiter can only do what the day screen offers: PENDING or
+  CONFIRMED to ARRIVED or NO_SHOW, and ARRIVED to COMPLETED (`ReservationStatus.waiterMayMoveTo`, 403 otherwise; owner and manager unchanged).
 - F-3: `/auth/recovery/questions` reveals which owner emails have recovery set up (real questions vs a fixed decoy list).
 - F-4: `RecoveryThrottle` maps grow without bound; the per-address limit trusts `X-Forwarded-For` (check what Caddy and the Next rewrite pass).
 - F-5: refresh-token rotation is not atomic (two parallel refreshes both succeed); revoke with `where not revoked` and require one row.
