@@ -33,3 +33,13 @@ project). They are the same three parts we already have slots for, so no single 
 - Is Kokoro's grade-C Italian good enough? Needs an ear test.
 - Does Chatterbox Multilingual run alongside the 9b model in 16 GB of video memory? Needs a measurement.
 - A "Jarvis" voice cloned from a person's recording has consent and licence questions: use a voice we have the right to use.
+
+## Addendum, 2026-10-27 (second round; the plan built on it is `docs/VOICE_PLAN.md`)
+- **Blackwell (RTX 50 series, sm_120)** needs software built for CUDA 12.8 or newer ([PyTorch forum](https://discuss.pytorch.org/t/pytorch-support-for-sm120/216099), [Whishper issue](https://github.com/pluja/whishper/issues/172)). Kokoro-FastAPI ships `latest-cu128` for it ([README](https://github.com/remsky/Kokoro-FastAPI)); whether the speaches CUDA image does is unverified.
+- **Kokoro-FastAPI**: OpenAI-compatible speech endpoint with streaming output; about 300 ms to first audio and 35x to 100x real time on an RTX 4060 Ti; about 3 to 4 GB of video memory; models are inside the image; no documented health endpoint; Italian voices by the `if_`/`im_` prefix.
+- **speaches** ([README](https://github.com/speaches-ai/speaches)): OpenAI-compatible server for faster-whisper (listening) and Kokoro and Piper (speaking), GPU or CPU, server-sent-event streaming of transcripts.
+- **Italian recognition**: FLEURS word error rate 2.54% (Whisper large-v3), 2.77% (large-v3-turbo), 3.02% (Parakeet v3, about 6x faster) ([leaderboard](https://models.handy.computer/languages/it)); read speech, quiet room.
+- **Voxtral Mini 4B Realtime** ([model card](https://huggingface.co/mistralai/Voxtral-Mini-4B-Realtime-2602)): Apache 2.0, Italian included, streaming with a delay of 240 ms to 2.4 s, needs a 16 GB GPU alone.
+- **Microphone needs a secure page** ([MDN](https://developer.mozilla.org/en-US/docs/Web/API/MediaDevices/getUserMedia)); Tailscale HTTPS must be enabled in the admin console and publishes machine names on a public log ([Tailscale](https://tailscale.com/kb/1153/enabling-https)).
+- **Wake word**: openWakeWord ships a "hey jarvis" model ([repo](https://github.com/dscripka/openWakeWord)), trained on synthetic speech, with a reported false trigger on "hey ja" ([issue](https://github.com/dscripka/openWakeWord/issues/142)). **VAD in the browser**: Silero through [vad-web](https://github.com/ricky0123/vad).
+- **OpenClaw**: see `docs/CUSTOMER_AGENT_PLAN.md`.
