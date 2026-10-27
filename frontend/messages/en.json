@@ -555,6 +555,32 @@
       "SAFETY_CLAIM_REMOVED": "The assistant cannot confirm that a dish is safe for an allergy. Ask the kitchen.",
       "TOO_MANY_STEPS": "The assistant could not finish. Try asking in a different way.",
       "NOTHING_CHANGED": "Nothing was changed. Try the request again."
+    },
+    "voice": {
+      "talk": "Talk",
+      "stopAndSend": "Stop and send",
+      "cancel": "Cancel",
+      "hint": "Tap to talk, or hold the button and release to send.",
+      "listening": "Listening… pause or tap to send.",
+      "transcribing": "Writing down what you said…",
+      "speaking": "Speaking…",
+      "stopSpeaking": "Stop speaking",
+      "notHeard": "I did not catch that. Try again, closer to the microphone.",
+      "settings": "Voice settings",
+      "autoSend": "Send automatically",
+      "speakReplies": "Speak replies",
+      "insecure": "The microphone needs a secure connection (https). Ask to set it up.",
+      "denied": "The microphone is blocked. Allow it in the browser settings for this site, then try again.",
+      "notFound": "No microphone found. Plug one in or check the device.",
+      "busy": "Another app is using the microphone. Close it and try again.",
+      "unsupported": "This browser cannot record sound. Write your message instead.",
+      "tooLarge": "The recording was too long. Say it in a shorter way.",
+      "unsupportedType": "The server does not accept this audio format.",
+      "tooManyRequests": "Too many voice requests in a short time. Wait a minute and try again.",
+      "unavailable": "Voice is not available right now. You can still type your message.",
+      "connectionLost": "No connection to the server. Check the network and try again.",
+      "playbackBlocked": "The browser blocked the sound. Tap the microphone or the speaker switch once, then try again.",
+      "generic": "Voice did not work. You can still type your message."
     }
   }
 }

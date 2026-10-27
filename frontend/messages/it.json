@@ -555,6 +555,32 @@
       "SAFETY_CLAIM_REMOVED": "L'assistente non può confermare che un piatto sia sicuro per un'allergia. Chiedi alla cucina.",
       "TOO_MANY_STEPS": "L'assistente non è riuscito a finire. Prova a chiederlo in un altro modo.",
       "NOTHING_CHANGED": "Non è stato cambiato nulla. Riprova la richiesta."
+    },
+    "voice": {
+      "talk": "Parla",
+      "stopAndSend": "Ferma e invia",
+      "cancel": "Annulla",
+      "hint": "Tocca per parlare, oppure tieni premuto e rilascia per inviare.",
+      "listening": "Ti ascolto… fai una pausa o tocca per inviare.",
+      "transcribing": "Sto scrivendo quello che hai detto…",
+      "speaking": "Sto parlando…",
+      "stopSpeaking": "Ferma la voce",
+      "notHeard": "Non ho capito. Riprova, più vicino al microfono.",
+      "settings": "Impostazioni vocali",
+      "autoSend": "Invia in automatico",
+      "speakReplies": "Leggi le risposte",
+      "insecure": "Il microfono richiede una connessione sicura (https). Chiedi di configurarla.",
+      "denied": "Il microfono è bloccato. Consentilo nelle impostazioni del browser per questo sito e riprova.",
+      "notFound": "Nessun microfono trovato. Collegane uno o controlla il dispositivo.",
+      "busy": "Un'altra app sta usando il microfono. Chiudila e riprova.",
+      "unsupported": "Questo browser non può registrare l'audio. Scrivi il messaggio.",
+      "tooLarge": "La registrazione era troppo lunga. Dillo in modo più breve.",
+      "unsupportedType": "Il server non accetta questo formato audio.",
+      "tooManyRequests": "Troppe richieste vocali in poco tempo. Aspetta un minuto e riprova.",
+      "unavailable": "La voce non è disponibile in questo momento. Puoi scrivere il messaggio.",
+      "connectionLost": "Nessuna connessione con il server. Controlla la rete e riprova.",
+      "playbackBlocked": "Il browser ha bloccato l'audio. Tocca una volta il microfono o l'interruttore, poi riprova.",
+      "generic": "La voce non ha funzionato. Puoi scrivere il messaggio."
     }
   }
 }

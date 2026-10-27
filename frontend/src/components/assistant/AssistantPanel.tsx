@@ -1,11 +1,12 @@
 "use client";
 
 import { useLocale, useTranslations } from "next-intl";
-import { useEffect, useId, useRef, useState, type KeyboardEvent } from "react";
+import { useEffect, useId, useRef, useState, type KeyboardEvent, type RefObject } from "react";
 import { Button } from "@/components/ui/Button";
 import { Dialog } from "@/components/ui/Dialog";
 import { Icon } from "@/components/ui/Icon";
 import { useAssistant } from "./AssistantProvider";
+import { useVoice, type VoiceApi } from "./useVoice";
 import {
   canConfirm,
   describeProposalDate,
@@ -31,11 +32,22 @@ const COUNTER_FROM = 900;
  */
 export function AssistantPanel() {
   const t = useTranslations("assistant");
-  const { isOpen, close } = useAssistant();
+  const locale = useLocale();
+  const { isOpen, close, send, busy, messages } = useAssistant();
   const [draft, setDraft] = useState("");
+  // Voice lives here, next to the draft and outside the sheet's content, so it can stop everything when the sheet closes.
+  // What it hears is sent through the ordinary send(), or put in the text box: it never confirms anything.
+  const voice = useVoice({
+    open: isOpen,
+    locale,
+    send,
+    busy,
+    messages,
+    onDraft: (text) => setDraft((current) => (current.trim() === "" ? text : `${current.trimEnd()} ${text}`).slice(0, MAX_MESSAGE_CHARS)),
+  });
   return (
     <Dialog open={isOpen} onClose={close} title={t("title")}>
-      <AssistantBody draft={draft} setDraft={setDraft} />
+      <AssistantBody draft={draft} setDraft={setDraft} voice={voice} />
     </Dialog>
   );
 }
@@ -72,14 +84,16 @@ function useVisibleHeight(): number {
   return height;
 }
 
-function AssistantBody({ draft, setDraft }: { draft: string; setDraft: (text: string) => void }) {
+function AssistantBody({ draft, setDraft, voice }: { draft: string; setDraft: (text: string) => void; voice: VoiceApi }) {
   const t = useTranslations("assistant");
   const { role, messages, busy, send, cancel, confirm, dismiss, clear } = useAssistant();
   const now = useNow(CLOCK_MS);
   const visibleHeight = useVisibleHeight();
   const inputId = useId();
+  const hintId = useId();
   const listRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const micRef = useRef<HTMLButtonElement>(null);
 
   // Always show the newest message (and the "thinking" line under it), also when the keyboard changes the list's height.
   useEffect(() => {
@@ -106,9 +120,18 @@ function AssistantBody({ draft, setDraft }: { draft: string; setDraft: (text: st
   // Deferred a tick: the sheet itself is opened by the Dialog just after this content first appears.
   useEffect(() => {
     if (busy) return;
-    const timer = window.setTimeout(() => inputRef.current?.focus(), 0);
+    const timer = window.setTimeout(() => {
+      // Someone talking to the assistant stays on the microphone button: the text box would only raise the keyboard.
+      if (document.activeElement === micRef.current) return;
+      inputRef.current?.focus();
+    }, 0);
     return () => window.clearTimeout(timer);
   }, [busy]);
+
+  // A transcript put in the text box (when sending is manual) is there to be read and corrected: move to it.
+  useEffect(() => {
+    if (voice.drafted > 0) inputRef.current?.focus();
+  }, [voice.drafted]);
 
   // The field grows with what is typed, up to about four lines (the CSS caps it).
   useEffect(() => {
@@ -121,7 +144,14 @@ function AssistantBody({ draft, setDraft }: { draft: string; setDraft: (text: st
   function submit() {
     const text = draft.trim();
     if (text === "" || busy) return;
-    setDraft("");
+    ask(text, () => setDraft(""));
+  }
+
+  /** Sends typed or chosen text. Whatever voice was doing stops first (a typed message is also a tap that readies the speaker). */
+  function ask(text: string, beforeSend?: () => void) {
+    voice.stopAll();
+    voice.unlockAudio();
+    beforeSend?.();
     void send(text);
   }
 
@@ -137,7 +167,14 @@ function AssistantBody({ draft, setDraft }: { draft: string; setDraft: (text: st
     <div className="flex flex-col gap-3">
       {messages.length > 0 ? (
         <div className="flex justify-end">
-          <button type="button" onClick={clear} className="flex min-h-11 items-center px-2 text-sm font-bold text-muted underline hover:text-ink">
+          <button
+            type="button"
+            onClick={() => {
+              // Forgetting the conversation also stops any recording, request or voice that belongs to it.
+              voice.stopAll();
+              clear();
+            }}
+            className="flex min-h-11 items-center px-2 text-sm font-bold text-muted underline hover:text-ink">
             {t("clear")}
           </button>
         </div>
@@ -162,7 +199,7 @@ function AssistantBody({ draft, setDraft }: { draft: string; setDraft: (text: st
                   <button
                     type="button"
                     disabled={busy}
-                    onClick={() => void send(t(`suggestions.${key}`))}
+                    onClick={() => ask(t(`suggestions.${key}`))}
                     className="min-h-11 rounded-full border border-line-strong bg-surface px-4 py-2 text-left text-sm font-semibold hover:bg-canvas disabled:opacity-60"
                   >
                     {t(`suggestions.${key}`)}
@@ -189,6 +226,8 @@ function AssistantBody({ draft, setDraft }: { draft: string; setDraft: (text: st
         </div>
       ) : null}
 
+      {voice.available ? <VoiceNotices voice={voice} /> : null}
+
       <form
         onSubmit={(event) => {
           event.preventDefault();
@@ -212,6 +251,7 @@ function AssistantBody({ draft, setDraft }: { draft: string; setDraft: (text: st
           onKeyDown={onKeyDown}
           className="max-h-[7.4rem] min-h-12 min-w-0 flex-1 resize-none overflow-y-auto rounded-[10px] border border-line-strong bg-surface px-3.5 py-2.5 text-base leading-6 disabled:opacity-60"
         />
+        {voice.available && voice.secure ? <MicButton voice={voice} buttonRef={micRef} hintId={hintId} /> : null}
         <Button type="submit" disabled={busy || draft.trim() === ""} className="min-h-12 min-w-20">
           {t("send")}
         </Button>
@@ -219,7 +259,132 @@ function AssistantBody({ draft, setDraft }: { draft: string; setDraft: (text: st
       {draft.length > COUNTER_FROM ? (
         <p className="-mt-1 text-right text-xs text-muted">{t("charCount", { count: draft.length, max: MAX_MESSAGE_CHARS })}</p>
       ) : null}
+
+      {voice.available && !voice.secure ? (
+        // The browser only gives the microphone to https pages: say so calmly instead of showing a button that cannot work.
+        <p className="rounded-lg bg-info-soft px-3 py-2 text-sm font-semibold text-info-ink">{t("voice.insecure")}</p>
+      ) : null}
+
+      {voice.available ? <VoiceSettings voice={voice} hintId={hintId} /> : null}
     </div>
+  );
+}
+
+/** The notices about voice: what it is doing right now, and why it failed. A live region, so it is read out as it changes. */
+function VoiceNotices({ voice }: { voice: VoiceApi }) {
+  const t = useTranslations("assistant.voice");
+  const td = useTranslations("assistant");
+  return (
+    <>
+      <div role="status" className="flex flex-col empty:hidden">
+        {voice.state === "listening" ? (
+          <div className="flex items-center justify-between gap-3 rounded-lg bg-info-soft px-3 py-2">
+            <p className="min-w-0 text-sm font-semibold text-info-ink">{t("listening")}</p>
+            <LevelMeter level={voice.level} />
+          </div>
+        ) : voice.state === "transcribing" ? (
+          <p className="rounded-lg bg-info-soft px-3 py-2 text-sm font-semibold text-info-ink">{t("transcribing")}</p>
+        ) : voice.state === "speaking" ? (
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg bg-info-soft px-3 py-2">
+            <p className="text-sm font-semibold text-info-ink">{t("speaking")}</p>
+            <Button variant="secondary" onClick={voice.stopSpeaking}>
+              {t("stopSpeaking")}
+            </Button>
+          </div>
+        ) : voice.notHeard ? (
+          <p className="rounded-lg bg-info-soft px-3 py-2 text-sm font-semibold text-info-ink">{t("notHeard")}</p>
+        ) : null}
+      </div>
+      {voice.error ? (
+        // A fixed line for the kind of failure; what the server said is never shown.
+        <div role="alert" className="flex flex-wrap items-center justify-between gap-3 rounded-lg bg-danger-soft px-3 py-2">
+          <p className="min-w-0 text-sm font-semibold text-danger-ink">{t(voice.error)}</p>
+          <Button variant="secondary" onClick={voice.dismissNotice}>
+            {td("dismiss")}
+          </Button>
+        </div>
+      ) : null}
+    </>
+  );
+}
+
+/** How loud it is now, as a bar. Decoration only: the status line says what is going on. */
+function LevelMeter({ level }: { level: number }) {
+  return (
+    <div aria-hidden="true" className="h-2 w-20 shrink-0 overflow-hidden rounded-full bg-surface">
+      <div
+        className="h-full rounded-full bg-primary transition-[width] duration-100 motion-reduce:transition-none"
+        style={{ width: `${Math.round(Math.min(1, Math.max(0, level)) * 100)}%` }}
+      />
+    </div>
+  );
+}
+
+/** A small spinner; it only turns for people who have not asked for less motion. */
+function Spinner() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" aria-hidden="true" className="h-5 w-5 motion-safe:animate-spin">
+      <circle cx="12" cy="12" r="9" className="opacity-25" />
+      <path d="M21 12a9 9 0 0 0-9-9" />
+    </svg>
+  );
+}
+
+/**
+ * The microphone button, next to Send. Tap to start (it stops by itself after you stop talking, or tap again to send),
+ * or hold it down while talking and let go to send. It is never really disabled while the assistant is thinking
+ * (aria-disabled instead), so the focus does not jump away from it.
+ */
+function MicButton({ voice, buttonRef, hintId }: { voice: VoiceApi; buttonRef: RefObject<HTMLButtonElement | null>; hintId: string }) {
+  const t = useTranslations("assistant.voice");
+  const listening = voice.state === "listening";
+  const working = voice.state === "transcribing";
+  const blocked = voice.state === "thinking";
+  const name = listening ? t("stopAndSend") : working ? t("cancel") : t("talk");
+  // Pulses while listening (not for people who asked for less motion). touch-none: holding the button must not
+  // scroll or select anything on a phone.
+  const look = listening
+    ? "border-danger bg-danger text-on-primary motion-safe:animate-pulse"
+    : "border-line-strong bg-surface text-ink hover:bg-canvas";
+  return (
+    <button
+      ref={buttonRef}
+      type="button"
+      aria-label={name}
+      aria-describedby={hintId}
+      aria-disabled={blocked ? true : undefined}
+      {...voice.micProps}
+      className={`flex h-12 w-12 shrink-0 touch-none items-center justify-center rounded-full border select-none transition-colors aria-disabled:opacity-60 ${look}`}
+    >
+      {working ? <Spinner /> : <Icon name={listening ? "stop" : "mic"} className="h-6 w-6" />}
+    </button>
+  );
+}
+
+/** The two switches, saved on this device. The speaker switch only exists when the server can also speak. */
+function VoiceSettings({ voice, hintId }: { voice: VoiceApi; hintId: string }) {
+  const t = useTranslations("assistant.voice");
+  return (
+    <div role="group" aria-label={t("settings")} className="flex flex-col gap-0.5">
+      {voice.secure ? (
+        <p id={hintId} className="text-xs text-muted">
+          {t("hint")}
+        </p>
+      ) : null}
+      <div className="flex flex-wrap gap-x-5">
+        <VoiceSwitch label={t("autoSend")} checked={voice.autoSend} onChange={voice.setAutoSend} />
+        {voice.canSpeak ? <VoiceSwitch label={t("speakReplies")} checked={voice.speakReplies} onChange={voice.setSpeakReplies} /> : null}
+      </div>
+    </div>
+  );
+}
+
+function VoiceSwitch({ label, checked, onChange }: { label: string; checked: boolean; onChange: (on: boolean) => void }) {
+  return (
+    <label className="flex min-h-11 cursor-pointer items-center gap-2 text-sm font-semibold">
+      <input type="checkbox" role="switch" checked={checked} onChange={(event) => onChange(event.target.checked)} className="h-5 w-5 shrink-0 accent-primary" />
+      {label}
+    </label>
   );
 }
 
