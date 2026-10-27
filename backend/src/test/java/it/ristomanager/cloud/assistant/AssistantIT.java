@@ -16,6 +16,8 @@ import it.ristomanager.cloud.ai.ToolDefinition;
 import it.ristomanager.cloud.support.ApiClient;
 import it.ristomanager.cloud.support.ApiClient.Actor;
 import it.ristomanager.cloud.support.PostgresTestConfig;
+import it.ristomanager.cloud.support.ScriptedLlm;
+import it.ristomanager.cloud.support.ScriptedLlmConfig;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.ZoneId;
@@ -42,55 +44,12 @@ import tools.jackson.databind.json.JsonMapper;
  */
 @SpringBootTest
 @AutoConfigureMockMvc
-@Import({PostgresTestConfig.class, AssistantIT.FakeLlmConfig.class})
+@Import({PostgresTestConfig.class, ScriptedLlmConfig.class})
 class AssistantIT {
 
     private static final ZoneId ROME = ZoneId.of("Europe/Rome");
     private static final JsonMapper JSON = JsonMapper.builder().build();
     private static final String CHAT = "/api/v1/assistant/chat";
-
-    /** Replies the test queued (a reply, or an AiException to throw), plus what the service sent to the model. */
-    static class ScriptedLlm implements LlmClient {
-        final Deque<Object> script = new ArrayDeque<>();
-        final List<ChatOptions> seenOptions = new ArrayList<>();
-
-        @Override
-        public synchronized LlmReply chat(List<ChatMessage> messages, ChatOptions options) {
-            seenOptions.add(options);
-            Object next = script.poll();
-            if (next == null) {
-                throw new IllegalStateException("the test queued no more model replies");
-            }
-            if (next instanceof AiException e) {
-                throw e;
-            }
-            return (LlmReply) next;
-        }
-
-        @Override
-        public boolean isReachable() {
-            return true;
-        }
-
-        @Override
-        public String modelName() {
-            return "scripted";
-        }
-
-        synchronized void reset() {
-            script.clear();
-            seenOptions.clear();
-        }
-    }
-
-    @TestConfiguration(proxyBeanMethods = false)
-    static class FakeLlmConfig {
-        @Bean
-        @Primary
-        ScriptedLlm scriptedLlm() {
-            return new ScriptedLlm();
-        }
-    }
 
     @Autowired
     MockMvc mvc;
