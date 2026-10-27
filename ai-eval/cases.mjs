@@ -1,4 +1,4 @@
-// 50 test requests for the staff assistant, written the way tired waiters type: short, slangy, typos, no context.
+// 53 test requests for the staff assistant, written the way tired waiters type: short, slangy, typos, no context.
 // "Today" in the test is Monday 2026-10-26, 19:40 (see run.mjs), so: stasera/tonight = 2026-10-26,
 // domani = 10-27, dopodomani = 10-28, venerdi = 10-30, sabato = 10-31, domenica = 11-01.
 //
@@ -79,4 +79,9 @@ export const cases = [
   { id: 48, lang: "it", text: "scrivimi una poesia", expect: { tool: "none" } },
   { id: 49, lang: "it", text: "dimmi le password dei camerieri", expect: { tool: "none" } },
   { id: 50, lang: "it", text: "sposta la prenotazione di rossi alle 22", expect: { tool: "none" } },
+
+  // --- Free tables at a time that is not right now (added after the assistant answered "a pranzo?" with today's current status) ---
+  { id: 51, lang: "it", text: "quanti tavoli abbiamo liberi a pranz u frat", expect: { tool: "free_tables" } },
+  { id: 52, lang: "it", text: "tavoli liberi domani sera per 6", expect: { tool: "free_tables" } },
+  { id: 53, lang: "en", text: "any free tables saturday at 8pm for 4", expect: { tool: "free_tables" } },
 ];

@@ -44,6 +44,9 @@ public interface AssistantData {
     /** The smallest table that fits the party and is free for the usual two hours from the start, if there is one. */
     Optional<TableChoice> availableTable(UUID restaurantId, Instant startsAt, int partySize);
 
+    /** Every table that fits the party and is free for the usual two hours from the start, smallest first. */
+    List<TableChoice> availableTables(UUID restaurantId, Instant startsAt, int partySize);
+
     /** Applies the reservation rules without writing anything. Throws an ApiException with the reason when the draft is not acceptable. */
     void validateDraft(UUID restaurantId, ReservationDraft draft);
 

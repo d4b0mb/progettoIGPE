@@ -144,8 +144,13 @@ class SpringAssistantData implements AssistantData {
     @Override
     public Optional<TableChoice> availableTable(UUID restaurantId, Instant startsAt, int partySize) {
         // Smallest first, so the first one is the tightest fit.
+        return availableTables(restaurantId, startsAt, partySize).stream().findFirst();
+    }
+
+    @Override
+    public List<TableChoice> availableTables(UUID restaurantId, Instant startsAt, int partySize) {
         return reservationService.availableTables(restaurantId, startsAt.atOffset(ZoneOffset.UTC), null, partySize, null)
-                .stream().findFirst().map(t -> new TableChoice(t.id(), t.number(), t.seats()));
+                .stream().map(t -> new TableChoice(t.id(), t.number(), t.seats())).toList();
     }
 
     @Override

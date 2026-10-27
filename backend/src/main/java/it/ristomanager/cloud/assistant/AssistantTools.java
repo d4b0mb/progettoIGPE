@@ -52,12 +52,14 @@ final class AssistantTools {
 
     static final String FIND_RESERVATIONS = "find_reservations";
     static final String FLOOR_STATUS = "floor_status";
+    static final String FREE_TABLES = "free_tables";
     static final String KITCHEN_QUEUE = "kitchen_queue";
     static final String MENU_LOOKUP = "menu_lookup";
     static final String PROPOSE_CREATE = "propose_create_reservation";
     static final String PROPOSE_CANCEL = "propose_cancel_reservation";
 
     static final int NAME_MAX = 80;
+    private static final int MAX_FREE_TABLES = 30;
     static final int NOTES_MAX = 160;
     private static final int NOTES_INPUT_MAX = 300;
     private static final int PHONE_MAX = 30;
@@ -68,13 +70,13 @@ final class AssistantTools {
     private static final JsonMapper MAPPER = JsonMapper.builder().build();
 
     private static final List<String> ALL_TOOLS = List.of(
-            FIND_RESERVATIONS, FLOOR_STATUS, KITCHEN_QUEUE, MENU_LOOKUP, PROPOSE_CREATE, PROPOSE_CANCEL);
+            FIND_RESERVATIONS, FLOOR_STATUS, FREE_TABLES, KITCHEN_QUEUE, MENU_LOOKUP, PROPOSE_CREATE, PROPOSE_CANCEL);
 
     /** Matches what the REST endpoints allow: floor and reservation reads for owner, manager and waiter; writes for owner and manager. */
     private static final Map<Role, Set<String>> ALLOWED = Map.of(
             Role.OWNER, Set.copyOf(ALL_TOOLS),
             Role.MANAGER, Set.copyOf(ALL_TOOLS),
-            Role.WAITER, Set.of(FIND_RESERVATIONS, FLOOR_STATUS, KITCHEN_QUEUE, MENU_LOOKUP),
+            Role.WAITER, Set.of(FIND_RESERVATIONS, FLOOR_STATUS, FREE_TABLES, KITCHEN_QUEUE, MENU_LOOKUP),
             Role.KITCHEN, Set.of(KITCHEN_QUEUE, MENU_LOOKUP));
 
     private static final Map<String, ToolDefinition> DEFINITIONS = buildDefinitions();
@@ -120,7 +122,16 @@ final class AssistantTools {
         Map<String, ToolDefinition> map = new java.util.LinkedHashMap<>();
         map.put(FIND_RESERVATIONS, tool(FIND_RESERVATIONS, "Look up bookings by date and/or guest name.",
                 props("date", string("YYYY-MM-DD"), "name", string("Guest name or part of it"))));
-        map.put(FLOOR_STATUS, tool(FLOOR_STATUS, "Which tables are free, reserved or occupied right now.", props()));
+        map.put(FLOOR_STATUS, tool(FLOOR_STATUS,
+                "Which tables are free, reserved or occupied RIGHT NOW. Describes this moment only: for any other time or day use free_tables.",
+                props()));
+        map.put(FREE_TABLES, tool(FREE_TABLES,
+                "Which tables are free at a given day and time, for a party size, assuming the usual two-hour stay. Use it for every "
+                        + "question about a time that is not right now (lunch, dinner, tonight at 9, Saturday).",
+                props("date", string("YYYY-MM-DD; today when the person gives no day"),
+                        "time", string("HH:MM, 24-hour; lunch is 13:00 and dinner 20:00 when the person gives no hour"),
+                        "party_size", MAPPER.createObjectNode().put("type", "integer").put("description", "Number of guests; 1 when not said")),
+                "time"));
         map.put(KITCHEN_QUEUE, tool(KITCHEN_QUEUE, "Orders waiting in the kitchen.", props()));
         map.put(MENU_LOOKUP, tool(MENU_LOOKUP,
                 "Look up a menu item or search the menu: price and declared allergens.",
@@ -178,6 +189,7 @@ final class AssistantTools {
             return switch (name) {
                 case FIND_RESERVATIONS -> findReservations(ctx, args);
                 case FLOOR_STATUS -> floorStatus(ctx);
+                case FREE_TABLES -> freeTables(ctx, args);
                 case KITCHEN_QUEUE -> kitchenQueue(ctx);
                 case MENU_LOOKUP -> menuLookup(ctx, args);
                 case PROPOSE_CREATE -> proposeCreate(ctx, args);
@@ -272,6 +284,34 @@ final class AssistantTools {
             }
         });
         out.put("note", "Declared data only. Never say a dish is safe for an allergy; tell the person to confirm with the kitchen.");
+        return ok(out);
+    }
+
+    /** Tables free at a chosen day and time. Past moments are refused: the answer would mean nothing. */
+    private Result freeTables(Context ctx, JsonNode args) {
+        LocalDate date = optionalDate(args, "date");
+        if (date == null) {
+            date = LocalDate.now(ctx.zone());
+        }
+        LocalTime time = requiredTime(args, "time");
+        int partySize = absent(args.path("party_size")) ? 1 : partySize(args);
+        Instant startsAt = date.atTime(time).atZone(ctx.zone()).toInstant();
+        if (startsAt.isBefore(Instant.now())) {
+            return error("that time has already passed", "error");
+        }
+        List<TableChoice> tables = data.availableTables(ctx.restaurantId(), startsAt, partySize);
+        ObjectNode out = MAPPER.createObjectNode();
+        out.put("date", date.toString());
+        out.put("time", time.toString());
+        out.put("party_size", partySize);
+        out.put("assumed_stay_minutes", 120);
+        out.put("count", tables.size());
+        ArrayNode list = out.putArray("free_tables");
+        for (TableChoice t : tables.stream().limit(MAX_FREE_TABLES).toList()) {
+            ObjectNode node = list.addObject();
+            node.put("table", t.number());
+            node.put("seats", t.seats());
+        }
         return ok(out);
     }
 

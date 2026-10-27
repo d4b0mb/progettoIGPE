@@ -32,7 +32,8 @@ const TOOLS = [
   ["create_reservation", "Create a booking.", { name: str("Guest surname or name"), party_size: { type: "integer" }, date: str("YYYY-MM-DD"), time: str("HH:MM, 24-hour"), phone: str("Optional"), notes: str("Optional: allergies, requests") }, ["name", "party_size", "date", "time"]],
   ["find_reservations", "Look up bookings by date and/or guest name.", { date: str("YYYY-MM-DD"), name: str("Guest name") }, []],
   ["cancel_reservation", "Cancel a booking.", { name: str("Guest name"), date: str("YYYY-MM-DD, if known") }, ["name"]],
-  ["floor_status", "Which tables are free or occupied right now.", {}, []],
+  ["floor_status", "Which tables are free, reserved or occupied RIGHT NOW (this moment only: for any other time use free_tables).", {}, []],
+  ["free_tables", "Which tables are free at a given day and time, for a party size (usual two-hour stay). Use it for any time that is not right now.", { date: str("YYYY-MM-DD, today if not said"), time: str("HH:MM, 24-hour; lunch 13:00, dinner 20:00"), party_size: { type: "integer" } }, ["time"]],
   ["kitchen_queue", "Orders waiting in the kitchen.", {}, []],
   ["menu_lookup", "Look up a menu item or search the menu: price, ingredients, declared allergens.", { query: str("Dish name or search words") }, ["query"]],
 ].map(([name, description, properties, required]) => ({ type: "function", function: { name, description, parameters: { type: "object", properties, required } } }));

@@ -96,6 +96,10 @@ class AssistantServiceTest {
         List<ReservationRow> cancellable = List.of();
         List<MenuRow> menu = List.of();
         TableChoice table = new TableChoice(UUID.randomUUID(), 4, 4);
+        List<TableChoice> freeTables = List.of();
+        Instant freeTablesAt;
+        int freeTablesParty;
+        int freeTablesCalls;
         ApiException validateError;
         int createCalls;
         int cancelCalls;
@@ -138,6 +142,14 @@ class AssistantServiceTest {
         public Optional<TableChoice> availableTable(UUID restaurantId, Instant startsAt, int partySize) {
             tableLookups++;
             return Optional.ofNullable(table);
+        }
+
+        @Override
+        public List<TableChoice> availableTables(UUID restaurantId, Instant startsAt, int partySize) {
+            freeTablesCalls++;
+            freeTablesAt = startsAt;
+            freeTablesParty = partySize;
+            return freeTables;
         }
 
         @Override
@@ -312,11 +324,11 @@ class AssistantServiceTest {
         chat(Role.WAITER, "a");
         chat(Role.KITCHEN, "a");
 
-        assertThat(names(llm.options.get(0))).containsExactlyInAnyOrder("find_reservations", "floor_status",
+        assertThat(names(llm.options.get(0))).containsExactlyInAnyOrder("find_reservations", "floor_status", "free_tables",
                 "kitchen_queue", "menu_lookup", "propose_create_reservation", "propose_cancel_reservation");
-        assertThat(names(llm.options.get(1))).containsExactlyInAnyOrder("find_reservations", "floor_status",
+        assertThat(names(llm.options.get(1))).containsExactlyInAnyOrder("find_reservations", "floor_status", "free_tables",
                 "kitchen_queue", "menu_lookup", "propose_create_reservation", "propose_cancel_reservation");
-        assertThat(names(llm.options.get(2))).containsExactlyInAnyOrder("find_reservations", "floor_status",
+        assertThat(names(llm.options.get(2))).containsExactlyInAnyOrder("find_reservations", "floor_status", "free_tables",
                 "kitchen_queue", "menu_lookup").noneMatch(n -> n.startsWith("propose_"));
         assertThat(names(llm.options.get(3))).containsExactlyInAnyOrder("kitchen_queue", "menu_lookup");
     }
@@ -338,6 +350,58 @@ class AssistantServiceTest {
         assertThat(create.parameters().path("properties").path("allergens").path("items").path("enum").size()).isEqualTo(14);
         assertThat(create.parameters().path("required").toString())
                 .isEqualTo("[\"guest_name\",\"party_size\",\"date\",\"time\"]");
+    }
+
+    private List<String> toolResults() {
+        return llm.lastCall().stream().filter(m -> m.role().equals("tool")).map(ChatMessage::content).toList();
+    }
+
+    @Test
+    void freeTablesAnswersForTheChosenDayAndTimeNotForRightNow() {
+        data.freeTables = List.of(new TableChoice(UUID.randomUUID(), 4, 4), new TableChoice(UUID.randomUUID(), 7, 6));
+        llm.script.add(call("free_tables", "{\"date\":\"2099-05-01\",\"time\":\"13:00\",\"party_size\":3}"));
+        llm.script.add(say("Liberi il 4 e il 7."));
+
+        chat(Role.WAITER, "quanti tavoli liberi a pranzo?");
+
+        assertThat(toolResults()).singleElement().satisfies(result -> assertThat(result)
+                .contains("\"date\":\"2099-05-01\"").contains("\"time\":\"13:00\"").contains("\"party_size\":3")
+                .contains("\"count\":2").contains("\"table\":4").contains("\"seats\":6"));
+        // 13:00 in Rome on 1 May is 11:00 UTC (summer time): the asked-for moment, not "now".
+        assertThat(data.freeTablesAt).isEqualTo(Instant.parse("2099-05-01T11:00:00Z"));
+        assertThat(data.freeTablesParty).isEqualTo(3);
+        assertThat(audit.entries).containsExactly("TOOL free_tables ok");
+    }
+
+    @Test
+    void freeTablesAssumesOneGuestAndTodayWhenNotToldAndRefusesAMomentThatHasPassed() {
+        // No party size: one guest. A time on a past day is refused without asking the data layer.
+        llm.script.add(call("free_tables", "{\"date\":\"2099-05-01\",\"time\":\"20:00\"}"));
+        llm.script.add(say("ok"));
+        chat(Role.OWNER, "cena?");
+        assertThat(data.freeTablesParty).isEqualTo(1);
+
+        int calls = data.freeTablesCalls;
+        llm.script.add(call("free_tables", "{\"date\":\"2020-01-01\",\"time\":\"20:00\"}"));
+        llm.script.add(call("free_tables", "{\"time\":\"00:00\"}"));
+        llm.script.add(say("ok"));
+        chat(Role.OWNER, "cena?");
+        assertThat(toolResults()).containsExactly("{\"error\":\"that time has already passed\"}",
+                "{\"error\":\"that time has already passed\"}");
+        assertThat(data.freeTablesCalls).isEqualTo(calls);
+    }
+
+    @Test
+    void freeTablesRejectsABadTimeAndIsNotForTheKitchen() {
+        llm.script.add(call("free_tables", "{\"date\":\"2099-05-01\",\"time\":\"lunch\"}"));
+        llm.script.add(say("ok"));
+        chat(Role.MANAGER, "pranzo?");
+        assertThat(toolResults()).singleElement().satisfies(r -> assertThat(r).startsWith("{\"error\":"));
+
+        llm.script.add(call("free_tables", "{\"date\":\"2099-05-01\",\"time\":\"13:00\"}"));
+        llm.script.add(say("ok"));
+        chat(Role.KITCHEN, "tavoli?");
+        assertThat(toolResults()).containsExactly("{\"error\":\"not allowed\"}");
     }
 
     @Test

@@ -11,7 +11,7 @@ const EMAIL = process.env.EMAIL ?? "owner@demo.ristomanager.local";
 const PASSWORD = process.env.PASSWORD ?? "Demo-Password-2026";
 const ONLY = process.env.ONLY ? new Set(process.env.ONLY.split(",").map(Number)) : null;
 
-const TOOL_OF = { create_reservation: "propose_create_reservation", cancel_reservation: "propose_cancel_reservation", find_reservations: "find_reservations", floor_status: "floor_status", kitchen_queue: "kitchen_queue", menu_lookup: "menu_lookup" };
+const TOOL_OF = { create_reservation: "propose_create_reservation", cancel_reservation: "propose_cancel_reservation", find_reservations: "find_reservations", floor_status: "floor_status", free_tables: "free_tables", kitchen_queue: "kitchen_queue", menu_lookup: "menu_lookup" };
 
 async function call(path, { method = "GET", body, token } = {}) {
   const response = await fetch(`${BASE}${path}`, { method, headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) }, body: body ? JSON.stringify(body) : undefined, signal: AbortSignal.timeout(150_000) });

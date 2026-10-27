@@ -254,7 +254,7 @@ class AssistantIT {
                 .andExpect(jsonPath("$.proposals.length()").value(0));
 
         assertThat(llm.seenOptions.get(0).tools()).extracting(ToolDefinition::name)
-                .containsExactlyInAnyOrder("find_reservations", "floor_status", "kitchen_queue", "menu_lookup");
+                .containsExactlyInAnyOrder("find_reservations", "floor_status", "free_tables", "kitchen_queue", "menu_lookup");
         assertNoReservationsTomorrow();
     }
 
