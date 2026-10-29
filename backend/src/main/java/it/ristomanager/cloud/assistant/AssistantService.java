@@ -162,7 +162,7 @@ public class AssistantService {
         List<ChatMessage> history = sanitise(request.history());
         ZoneId zone = data.timezone(who.restaurantId());
 
-        String system = who.isGuest() ? AssistantPrompt.guestSystem() : AssistantPrompt.system(clock.instant().atZone(zone));
+        String system = who.isGuest() ? AssistantPrompt.guestSystem() : AssistantPrompt.system(clock.instant().atZone(zone), Boolean.TRUE.equals(request.spoken()));
         List<ChatMessage> messages = new ArrayList<>();
         messages.add(ChatMessage.system(system));
         messages.addAll(history);

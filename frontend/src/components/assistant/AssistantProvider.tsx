@@ -32,8 +32,11 @@ interface AssistantApi {
   messages: ChatMessage[];
   /** True while a question is with the assistant. */
   busy: boolean;
-  /** Sends a question. Never confirms anything: only confirm() does, and only the Confirm button calls it. */
-  send: (text: string) => Promise<void>;
+  /**
+   * Sends a question. Never confirms anything: only confirm() does, and only the Confirm button calls it.
+   * `spoken` marks a question that came from voice, so the assistant answers in a short style made for listening.
+   */
+  send: (text: string, spoken?: boolean) => Promise<void>;
   /** Stops waiting for the assistant. */
   cancel: () => void;
   /** Carries out a proposal the person has approved. */
@@ -109,7 +112,7 @@ export function AssistantProvider({ role, children }: { role: Role; children: Re
   );
 
   const send = useCallback(
-    async (raw: string) => {
+    async (raw: string, spoken = false) => {
       const text = raw.trim().slice(0, MAX_MESSAGE_CHARS);
       if (text === "" || abortRef.current) return;
       // The history is what was said before this message.
@@ -120,7 +123,7 @@ export function AssistantProvider({ role, children }: { role: Role; children: Re
       mutate((list) => [...list, { id: nextId(), role: "user", text }]);
       try {
         const reply = await unwrap(
-          api.POST("/api/v1/assistant/chat", { body: { message: text, history }, signal: controller.signal }),
+          api.POST("/api/v1/assistant/chat", { body: { message: text, history, ...(spoken ? { spoken: true } : {}) }, signal: controller.signal }),
         );
         if (controller.signal.aborted) return;
         mutate((list) => [...list, assistantMessage(reply)]);

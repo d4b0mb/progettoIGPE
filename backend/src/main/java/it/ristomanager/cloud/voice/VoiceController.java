@@ -134,10 +134,12 @@ class VoiceController {
         if (voice != null && !VOICE_NAME.matcher(voice).matches()) {
             throw ApiException.invalid("voice", "voice is not valid");
         }
+        // Screen-style text (times, counts, dates, symbols) is turned into words after the length check, for any engine.
+        String sayable = SpokenText.forSpeech(text, language);
         UUID userId = CurrentUser.from(jwt).userId();
         SpeechAudio spoken;
         try {
-            spoken = gate.run(userId, () -> synthesizer.speak(text, language, voice));
+            spoken = gate.run(userId, () -> synthesizer.speak(sayable, language, voice));
         } catch (AiException e) {
             throw VoiceErrors.toApi(e);
         }

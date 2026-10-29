@@ -20,7 +20,25 @@ final class AssistantPrompt {
     private AssistantPrompt() {
     }
 
+    /** The text-chat prompt: the same as {@code system(now, false)}. */
     static String system(ZonedDateTime now) {
+        return system(now, false);
+    }
+
+    /**
+     * The staff prompt. For a voice turn ({@code spoken}) the reply is read aloud, so a short spoken-style paragraph is
+     * added; it only changes how the answer sounds, every rule below it still applies.
+     */
+    static String system(ZonedDateTime now, boolean spoken) {
+        return base(now) + (spoken ? SPOKEN_STYLE : "");
+    }
+
+    /** Added for a voice turn: the answer is spoken by a speech engine, so it is written for the ear. */
+    private static final String SPOKEN_STYLE = """
+
+            This reply will be read aloud by a speech engine. Answer the way a person would say it: one or two short sentences of plain words, with no lists, tables, markdown, emoji or symbols such as & / - : #. Say times, numbers and amounts in words as a person would ("alle venti e trenta", "dalle dodici alle due", "cinque tavoli", "dodici euro e cinquanta"; in English "eight thirty p.m.", "five tables"). Do not read out ids or codes. Everything above (tools, proposals, allergy rules, the language of the person) still applies unchanged.""";
+
+    private static String base(ZonedDateTime now) {
         return """
                 You are the assistant of a restaurant's staff (waiters, managers, kitchen). Today is %s %s and it is %s.
                 Calendar of the next 7 days (each weekday appears once: "sabato", "ven", "dom", "saturday" mean THAT line's date; add 7 days only if the person says next week / "prossima settimana" / "prossimo"):

@@ -45,8 +45,8 @@ export interface UseVoiceOptions {
   open: boolean;
   /** The language of the screen, which is the language to listen and speak in. */
   locale: string;
-  /** Sends text to the assistant as an ordinary message. Voice never does anything else with what it heard. */
-  send: (text: string) => Promise<void>;
+  /** Sends text to the assistant as an ordinary message (`spoken`: it was said, so the reply should be short and speakable). Voice never does anything else with what it heard. */
+  send: (text: string, spoken?: boolean) => Promise<void>;
   /** The assistant is working on a question. */
   busy: boolean;
   /** The conversation, to find the replies to speak. */
@@ -425,7 +425,7 @@ export function useVoice(options: UseVoiceOptions): VoiceApi {
   function deliver(text: string) {
     const { autoSend: automatic, busy: working, send, onDraft } = latest.current;
     if (automatic && !working) {
-      void send(text);
+      void send(text, true);
     } else {
       onDraft(text);
       setDrafted((count) => count + 1);

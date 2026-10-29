@@ -150,6 +150,12 @@ production (Phase 3). GitHub Actions CI. Reasons for each choice: `docs/adr/`.
      a better Italian voice, a long-idle check that the models really stay loaded, `AsyncRequestNotUsableException` logged as ERROR when the browser drops
      a voice request (harmless), wake word, customer channels. The staff agents (`chef`, `head-waiter`, `dish-runner`) have still never been run.
    - Gotcha: in PowerShell plain `curl` is `Invoke-WebRequest`; use `curl.exe`. A failed assistant call right after a Docker restart usually means Ollama is not running.
+   - Natural speech (2026-10-29): spoken replies used to read screen text literally ("12:00-13:45" digit by digit). Two fixes. (1) `SpokenText` (voice package, engine-agnostic,
+     it/en, unit-tested) runs in `POST /speak` right before synthesis: times and ranges ("dalle dodici alle tredici e quarantacinque"), counts, dates, euro amounts, percentages,
+     phone numbers digit by digit, "&" and spaced dashes; shapes it cannot read with certainty (for example "8/10") are left untouched. (2) `AssistantRequest` has an optional
+     `spoken` flag, sent by `useVoice` for a transcript it sends; the staff prompt then gets a short "this will be read aloud" paragraph (`AssistantPrompt.system(now, true)`).
+     Proposals and the allergy rules are unchanged. A typed question with "speak replies" on is not flagged, so only the code-side fix helps there. `openapi.json` and
+     `schema.d.ts` were updated for the new field (the OpenAPI contract IT was not run, Docker was unavailable). Not yet judged by ear on the PC.
 
 Next phases (not started): Phase 3 Kubernetes (k3s), staging/production, monitoring; Phase 4 public
 booking site (Next.js, SEO, email confirmation).

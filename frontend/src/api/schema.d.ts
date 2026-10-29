@@ -1174,6 +1174,7 @@ export interface components {
         AssistantRequest: {
             message: string;
             history?: components["schemas"]["Turn"][];
+            spoken?: boolean;
         };
         Turn: {
             role: string;

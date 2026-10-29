@@ -2740,6 +2740,9 @@
             },
             "maxItems" : 20,
             "minItems" : 0
+          },
+          "spoken" : {
+            "type" : "boolean"
           }
         },
         "required" : [ "message" ]

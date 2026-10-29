@@ -672,6 +672,24 @@ class AssistantServiceTest {
     // ---- history
 
     @Test
+    void aSpokenTurnAddsTheSpokenStyleToTheStaffPromptAndNothingElseChanges() {
+        llm.script.add(say("ok"));
+        llm.script.add(say("ok"));
+        llm.script.add(say("ok"));
+
+        service.chat(user(Role.OWNER), new AssistantRequest("ciao", null, null));
+        service.chat(user(Role.OWNER), new AssistantRequest("ciao", null, false));
+        service.chat(user(Role.OWNER), new AssistantRequest("ciao", null, true));
+
+        String text = llm.calls.get(0).get(0).content();
+        assertThat(llm.calls.get(1).get(0).content()).isEqualTo(text);
+        String spoken = llm.calls.get(2).get(0).content();
+        assertThat(text).doesNotContain("read aloud");
+        assertThat(spoken).startsWith(text).contains("read aloud").contains("no lists, tables, markdown")
+                .contains("NEVER say that a booking was made or cancelled").contains("You never decide whether food is safe");
+    }
+
+    @Test
     void theClientCanNeverInjectSystemOrToolTurns() {
         llm.script.add(say("ok"));
         List<Turn> history = List.of(

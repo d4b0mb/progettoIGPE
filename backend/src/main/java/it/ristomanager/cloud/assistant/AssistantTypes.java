@@ -25,11 +25,17 @@ public final class AssistantTypes {
 
     /**
      * One message from the person, with the earlier turns of the conversation. Only "user" and "assistant" turns are
-     * accepted from the client; anything else is dropped by the server.
+     * accepted from the client; anything else is dropped by the server. {@code spoken} is true when the message came from
+     * voice and the reply will be read aloud: it only changes the style of the answer (short, no symbols), nothing else.
      */
     public record AssistantRequest(
             @NotBlank @Size(max = 1000) String message,
-            @Size(max = 20) List<@Valid Turn> history) {
+            @Size(max = 20) List<@Valid Turn> history,
+            Boolean spoken) {
+
+        public AssistantRequest(String message, List<Turn> history) {
+            this(message, history, null);
+        }
     }
 
     public record Turn(@NotBlank String role, @Size(max = 1000) String content) {
