@@ -8,7 +8,7 @@ something breaks, the error message is the first thing to send back.
 There are two kinds of engine, both small local web servers that speak the OpenAI audio API:
 
 - **STT** (speech to text, "listening"): faster-whisper through the *speaches* server, port 8000.
-- **TTS** (text to speech, "speaking"): Kokoro through *Kokoro-FastAPI*, port 8880.
+- **TTS** (text to speech, "speaking"): Kokoro, served by speaches on the same port 8000 as listening (no separate Kokoro server).
 
 ## 0. Before you start
 

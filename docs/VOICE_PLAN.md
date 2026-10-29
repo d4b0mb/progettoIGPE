@@ -3,6 +3,9 @@
 Status: plan prepared 2026-10-27 for work on 2026-10-28. Background and sources: `docs/VOICE_RESEARCH.md`. The bigger picture
 (the same agent will later talk to customers on WhatsApp, Telegram and the phone): `docs/CUSTOMER_AGENT_PLAN.md`.
 
+**Update 2026-10-29:** the engines run (speaches on the RTX 5080 does listening and speaking, Piper `paola` speaks Italian) and the phone works over Tailscale
+HTTPS. The current state is in `docs/HANDOFF.md`, Block 18; sections 6 to 9 below are the original plan and are partly overtaken.
+
 ## 1. What we are building, in one paragraph
 A staff member taps a microphone button (or later says "Hey Jarvis"), speaks Italian or English, and the assistant answers out loud in
 a natural voice, within about three seconds. Everything it can do is what the text assistant already does (ADR 0012): read, and

@@ -1,65 +1,48 @@
-# Local speech servers for the voice assistant (speech to text and text to speech), as an override file.
-# It adds services and adds variables to the backend; it changes nothing else in docker-compose.yml.
+# Local speech server for the voice assistant (listening and speaking), as an override file.
+# One server does both: speaches (faster-whisper for listening, Kokoro for speaking), OpenAI-style API on port 8000.
+# It adds a service and variables to the backend; it changes nothing else in docker-compose.yml.
 #
 #   GPU (NVIDIA):  docker compose -f docker-compose.yml -f docker-compose.voice.yml --profile voice-gpu up -d
-#   CPU only:      VOICE_STT_HOST=stt-cpu VOICE_TTS_HOST=tts-cpu \
-#                  docker compose -f docker-compose.yml -f docker-compose.voice.yml --profile voice-cpu up -d
-#   (PowerShell:   $env:VOICE_STT_HOST="stt-cpu"; $env:VOICE_TTS_HOST="tts-cpu"; docker compose ... --profile voice-cpu up -d)
+#   CPU only:      VOICE_HOST=stt-cpu docker compose -f docker-compose.yml -f docker-compose.voice.yml --profile voice-cpu up -d
+#   (PowerShell:   $env:VOICE_HOST="stt-cpu"; docker compose ... --profile voice-cpu up -d)
 #
-# Use ONE profile at a time: the GPU and CPU services use the same two ports on this computer (8000 and 8880).
-# Both ports are reachable from this computer only (127.0.0.1); the voice-lab scripts use them directly
-# (voice-lab/candidates.json: speech to text http://localhost:8000, text to speech http://localhost:8880).
-# The backend reaches the servers through the Docker network by service name.
+# Use ONE profile at a time (both use port 8000 on this computer, reachable from this computer only).
 #
-# Without any --profile the two backend variables below still apply, so the backend would say voice is
-# enabled but find no speech server (it should answer 503 on the voice endpoints). Only use this file together with a profile.
-#
-# ---------------------------------------------------------------------------------------------------------
-# UNVERIFIED / UNKNOWN (nothing here was run; the four image tags were checked to exist, nothing else was):
-#  1. UNVERIFIED: does the speaches CUDA image (ghcr.io/speaches-ai/speaches:latest-cuda) include GPU kernels for an
-#     RTX 5080 (Blackwell, sm_120)? If it fails with "no kernel image is available for execution on the device"
-#     (or similar), use the CPU profile for STT (VOICE_STT_HOST=stt-cpu with the stt-cpu service) and tell the developer.
-#     The Kokoro tag latest-cu128 is the one meant for RTX 50-series cards; that is a claim of its maker, not tested here.
-#  2. UNVERIFIED: the path of the Hugging Face cache INSIDE the speaches image. It is written below as
-#     /home/ubuntu/.cache/huggingface/hub from memory of the speaches documentation. If models are downloaded again
-#     after every restart, this path is wrong: check the speaches README / its own compose file.
-#  3. UNKNOWN: whether the images contain curl or python, so NO healthcheck is defined. Add one only after checking
-#     (for example with: docker compose ... exec stt-gpu sh -c "command -v curl"). Until then "up -d" returns before the
-#     servers are ready; the first model load can take a while. Look at: docker compose ... logs -f stt-gpu tts-gpu
-#  4. UNKNOWN: whether the speaches server downloads a model by itself on the first transcription request.
-#     Do not rely on it: pre-download (see below).
-#  5. UNKNOWN: Kokoro-FastAPI keeps its model files inside the image or downloads them on first start. No volume is
-#     defined for it; if it downloads at start, the download is repeated when the container is re-created.
-#  6. UNKNOWN: the other settings the backend will read for voice (model names, voice names, language mapping). Only the
-#     three variables requested are set here. When the backend code defines more VOICE_* variables, add them below.
-#  7. Docker Desktop on Windows needs the WSL 2 backend and a current NVIDIA driver for GPU containers.
-#
-# PRE-DOWNLOADING MODELS (so the first request is not slow or failing). Exact commands are NOT given because they were
-# not verified:
-#  - speaches (speech to text): the running server has an API call to download a model by its Hugging Face id, for
-#    example Systran/faster-whisper-large-v3-turbo (the model in voice-lab/candidates.example.json). It is described in
-#    the speaches documentation: check the project README for the exact call (from memory it is a POST to /v1/models/<id>;
-#    UNVERIFIED). Downloaded files land in the volume voice-hf-cache.
-#  - Kokoro-FastAPI (text to speech): check the project README (github.com/remsky/Kokoro-FastAPI) for how the Kokoro
-#    model is obtained and whether the image already contains it.
-# ---------------------------------------------------------------------------------------------------------
+# Verified on the RTX 5080 (Blackwell): the CUDA image works; the models live in the volume voice-hf-cache.
+# Download them once while online (the server is offline afterwards, see HF_HUB_OFFLINE):
+#   curl.exe -X POST http://localhost:8000/v1/models/Systran%2Ffaster-whisper-small
+#   curl.exe -X POST http://localhost:8000/v1/models/speaches-ai%2FKokoro-82M-v1.0-ONNX-fp16
+#   curl.exe -X POST http://localhost:8000/v1/models/speaches-ai%2Fpiper-it_IT-paola-medium   (Italian voice in use)
+# If a model is missing after a restart, run the download with HF_HUB_OFFLINE=0 once (edit it below), then switch it back.
+# Check what is installed: curl.exe http://localhost:8000/v1/models
+
+x-speaches-env: &speaches-env
+  STT_MODEL_TTL: "-1"            # keep the models loaded (the default unloads them after 5 idle minutes: 15-26 s on the next request)
+  TTS_MODEL_TTL: "-1"
+  HF_HUB_OFFLINE: "${HF_HUB_OFFLINE:-1}"  # 1 = models are already in the volume, no contact with Hugging Face; set 0 only to download a model
+  HF_HUB_DISABLE_TELEMETRY: "1"
+  GRADIO_ANALYTICS_ENABLED: "False"
+  DO_NOT_TRACK: "1"
 
 services:
   backend:
     environment:
       VOICE_ENABLED: "true"
-      # ${VAR:-default}: GPU services by default; set VOICE_STT_HOST / VOICE_TTS_HOST to stt-cpu / tts-cpu for the CPU profile.
-      VOICE_STT_URL: http://${VOICE_STT_HOST:-stt-gpu}:8000
-      VOICE_TTS_URL: http://${VOICE_TTS_HOST:-tts-gpu}:8880
+      VOICE_STT_URL: http://${VOICE_HOST:-stt-gpu}:8000
+      VOICE_STT_MODEL: Systran/faster-whisper-small
+      VOICE_TTS_URL: http://${VOICE_HOST:-stt-gpu}:8000
+      VOICE_TTS_MODEL: speaches-ai/piper-it_IT-paola-medium
+      VOICE_TTS_VOICE_IT: paola
+      VOICE_TTS_VOICE_EN: paola # Piper model above is Italian only; English replies would be read with an Italian voice
 
-  # Speech to text, GPU: faster-whisper behind an OpenAI-style API (POST /v1/audio/transcriptions).
   stt-gpu:
     image: ghcr.io/speaches-ai/speaches:latest-cuda
     profiles: ["voice-gpu"]
     ports:
       - "127.0.0.1:8000:8000"
+    environment: *speaches-env
     volumes:
-      - voice-hf-cache:/home/ubuntu/.cache/huggingface/hub # UNVERIFIED path, see note 2
+      - voice-hf-cache:/home/ubuntu/.cache/huggingface/hub
     deploy:
       resources:
         reservations:
@@ -69,36 +52,14 @@ services:
               capabilities: [gpu]
     restart: unless-stopped
 
-  # Text to speech, GPU: Kokoro behind an OpenAI-style API (POST /v1/audio/speech). cu128 = for RTX 50-series (Blackwell).
-  tts-gpu:
-    image: ghcr.io/remsky/kokoro-fastapi-gpu:latest-cu128
-    profiles: ["voice-gpu"]
-    ports:
-      - "127.0.0.1:8880:8880"
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: 1
-              capabilities: [gpu]
-    restart: unless-stopped
-
-  # CPU fallbacks: slower, no graphics card needed. Use these if a GPU image does not work (see note 1).
   stt-cpu:
     image: ghcr.io/speaches-ai/speaches:latest-cpu
     profiles: ["voice-cpu"]
     ports:
       - "127.0.0.1:8000:8000"
+    environment: *speaches-env
     volumes:
-      - voice-hf-cache:/home/ubuntu/.cache/huggingface/hub # UNVERIFIED path, see note 2
-    restart: unless-stopped
-
-  tts-cpu:
-    image: ghcr.io/remsky/kokoro-fastapi-cpu:latest
-    profiles: ["voice-cpu"]
-    ports:
-      - "127.0.0.1:8880:8880"
+      - voice-hf-cache:/home/ubuntu/.cache/huggingface/hub
     restart: unless-stopped
 
 volumes:
