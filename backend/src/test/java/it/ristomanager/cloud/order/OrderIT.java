@@ -437,4 +437,24 @@ class OrderIT {
         api.get(kitchen, "/api/v1/restaurant").andExpect(jsonPath("$.theme").value("DUODECIM"));
         api.put(owner, "/api/v1/restaurant/theme", "{\"theme\":\"NEON\"}").andExpect(status().isBadRequest());
     }
+
+    @Test
+    void ticketNotesAndLineNotesHaveALengthLimit() throws Exception {
+        // A line note: 200 characters are fine, 201 are refused.
+        api.post(waiter, "/api/v1/orders", """
+                {"tableId":"%s","items":[{"menuItemId":"%s","quantity":1,"note":"%s"}]}
+                """.formatted(table, steak, "n".repeat(200))).andExpect(status().isCreated());
+        api.post(waiter, "/api/v1/orders", """
+                {"tableId":"%s","items":[{"menuItemId":"%s","quantity":1,"note":"%s"}]}
+                """.formatted(table, steak, "n".repeat(201))).andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.fields.items").exists());
+        // The note of the whole ticket: 500 are fine, 501 are refused.
+        api.post(waiter, "/api/v1/orders", """
+                {"tableId":"%s","note":"%s","items":[{"menuItemId":"%s","quantity":1}]}
+                """.formatted(table, "t".repeat(500), steak)).andExpect(status().isCreated());
+        api.post(waiter, "/api/v1/orders", """
+                {"tableId":"%s","note":"%s","items":[{"menuItemId":"%s","quantity":1}]}
+                """.formatted(table, "t".repeat(501), steak)).andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.fields.note").exists());
+    }
 }

@@ -144,6 +144,50 @@ class ReservationRulesTest {
     }
 
     @Test
+    void guestNameIsCappedAt80Characters() {
+        assertThatCode(() -> ReservationRules.validate(with(b -> { b.guest = "x".repeat(80); return b; }), ROME, NOW, true))
+                .doesNotThrowAnyException();
+        assertRejected(with(b -> { b.guest = "x".repeat(81); return b; }), true, "guestName");
+    }
+
+    @Test
+    void phoneIsCappedAt30Characters() {
+        String thirty = "+39 333 000 1111".concat("0".repeat(14));
+        assertThatCode(() -> ReservationRules.validate(with(b -> { b.phone = thirty; return b; }), ROME, NOW, true))
+                .doesNotThrowAnyException();
+        assertRejected(with(b -> { b.phone = thirty + "0"; return b; }), true, "phone");
+    }
+
+    @Test
+    void emailIsCappedAt120Characters() {
+        String atLimit = "a".repeat(120 - "@example.com".length()) + "@example.com";
+        assertThatCode(() -> ReservationRules.validate(with(b -> { b.email = atLimit; return b; }), ROME, NOW, true))
+                .doesNotThrowAnyException();
+        assertRejected(with(b -> { b.email = "a" + atLimit; return b; }), true, "email");
+    }
+
+    @Test
+    void notesAreCappedAt500Characters() {
+        assertThatCode(() -> ReservationRules.validate(with(b -> { b.notes = "n".repeat(500); return b; }), ROME, NOW, true))
+                .doesNotThrowAnyException();
+        assertRejected(with(b -> { b.notes = "n".repeat(501); return b; }), true, "notes");
+    }
+
+    @Test
+    void aTableSearchDurationMustBeBetweenOneMinuteAnd24Hours() {
+        assertThatCode(() -> ReservationRules.validateSearchDuration(null)).doesNotThrowAnyException();
+        assertThatCode(() -> ReservationRules.validateSearchDuration(1)).doesNotThrowAnyException();
+        assertThatCode(() -> ReservationRules.validateSearchDuration(24 * 60)).doesNotThrowAnyException();
+        for (int bad : new int[] {0, -1, -120, 24 * 60 + 1, Integer.MAX_VALUE, Integer.MIN_VALUE}) {
+            assertThatThrownBy(() -> ReservationRules.validateSearchDuration(bad))
+                    .isInstanceOfSatisfying(ApiException.class, e -> {
+                        org.assertj.core.api.Assertions.assertThat(e.field()).isEqualTo("durationMinutes");
+                        org.assertj.core.api.Assertions.assertThat(e.status().value()).isEqualTo(400);
+                    });
+        }
+    }
+
+    @Test
     void statusDefaultsToPending() {
         org.assertj.core.api.Assertions.assertThat(
                 ReservationRules.statusOf(with(b -> { b.status = null; return b; }))).isEqualTo(ReservationStatus.PENDING);

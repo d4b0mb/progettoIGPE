@@ -104,6 +104,8 @@ public class ReservationService {
      */
     public List<DiningTable> availableTables(UUID rid, OffsetDateTime startsAt, Integer durationMinutes,
                                              int partySize, UUID excludeReservationId) {
+        // A negative length would build a time range that ends before it starts, which PostgreSQL refuses (a 500).
+        ReservationRules.validateSearchDuration(durationMinutes);
         int duration = durationMinutes == null ? ReservationRules.DEFAULT_DURATION_MINUTES : durationMinutes;
         Instant start = startsAt.toInstant();
         Instant end = start.plusSeconds(duration * 60L);

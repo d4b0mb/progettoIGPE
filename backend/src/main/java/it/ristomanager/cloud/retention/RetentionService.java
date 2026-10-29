@@ -15,7 +15,8 @@ import org.springframework.stereotype.Service;
  * Every night, guest details on visits that ended more than the retention period ago are erased (the
  * booking itself stays so history and counts add up), old entries of the activity log are deleted, and
  * long-dead login tokens are cleaned up. The work is done by one database function that runs with the
- * database owner's rights, because it crosses restaurants; see migration V8.
+ * database owner's rights, because it crosses restaurants; see migrations V8 and V11 (V11 also clears ticket
+ * and line notes and deletes revoked tokens).
  */
 @Service
 @EnableConfigurationProperties(RetentionProperties.class)

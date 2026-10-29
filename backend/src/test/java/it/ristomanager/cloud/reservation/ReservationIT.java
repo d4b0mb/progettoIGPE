@@ -225,6 +225,45 @@ class ReservationIT {
     }
 
     @Test
+    void aBadSearchDurationIsA400WithTheFieldNameNotA500() throws Exception {
+        addTable(4);
+        String startsAtUtc = OffsetDateTime.parse(at(20, 0)).withOffsetSameInstant(java.time.ZoneOffset.UTC).toString();
+        String url = "/api/v1/reservations/available-tables?startsAt=" + startsAtUtc + "&partySize=2&durationMinutes=";
+        for (String bad : new String[] {"-30", "0", "1441"}) {
+            api.get(owner, url + bad).andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.fields.durationMinutes").exists());
+        }
+        api.get(owner, url + "1").andExpect(status().isOk());
+        api.get(owner, url + "1440").andExpect(status().isOk());
+    }
+
+    @Test
+    void tooLongGuestFieldsAreRejectedWithTheOffendingField() throws Exception {
+        String when = at(20, 0);
+        api.post(owner, "/api/v1/reservations", """
+                {"guestName":"%s","startsAt":"%s","partySize":2}
+                """.formatted("x".repeat(81), when)).andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.fields.guestName").exists());
+        api.post(owner, "/api/v1/reservations", """
+                {"guestName":"X","phone":"%s","startsAt":"%s","partySize":2}
+                """.formatted("1".repeat(31), when)).andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.fields.phone").exists());
+        api.post(owner, "/api/v1/reservations", """
+                {"guestName":"X","email":"%s@example.com","startsAt":"%s","partySize":2}
+                """.formatted("a".repeat(120), when)).andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.fields.email").exists());
+        api.post(owner, "/api/v1/reservations", """
+                {"guestName":"X","notes":"%s","startsAt":"%s","partySize":2}
+                """.formatted("n".repeat(501), when)).andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.fields.notes").exists());
+        // Exactly at the limits is accepted.
+        api.post(owner, "/api/v1/reservations", """
+                {"guestName":"%s","phone":"%s","email":"%s@example.com","notes":"%s","startsAt":"%s","partySize":2}
+                """.formatted("x".repeat(80), "1".repeat(30), "a".repeat(108), "n".repeat(500), when))
+                .andExpect(status().isCreated());
+    }
+
+    @Test
     void rolesDecideWhoCanChangeReservations() throws Exception {
         Actor manager = api.staff(owner, "MANAGER");
         Actor waiter = api.staff(owner, "WAITER");
