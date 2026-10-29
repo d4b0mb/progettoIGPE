@@ -47,6 +47,39 @@ test("toppings and free notes reach the kitchen on the ticket", async ({ browser
   await waiter.context.close();
 });
 
+test("a note on a dish already in the order covers those portions, not an extra one", async ({ browser }) => {
+  const waiter = await signedIn(browser, duodecim.waiter);
+  const page = waiter.page;
+  await page.goto("/orders");
+  await page.getByRole("button", { name: /^Table 1 / }).click();
+
+  // Two plain portions, then a note: the dialog starts from 2 and the note covers both.
+  await page.getByRole("button", { name: "Add one Margherita", exact: true }).click();
+  await page.getByRole("button", { name: "Add one Margherita", exact: true }).click();
+  await expect(page.getByLabel("Quantity of Margherita", { exact: true })).toHaveText("2");
+  await page.getByRole("button", { name: "Customise Margherita", exact: true }).click();
+  const sheet = page.getByRole("dialog");
+  await expect(sheet.getByLabel("Amount of Margherita")).toContainText("2");
+  await sheet.getByLabel("Note for this item").fill("ben cotta");
+  await sheet.getByRole("button", { name: "Save changes" }).click();
+  await expect(sheet).toBeHidden();
+  const lines = page.getByRole("list", { name: "Customised Margherita" });
+  await expect(lines).toContainText("2 ×");
+  await expect(lines).toContainText("ben cotta");
+  await expect(page.getByLabel("Quantity of Margherita", { exact: true })).toHaveText("0");
+
+  // A note for only one of them: lower the amount in the dialog, the other stays plain.
+  await page.getByRole("button", { name: "Add one Margherita", exact: true }).click();
+  await page.getByRole("button", { name: "Add one Margherita", exact: true }).click();
+  await page.getByRole("button", { name: "Customise Margherita", exact: true }).click();
+  await page.getByRole("dialog").getByRole("button", { name: "One fewer" }).click();
+  await page.getByRole("dialog").getByLabel("Note for this item").fill("senza basilico");
+  await page.getByRole("dialog").getByRole("button", { name: "Save changes" }).click();
+  await expect(page.getByLabel("Quantity of Margherita", { exact: true })).toHaveText("1");
+  await expect(lines).toContainText("senza basilico");
+  await waiter.context.close();
+});
+
 test("the owner sees the pizza options and the waiter can read them but not edit", async ({ browser }) => {
   const owner = await signedIn(browser, duodecim.owner);
   await owner.page.goto("/menu");

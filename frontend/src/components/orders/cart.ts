@@ -51,6 +51,22 @@ export function nudgePlain(lines: CartLine[], itemId: string, serving: number, d
   return quantity <= 0 ? lines.filter((l) => l !== plain) : lines.map((l) => (l === plain ? { ...l, quantity } : l));
 }
 
+/**
+ * Options or a note for a dish that may already be in the order as plain portions. The portions the choice covers are
+ * taken from the plain line first (so "2 fries" plus a note is 2 fries with the note, not a third portion); any
+ * portions left over stay plain. A choice covering more than the plain line has simply adds the difference.
+ */
+export function customisePlain(lines: CartLine[], itemId: string, serving: number, choice: Omit<CartLine, "id" | "itemId" | "serving">, id: string): CartLine[] {
+  const plain = lines.find((l) => l.itemId === itemId && l.serving === serving && isPlain(l));
+  const quantity = Math.max(1, Math.min(MAX_QUANTITY, choice.quantity));
+  let rest = lines;
+  if (plain) {
+    const left = plain.quantity - quantity;
+    rest = left > 0 ? lines.map((l) => (l === plain ? { ...l, quantity: left } : l)) : lines.filter((l) => l !== plain);
+  }
+  return addLine(rest, { id, itemId, serving, ...choice, quantity });
+}
+
 /** Changes a line (its options, note or amount). If it now matches another line, the two become one. */
 export function replaceLine(lines: CartLine[], id: string, change: Partial<Omit<CartLine, "id">>): CartLine[] {
   const current = lines.find((l) => l.id === id);

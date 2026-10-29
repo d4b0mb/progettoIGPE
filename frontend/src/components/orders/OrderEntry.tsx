@@ -13,7 +13,7 @@ import { COURSES } from "@/components/menu/MenuForm";
 import { groupBySection } from "@/components/menu/sections";
 import { formatCents } from "@/components/menu/money";
 import { todayLocal } from "@/components/reservations/time";
-import { addLine, isPlain, lineCents, newLineId, nudgePlain, quantityOf, removeLine, replaceLine, type CartLine } from "./cart";
+import { customisePlain, isPlain, lineCents, newLineId, nudgePlain, quantityOf, removeLine, replaceLine, type CartLine } from "./cart";
 import { CustomizeDialog, type Choice } from "./CustomizeDialog";
 import { useRemote } from "@/lib/useRemote";
 
@@ -55,8 +55,9 @@ export function OrderEntry({ onSent }: { onSent: (code: string) => void }) {
 
   const [tableId, setTableId] = useState("");
   const [lines, setLines] = useState<CartLine[]>([]);
-  // The dish being customised: a new line for it, or an existing line being edited.
-  const [customising, setCustomising] = useState<{ item: MenuItem; line?: CartLine } | null>(null);
+  // The dish being customised: an existing line being edited, or a note/options for the dish's plain portions
+  // (plainQty of them are already in the order; the dialog starts from that amount).
+  const [customising, setCustomising] = useState<{ item: MenuItem; line?: CartLine; plainQty?: number } | null>(null);
   const [servings, setServings] = useState<number[]>([1]);
   const [active, setActive] = useState(1);
   const [search, setSearch] = useState("");
@@ -91,7 +92,7 @@ export function OrderEntry({ onSent }: { onSent: (code: string) => void }) {
   function saveChoice(choice: Choice) {
     if (!customising) return;
     const { item, line } = customising;
-    setLines((l) => (line ? replaceLine(l, line.id, choice) : addLine(l, { id: newLineId(), itemId: item.id, serving: active, ...choice })));
+    setLines((l) => (line ? replaceLine(l, line.id, choice) : customisePlain(l, item.id, active, choice, newLineId())));
     setCustomising(null);
   }
 
@@ -288,7 +289,7 @@ export function OrderEntry({ onSent }: { onSent: (code: string) => void }) {
                             <button
                               type="button"
                               aria-label={t("customiseDish", { name: m.name })}
-                              onClick={() => setCustomising({ item: m })}
+                              onClick={() => setCustomising({ item: m, plainQty: qty })}
                               className="min-h-11 rounded-full border border-dashed border-line-strong px-4 text-sm font-bold text-primary-strong hover:bg-canvas"
                             >
                               {optionsFor(m).length > 0 ? t("customise") : t("addNote")}
@@ -330,8 +331,8 @@ export function OrderEntry({ onSent }: { onSent: (code: string) => void }) {
           key={customising.line?.id ?? customising.item.id}
           item={customising.item}
           options={optionsFor(customising.item)}
-          initial={customising.line ?? { modifierIds: [], note: "", quantity: 1 }}
-          editing={customising.line !== undefined}
+          initial={customising.line ?? { modifierIds: [], note: "", quantity: Math.max(1, customising.plainQty ?? 0) }}
+          editing={customising.line !== undefined || (customising.plainQty ?? 0) > 0}
           tableAllergies={tableAllergies}
           onSave={saveChoice}
           onClose={() => setCustomising(null)}

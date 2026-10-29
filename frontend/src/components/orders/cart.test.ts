@@ -1,7 +1,56 @@
 import { describe, expect, it } from "vitest";
-import { addLine, isPlain, lineCents, nudgePlain, quantityOf, removeLine, replaceLine, type CartLine } from "./cart";
+import { addLine, customisePlain, isPlain, lineCents, nudgePlain, quantityOf, removeLine, replaceLine, type CartLine } from "./cart";
 
 const line = (over: Partial<CartLine>): CartLine => ({ id: "x", itemId: "margherita", serving: 1, quantity: 1, modifierIds: [], note: "", ...over });
+
+describe("a note on a dish that is already in the order", () => {
+  const note = (quantity: number, text = "ben cotte") => ({ quantity, modifierIds: [], note: text });
+
+  it("two fries plus a note for both is two fries with the note, not a third portion", () => {
+    const lines = customisePlain(nudgePlain([], "fries", 1, 2), "fries", 1, note(2), "n1");
+    expect(lines).toHaveLength(1);
+    expect(lines[0]).toMatchObject({ quantity: 2, note: "ben cotte" });
+    expect(quantityOf(lines, "fries", 1)).toBe(2);
+  });
+
+  it("a note for just one of two leaves the other plain, and the total stays two", () => {
+    const lines = customisePlain(nudgePlain([], "fries", 1, 2), "fries", 1, note(1), "n1");
+    expect(lines).toHaveLength(2);
+    expect(lines.find(isPlain)?.quantity).toBe(1);
+    expect(lines.find((l) => !isPlain(l))).toMatchObject({ quantity: 1, note: "ben cotte" });
+    expect(quantityOf(lines, "fries", 1)).toBe(2);
+  });
+
+  it("asking for more than the plain portions adds only the difference", () => {
+    const lines = customisePlain(nudgePlain([], "fries", 1, 2), "fries", 1, note(3), "n1");
+    expect(lines).toHaveLength(1);
+    expect(quantityOf(lines, "fries", 1)).toBe(3);
+  });
+
+  it("with no plain portions yet it is a new line", () => {
+    const lines = customisePlain([], "fries", 1, note(1), "n1");
+    expect(lines).toHaveLength(1);
+    expect(lines[0]).toMatchObject({ id: "n1", quantity: 1, note: "ben cotte" });
+  });
+
+  it("does not touch another serving or another dish, and joins an identical note", () => {
+    let lines = nudgePlain(nudgePlain([], "fries", 1, 2), "fries", 2, 1);
+    lines = nudgePlain(lines, "salad", 1, 1);
+    lines = customisePlain(lines, "fries", 1, note(1), "n1");
+    lines = customisePlain(lines, "fries", 1, note(1), "n2");
+    expect(quantityOf(lines, "fries", 1)).toBe(2);
+    expect(lines.filter((l) => l.itemId === "fries" && l.serving === 1)).toHaveLength(1);
+    expect(quantityOf(lines, "fries", 2)).toBe(1);
+    expect(quantityOf(lines, "salad", 1)).toBe(1);
+  });
+
+  it("a choice with no options and no note changes nothing", () => {
+    const lines = customisePlain(nudgePlain([], "fries", 1, 2), "fries", 1, { quantity: 2, modifierIds: [], note: "  " }, "n1");
+    expect(lines).toHaveLength(1);
+    expect(lines[0].quantity).toBe(2);
+    expect(isPlain(lines[0])).toBe(true);
+  });
+});
 
 describe("the order being taken", () => {
   it("the plain + and − create, grow, shrink and remove one line", () => {
