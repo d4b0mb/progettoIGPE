@@ -115,6 +115,83 @@ class RetentionIT {
         }
     }
 
+    private UUID insertTicket(OwnerDb db, String restaurant, String guest, String note, int createdDaysAgo) {
+        UUID id = UUID.randomUUID();
+        db.run("""
+                insert into kitchen_ticket (id, restaurant_id, ticket_day, code, guest_name, guest_allergens, note, created_at)
+                values (?, ?::uuid, current_date, ?, ?, '{MILK}', ?, now() - make_interval(days => ?))
+                """, id, restaurant, "C-" + id.toString().substring(0, 6), guest, note, createdDaysAgo);
+        return id;
+    }
+
+    private UUID insertLine(OwnerDb db, String restaurant, UUID ticket, String note) {
+        UUID id = UUID.randomUUID();
+        db.run("""
+                insert into ticket_item (id, restaurant_id, ticket_id, name, quantity, course, note)
+                values (?, ?::uuid, ?, 'Pesto trofie', 2, 'FIRST', ?)
+                """, id, restaurant, ticket, note);
+        return id;
+    }
+
+    @Test
+    void notesOfOldTicketsAndTheirLinesAreErasedButRecentOnesStay() throws Exception {
+        Actor a = new ApiClient(mvc).signup("A");
+        try (OwnerDb db = new OwnerDb(postgres)) {
+            UUID old = insertTicket(db, a.restaurantId(), "Rossi", "for Mrs Rossi, no nuts", 200);
+            UUID oldLine = insertLine(db, a.restaurantId(), old, "Rossi is allergic to pistachio");
+            // Nothing else left to erase on this ticket, only the note: it must still be cleared.
+            UUID oldNoteOnly = insertTicket(db, a.restaurantId(), "", "table of Mr Bianchi", 150);
+            db.run("update kitchen_ticket set guest_allergens = '{}' where id = ?::uuid", oldNoteOnly.toString());
+            // A ticket that is already blank except for the note of one line.
+            UUID oldLineOnly = insertTicket(db, a.restaurantId(), "", "", 120);
+            db.run("update kitchen_ticket set guest_allergens = '{}' where id = ?::uuid", oldLineOnly.toString());
+            UUID oldLineOnlyItem = insertLine(db, a.restaurantId(), oldLineOnly, "for Verdi");
+            UUID recent = insertTicket(db, a.restaurantId(), "Greco", "birthday cake for Greco", 5);
+            UUID recentLine = insertLine(db, a.restaurantId(), recent, "no onion");
+
+            retention.purge(90, 365);
+
+            assertThat(db.one("select note from kitchen_ticket where id = ?::uuid", String.class, old.toString())).isEmpty();
+            assertThat(db.one("select guest_name from kitchen_ticket where id = ?::uuid", String.class, old.toString())).isEmpty();
+            assertThat(db.one("select note from kitchen_ticket where id = ?::uuid", String.class, oldNoteOnly.toString())).isEmpty();
+            assertThat(db.one("select note from ticket_item where id = ?::uuid", String.class, oldLine.toString())).isEmpty();
+            assertThat(db.one("select note from ticket_item where id = ?::uuid", String.class, oldLineOnlyItem.toString())).isEmpty();
+            // The order itself is kept: the dish, the quantity, and the ticket.
+            assertThat(db.one("select name from ticket_item where id = ?::uuid", String.class, oldLine.toString())).isEqualTo("Pesto trofie");
+            assertThat(db.count("select quantity from ticket_item where id = ?::uuid", oldLine.toString())).isEqualTo(2);
+            assertThat(db.count("select count(*) from kitchen_ticket where id = ?::uuid", old.toString())).isEqualTo(1);
+
+            // Within the period nothing is touched.
+            assertThat(db.one("select note from kitchen_ticket where id = ?::uuid", String.class, recent.toString())).isEqualTo("birthday cake for Greco");
+            assertThat(db.one("select note from ticket_item where id = ?::uuid", String.class, recentLine.toString())).isEqualTo("no onion");
+        }
+    }
+
+    @Test
+    void revokedTokensAreDeletedAfterSevenDaysAndLiveOnesAreKept() throws Exception {
+        Actor a = new ApiClient(mvc).signup("A");
+        try (OwnerDb db = new OwnerDb(postgres)) {
+            String revokedOld = "revoked-old-" + UUID.randomUUID();
+            String revokedRecent = "revoked-recent-" + UUID.randomUUID();
+            String liveOld = "live-old-" + UUID.randomUUID();
+            // All three are still unexpired (valid for 5 more days), so only the revoked flag and age decide.
+            for (Object[] row : new Object[][] {{revokedOld, true, 10}, {revokedRecent, true, 2}, {liveOld, false, 10}}) {
+                db.run("""
+                        insert into refresh_token (user_id, restaurant_id, token_hash, expires_at, revoked, created_at)
+                        values (?::uuid, ?::uuid, ?, now() + interval '5 days', ?, now() - make_interval(days => ?))
+                        """, a.userId(), a.restaurantId(), row[0], row[1], row[2]);
+            }
+
+            RetentionService.Result result = retention.purge(90, 365);
+
+            assertThat(result.tokensDeleted()).isGreaterThanOrEqualTo(1);
+            assertThat(db.count("select count(*) from refresh_token where token_hash = ?", revokedOld)).isZero();
+            // Revoked a short while ago: kept, because it is still of use for detecting a replayed token.
+            assertThat(db.count("select count(*) from refresh_token where token_hash = ?", revokedRecent)).isEqualTo(1);
+            assertThat(db.count("select count(*) from refresh_token where token_hash = ?", liveOld)).isEqualTo(1);
+        }
+    }
+
     @Test
     void nonsensicalRetentionPeriodsAreRefused() {
         assertThatThrownBy(() -> retention.purge(0, 365)).rootCause().hasMessageContaining("retention periods must be at least one day");
