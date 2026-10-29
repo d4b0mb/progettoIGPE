@@ -10,8 +10,10 @@ import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { SelectField } from "@/components/ui/Controls";
 import { Field } from "@/components/ui/Field";
+import { TableBookings } from "./TableBookings";
 
 type Table = components["schemas"]["DiningTable"];
+type Reservation = components["schemas"]["Reservation"];
 type Obstacle = components["schemas"]["Obstacle"];
 type Live = components["schemas"]["TableView"]["liveStatus"];
 type Service = Table["serviceStatus"];
@@ -19,6 +21,15 @@ type Service = Table["serviceStatus"];
 const SHAPES: Table["shape"][] = ["ROUND", "SQUARE", "RECTANGLE"];
 const SERVICE: Service[] = ["FREE", "TO_CLEAN", "OUT_OF_SERVICE"];
 export const OBSTACLE_TYPES: Obstacle["type"][] = ["WALL", "COLUMN", "DOOR", "WINDOW", "STAIRS", "KITCHEN", "TOILETS", "BAR", "ENTRANCE", "STORAGE"];
+
+// The Badge colours for each live status, for the badge-looking button that opens the bookings.
+const LIVE_BUTTON: Record<Live, string> = {
+  OCCUPIED: "bg-primary-soft text-primary-strong",
+  RESERVED: "bg-warn-soft text-warn-ink",
+  FREE: "bg-line text-ink",
+  TO_CLEAN: "bg-info-soft text-info-ink",
+  OUT_OF_SERVICE: "bg-info-soft text-info-ink",
+};
 
 const n = (s: string) => Number(s);
 
@@ -43,8 +54,9 @@ export function EmptyInspector() {
 }
 
 /** Details of the selected table. Staff can set its service status; owner and manager can change everything. */
-export function TableInspector({ table, live, canEdit, onChanged, onDeleted }: { table: Table; live: Live; canEdit: boolean; onChanged: () => void; onDeleted: () => void }) {
+export function TableInspector({ table, live, bookings, canEdit, onChanged, onDeleted }: { table: Table; live: Live; bookings: Reservation[]; canEdit: boolean; onChanged: () => void; onDeleted: () => void }) {
   const t = useTranslations("floor");
+  const [showBookings, setShowBookings] = useState(false);
   const [number, setNumber] = useState(String(table.number));
   const [name, setName] = useState(table.name);
   const [seats, setSeats] = useState(String(table.seats));
@@ -97,8 +109,25 @@ export function TableInspector({ table, live, canEdit, onChanged, onDeleted }: {
     <Shell title={`${t("table")} ${table.number}`}>
       <div className="flex flex-wrap items-center gap-2 text-sm">
         <span className="font-bold">{t("live")}:</span>
-        <Badge tone={live === "OCCUPIED" ? "good" : live === "RESERVED" ? "warn" : live === "FREE" ? "neutral" : "info"}>{t(`live${live}`)}</Badge>
+        {live === "OCCUPIED" || live === "RESERVED" || bookings.length > 0 ? (
+          // Looks like the badge, but opens the list of who has the table today.
+          <button
+            type="button"
+            aria-haspopup="dialog"
+            aria-label={t("showBookings", { status: t(`live${live}`) })}
+            onClick={() => setShowBookings(true)}
+            className={`inline-flex min-h-11 items-center gap-1.5 rounded-full px-3.5 text-xs font-bold underline decoration-dotted underline-offset-2 ${LIVE_BUTTON[live]}`}
+          >
+            {t(`live${live}`)}
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M4 2l4 4-4 4" />
+            </svg>
+          </button>
+        ) : (
+          <Badge tone={live === "FREE" ? "neutral" : "info"}>{t(`live${live}`)}</Badge>
+        )}
       </div>
+      <TableBookings open={showBookings} onClose={() => setShowBookings(false)} tableNumber={table.number} bookings={bookings} />
 
       <div className="flex flex-col gap-2" role="group" aria-label={t("service")}>
         <span className="text-sm font-bold">{t("service")}</span>

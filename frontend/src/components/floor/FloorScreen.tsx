@@ -17,6 +17,7 @@ import { clamp, defaultObstacleSize, snap, tidy, type Geom, type ObstacleType } 
 import { FloorDraftDialog } from "./FloorDraftDialog";
 import { EmptyInspector, OBSTACLE_TYPES, ObstacleInspector, TableInspector } from "./Inspector";
 import { RoomForm } from "./RoomForm";
+import { bookingsForTable } from "./bookingsOfTable";
 
 type Room = components["schemas"]["Room"];
 type Layout = components["schemas"]["Layout"];
@@ -524,6 +525,7 @@ function RoomView({ room, canEdit, onRoomChanged }: { room: Room; canEdit: boole
             key={JSON.stringify(selectedTable.table)}
             table={selectedTable.table}
             live={selectedTable.liveStatus}
+            bookings={bookingsForTable(today, selectedTable.table.id)}
             canEdit={canEdit}
             onChanged={() => void refresh()}
             onDeleted={() => {
