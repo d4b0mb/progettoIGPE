@@ -23,6 +23,8 @@ TOKEN=$(curl -sf -X POST "$API/api/v1/auth/login" -H "Content-Type: application/
 KIND="${KIND:-dishes}"
 if [ "$KIND" = "modifiers" ]; then ENDPOINT="/api/v1/menu/modifiers"; else ENDPOINT="/api/v1/menu/items"; fi
 
+BODY=$(mktemp)
+trap 'rm -f "$BODY"' EXIT
 added=0
 skipped=0
 while IFS='|' read -r name course section price allergens description; do
@@ -36,9 +38,12 @@ while IFS='|' read -r name course section price allergens description; do
   else
     extra=",\"description\":\"$(esc "$description")\""
   fi
+  # The body goes in a file, not on the command line: on Windows (Git Bash) the command line is converted to the
+  # old code page, which turns names like "sale · pepe" or "è" into invalid UTF-8 and the server answers 400.
+  printf '{"name":"%s","course":"%s","section":"%s","priceCents":%s,"allergens":[%s]%s}' \
+    "$(esc "$name")" "$course" "$(esc "$section")" "$price" "$list" "$extra" > "$BODY"
   status=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$API$ENDPOINT" \
-    -H "Content-Type: application/json" -H "Authorization: Bearer $TOKEN" \
-    -d "{\"name\":\"$(esc "$name")\",\"course\":\"$course\",\"section\":\"$(esc "$section")\",\"priceCents\":$price,\"allergens\":[$list]$extra}")
+    -H "Content-Type: application/json" -H "Authorization: Bearer $TOKEN" --data-binary "@$BODY")
   case "$status" in
     201) added=$((added + 1)) ;;
     409) skipped=$((skipped + 1)) ;;
