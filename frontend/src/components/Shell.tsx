@@ -30,7 +30,7 @@ export function Shell({ user, children }: { user: User; children: React.ReactNod
   return (
     <div className="flex min-h-dvh flex-col md:flex-row">
       {/* Desktop sidebar */}
-      <aside className="hidden w-60 shrink-0 flex-col justify-between bg-sidebar p-4 text-sidebar-text md:flex">
+      <aside className="hidden w-60 shrink-0 flex-col justify-between overflow-y-auto bg-sidebar p-4 text-sidebar-text md:sticky md:top-0 md:flex md:h-dvh md:self-start">
         <div className="flex flex-col gap-6">
           <Link href="/" className="flex items-center gap-2.5 px-2">
             <Brand fallbackName={tc("appName")} subtitle={tr(user.role)} />
