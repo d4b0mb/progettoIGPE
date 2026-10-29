@@ -44,6 +44,19 @@ class RefreshTokenRepository {
         jdbc.sql("update refresh_token set revoked = true where id = :id").param("id", id).update();
     }
 
+    /**
+     * Uses up a token exactly once. The update only matches a token that is not yet revoked, so of two requests
+     * presenting the same token at the same time, the database lets one change the row; the other waits for the
+     * first to commit, re-checks, matches nothing and gets {@code false}. Runs as the token's restaurant (row-level security).
+     *
+     * @return true if this call revoked the token, false if it was already revoked
+     */
+    boolean revokeIfActive(UUID id) {
+        return jdbc.sql("update refresh_token set revoked = true where id = :id and not revoked")
+                .param("id", id)
+                .update() == 1;
+    }
+
     void revokeAllForUser(UUID userId) {
         jdbc.sql("update refresh_token set revoked = true where user_id = :u and not revoked")
                 .param("u", userId)

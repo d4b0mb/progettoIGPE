@@ -2,6 +2,7 @@ package it.ristomanager.cloud.audit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -17,6 +18,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Import;
+import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.test.web.servlet.MockMvc;
 import org.testcontainers.postgresql.PostgreSQLContainer;
@@ -63,7 +65,17 @@ class AuditIT {
     @Test
     void aFailedSignInForAnUnknownEmailIsKeptButNotShownToAnyRestaurant() throws Exception {
         String stranger = "stranger-" + UUID.randomUUID() + "@example.com";
-        api.login(stranger, "whatever-password-1").andExpect(status().isUnauthorized());
+        // Failures without a restaurant are limited per client address, and every MockMvc call defaults to the same
+        // address, so this one comes from an address of its own and cannot be affected by other tests.
+        mvc.perform(post("/api/v1/auth/login").contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"email":"%s","password":"whatever-password-1"}
+                                """.formatted(stranger))
+                        .with(request -> {
+                            request.setRemoteAddr("test-" + UUID.randomUUID());
+                            return request;
+                        }))
+                .andExpect(status().isUnauthorized());
 
         assertThat(log(owner)).doesNotContain(stranger);
         try (OwnerDb db = new OwnerDb(postgres)) {

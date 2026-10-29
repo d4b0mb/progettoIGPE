@@ -14,6 +14,7 @@ import it.ristomanager.cloud.user.UserRepository;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import javax.crypto.SecretKey;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -31,14 +32,6 @@ import org.springframework.transaction.support.TransactionTemplate;
 @Service
 public class RecoveryService {
 
-    /** Shown for emails with no recovery set up. A mix of Italian and English, so language gives nothing away. */
-    private static final List<String> DECOYS = List.of(
-            "What was the name of your first pet?", "In which city did your parents meet?",
-            "What was your childhood nickname?", "What was the first car you drove?",
-            "Come si chiamava la tua prima scuola?", "Qual è il tuo piatto preferito da bambino?",
-            "Come si chiamava il tuo migliore amico d'infanzia?", "In che città hai fatto il tuo primo viaggio?",
-            "What was the street you grew up on?", "Qual è il soprannome che ti davano da piccolo?");
-
     private final RecoveryRepository repository;
     private final UserRepository users;
     private final PasswordEncoder encoder;
@@ -48,9 +41,11 @@ public class RecoveryService {
     private final TransactionTemplate tx;
     /** Checked against when the email has no recovery, so "no such owner" takes as long as "wrong answer". */
     private final String dummyHash;
+    /** Picks the questions shown for an email with no recovery, keyed with a server secret. */
+    private final RecoveryDecoys decoys;
 
     RecoveryService(RecoveryRepository repository, UserRepository users, PasswordEncoder encoder, AuthService auth,
-                    RecoveryThrottle throttle, AuditLog audit, PlatformTransactionManager transactions) {
+                    RecoveryThrottle throttle, AuditLog audit, PlatformTransactionManager transactions, SecretKey jwtKey) {
         this.repository = repository;
         this.users = users;
         this.encoder = encoder;
@@ -59,6 +54,7 @@ public class RecoveryService {
         this.audit = audit;
         this.tx = new TransactionTemplate(transactions);
         this.dummyHash = encoder.encode("not-a-real-answer");
+        this.decoys = new RecoveryDecoys(jwtKey.getEncoded());
     }
 
     /** What an owner has set up (questions only, never answers). */
@@ -106,10 +102,7 @@ public class RecoveryService {
         String key = AuthService.normalizeEmail(email);
         return repository.findByEmail(key)
                 .map(s -> List.of(s.question1(), s.question2()))
-                .orElseGet(() -> {
-                    int start = Math.floorMod(key.hashCode(), DECOYS.size());
-                    return List.of(DECOYS.get(start), DECOYS.get((start + 3) % DECOYS.size()));
-                });
+                .orElseGet(() -> decoys.forEmail(key));
     }
 
     public void reset(String email, String answer1, String answer2, String newPassword, String address) {

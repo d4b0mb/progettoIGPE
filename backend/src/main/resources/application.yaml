@@ -35,6 +35,12 @@ app:
     guest-data-days: ${GUEST_DATA_DAYS:90}
     # Entries of the activity log (which include IP addresses) are deleted after this many days.
     audit-days: ${AUDIT_DAYS:365}
+  audit:
+    # Failed sign-ins and recoveries for an unknown email have no restaurant, and anyone can cause them. Beyond these
+    # limits (per minute) the entry is not written; one AUTH_FAILURES_SUPPRESSED entry per minute says how many were left out.
+    # This is not a lockout: the sign-in itself is never refused because of it. Entries of a restaurant are never limited.
+    unscoped-per-address-per-minute: ${AUDIT_UNSCOPED_PER_ADDRESS_PER_MINUTE:20}
+    unscoped-per-minute: ${AUDIT_UNSCOPED_PER_MINUTE:200}
   ai:
     # Local language model through Ollama. Everything stays on the restaurant's own machine.
     enabled: ${AI_ENABLED:true}

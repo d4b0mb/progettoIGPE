@@ -10,7 +10,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.jayway.jsonpath.JsonPath;
 import it.ristomanager.cloud.support.PostgresTestConfig;
 import jakarta.servlet.http.Cookie;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -208,6 +215,63 @@ class AuthFlowIT {
         mvc.perform(post("/api/v1/auth/refresh").cookie(t.refreshCookie())).andExpect(status().isUnauthorized());
         // Reuse detection signs the user out everywhere, including the rotated token.
         mvc.perform(post("/api/v1/auth/refresh").cookie(rotated)).andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void sequentialRefreshesKeepWorkingAlongTheChain() throws Exception {
+        Tenant t = signup("R");
+        Cookie current = t.refreshCookie();
+        for (int i = 0; i < 3; i++) {
+            MvcResult res = mvc.perform(post("/api/v1/auth/refresh").cookie(current))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.accessToken").isNotEmpty())
+                    .andReturn();
+            Cookie next = res.getResponse().getCookie("rm_refresh");
+            assertThat(next).isNotNull();
+            assertThat(next.getValue()).isNotEqualTo(current.getValue());
+            current = next;
+        }
+        mvc.perform(post("/api/v1/auth/refresh").cookie(current)).andExpect(status().isOk());
+    }
+
+    @Test
+    void twoRefreshesWithTheSameCookieAtTheSameTimeLetExactlyOneWin() throws Exception {
+        Tenant t = signup("R");
+        int attempts = 6;
+        ExecutorService pool = Executors.newFixedThreadPool(attempts);
+        try {
+            CountDownLatch ready = new CountDownLatch(attempts);
+            CountDownLatch go = new CountDownLatch(1);
+            List<Future<MvcResult>> results = new ArrayList<>();
+            for (int i = 0; i < attempts; i++) {
+                results.add(pool.submit(() -> {
+                    ready.countDown();
+                    go.await();
+                    return mvc.perform(post("/api/v1/auth/refresh").cookie(t.refreshCookie())).andReturn();
+                }));
+            }
+            assertThat(ready.await(10, TimeUnit.SECONDS)).isTrue();
+            go.countDown();
+
+            List<MvcResult> done = new ArrayList<>();
+            for (Future<MvcResult> f : results) {
+                done.add(f.get(30, TimeUnit.SECONDS));
+            }
+            List<MvcResult> winners = done.stream().filter(r -> r.getResponse().getStatus() == 200).toList();
+            assertThat(winners).as("requests that got a new session").hasSize(1);
+            assertThat(done.stream().filter(r -> r.getResponse().getStatus() == 401).count())
+                    .as("requests refused").isEqualTo(attempts - 1);
+            assertThat(done.stream().filter(r -> r.getResponse().getCookie("rm_refresh") != null
+                    && !r.getResponse().getCookie("rm_refresh").getValue().isEmpty()).count())
+                    .as("requests handed a new refresh cookie").isEqualTo(1);
+
+            // The refused ones are treated as a reuse of a used token: the whole family is ended,
+            // including the winner's new token.
+            Cookie winnerCookie = winners.get(0).getResponse().getCookie("rm_refresh");
+            mvc.perform(post("/api/v1/auth/refresh").cookie(winnerCookie)).andExpect(status().isUnauthorized());
+        } finally {
+            pool.shutdownNow();
+        }
     }
 
     @Test

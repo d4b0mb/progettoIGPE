@@ -127,24 +127,39 @@ public class AuthService {
                 .orElseThrow(() -> ApiException.unauthorized("Not signed in"));
         return TenantContext.callAs(stored.restaurantId(), () -> {
             if (stored.revoked()) {
-                // A used-up token came back: someone copied it. Sign this user out everywhere.
-                // Committed on its own, before the error is raised, so it is not rolled back.
-                tx.executeWithoutResult(status -> refreshTokens.revokeAllForUser(stored.userId()));
-                audit.recordFor(stored.restaurantId(), stored.userId(), "", "TOKEN_REUSE_DETECTED", "user", stored.userId().toString(),
-                        "FAILURE", Map.of("effect", "all sessions of this user were ended"));
-                throw ApiException.unauthorized("Not signed in");
+                throw rejectReuse(stored);
             }
             if (stored.expiresAt().isBefore(Instant.now())) {
                 throw ApiException.unauthorized("Session expired");
             }
-            return tx.execute(status -> {
-                refreshTokens.revoke(stored.id());
+            Session session = tx.execute(status -> {
+                // The check above can be stale: a parallel request with the same token may have used it since.
+                // Only the request that really flips the row from active to revoked may start a session.
+                if (!refreshTokens.revokeIfActive(stored.id())) {
+                    return null;
+                }
                 AppUser user = users.findById(stored.userId())
                         .filter(AppUser::active)
                         .orElseThrow(() -> ApiException.unauthorized("Not signed in"));
                 return startSession(user);
             });
+            if (session == null) {
+                throw rejectReuse(stored);
+            }
+            return session;
         });
+    }
+
+    /**
+     * A used-up token came back (copied, or presented twice at once): sign this user out everywhere.
+     * Committed on its own, before the error is raised, so it is not rolled back. If a parallel request won the
+     * race, its new token was committed before this runs, so it is ended too.
+     */
+    private ApiException rejectReuse(RefreshTokenRepository.Stored stored) {
+        tx.executeWithoutResult(status -> refreshTokens.revokeAllForUser(stored.userId()));
+        audit.recordFor(stored.restaurantId(), stored.userId(), "", "TOKEN_REUSE_DETECTED", "user", stored.userId().toString(),
+                "FAILURE", Map.of("effect", "all sessions of this user were ended"));
+        return ApiException.unauthorized("Not signed in");
     }
 
     public void logout(String rawToken) {

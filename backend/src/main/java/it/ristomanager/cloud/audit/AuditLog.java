@@ -12,6 +12,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
@@ -34,11 +35,16 @@ public class AuditLog {
     private static final Logger log = LoggerFactory.getLogger(AuditLog.class);
     private static final JsonMapper JSON = JsonMapper.builder().build();
 
+    /** The entry that says how many failure entries without a restaurant were left out in a minute. */
+    static final String SUPPRESSED_ACTION = "AUTH_FAILURES_SUPPRESSED";
+
     private final JdbcClient jdbc;
     private final TransactionTemplate separateTransaction;
+    private final UnscopedFailureLimiter limiter;
 
-    AuditLog(JdbcClient jdbc, PlatformTransactionManager transactions) {
+    AuditLog(JdbcClient jdbc, PlatformTransactionManager transactions, UnscopedFailureLimiter limiter) {
         this.jdbc = jdbc;
+        this.limiter = limiter;
         this.separateTransaction = new TransactionTemplate(transactions);
         this.separateTransaction.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
     }
@@ -59,18 +65,52 @@ public class AuditLog {
         write(restaurantId, actorUserId, actorLabel, action, targetType, targetId, outcome, details);
     }
 
-    /** Something with no restaurant: an unknown email trying to sign in, or the nightly cleanup. */
+    /**
+     * Something with no restaurant: an unknown email trying to sign in, or the nightly cleanup.
+     *
+     * Failures are limited (see {@link UnscopedFailureLimiter}) because anyone can cause them: beyond the limit
+     * the entry is not written, only counted, and one summary entry per minute says how many were left out.
+     * Other entries (the nightly cleanup) are never limited.
+     */
     public void recordUnscoped(String actorLabel, String action, String outcome, Map<String, String> details) {
         try {
             String[] where = origin();
-            separateTransaction.executeWithoutResult(status ->
-                    jdbc.sql("select audit_record_unscoped(:label, :action, :outcome, cast(:details as jsonb), :ip, :ua)")
-                            .param("label", actorLabel).param("action", action).param("outcome", outcome)
-                            .param("details", json(details)).param("ip", where[0]).param("ua", where[1])
-                            .query().singleRow());
+            boolean failure = "FAILURE".equals(outcome);
+            if (failure && !limiter.tryAdmit(where[0])) {
+                writeSuppressionSummary();
+                return;
+            }
+            insertUnscoped(actorLabel, action, outcome, details, where);
+            if (failure) {
+                writeSuppressionSummary();
+            }
         } catch (RuntimeException e) {
             log.error("Could not write activity log entry {}", action, e);
         }
+    }
+
+    /** Writes the one summary entry for minutes that have finished, if entries were dropped in them. */
+    @Scheduled(fixedDelay = 15_000, initialDelay = 15_000)
+    void writeSuppressionSummary() {
+        try {
+            long dropped = limiter.takeSummary();
+            if (dropped > 0) {
+                insertUnscoped("system", SUPPRESSED_ACTION, "FAILURE", Map.of("dropped", Long.toString(dropped)),
+                        new String[] {null, null});
+                log.warn("{} failed sign-in or recovery attempts were not written to the activity log", dropped);
+            }
+        } catch (RuntimeException e) {
+            log.error("Could not write activity log summary entry", e);
+        }
+    }
+
+    private void insertUnscoped(String actorLabel, String action, String outcome, Map<String, String> details,
+                                String[] where) {
+        separateTransaction.executeWithoutResult(status ->
+                jdbc.sql("select audit_record_unscoped(:label, :action, :outcome, cast(:details as jsonb), :ip, :ua)")
+                        .param("label", actorLabel).param("action", action).param("outcome", outcome)
+                        .param("details", json(details)).param("ip", where[0]).param("ua", where[1])
+                        .query().singleRow());
     }
 
     private void write(UUID restaurantId, UUID actorUserId, String actorLabel, String action, String targetType,
