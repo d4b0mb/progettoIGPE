@@ -1,0 +1,30 @@
+# Local rehearsal on a laptop cluster (Docker Desktop's kind). Uses images built on this computer
+# and loaded into the cluster, no Ingress (there is no controller; reach it with kubectl port-forward).
+#   docker tag progettoigpe-backend:latest ristomanager-backend:local   (same for the frontend), then load both into the node
+#   kubectl create namespace ristomanager-local
+#   kubectl -n ristomanager-local create secret generic ristomanager-secrets --from-literal=... (see optional/secrets.example.md)
+#   kubectl apply -k deploy/k8s/overlays/local
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: ristomanager-local
+
+resources:
+  - ../../base
+
+images:
+  - name: ghcr.io/d4b0mb/ristomanager-backend
+    newName: ristomanager-backend
+    newTag: local
+  - name: ghcr.io/d4b0mb/ristomanager-frontend
+    newName: ristomanager-frontend
+    newTag: local
+
+replicas:
+  - name: frontend
+    count: 1
+
+patches:
+  - path: no-pull-patch.yaml
+  - path: remove-frontend-pdb.yaml
+  - path: remove-ingress.yaml

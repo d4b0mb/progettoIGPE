@@ -54,7 +54,7 @@ resource limits; NetworkPolicies allow only ingress -> frontend/backend, fronten
 | # | Step | Done when |
 |---|------|-----------|
 | 0 | Rehearse `deploy/docker-compose.prod.yml` on a real machine (a cheap VM, or locally with a test domain) | the app is reachable over https, an update works, a restore into a scratch database works |
-| 1 | Try the manifests on a local cluster (Docker Desktop's Kubernetes option, k3d or kind) with locally built images | `kubectl apply -k` gives running pods, the login works through the ingress, a kitchen screen gets a live order, `rollout undo` works. Note: some local clusters do not enforce NetworkPolicies; test that on k3s |
+| 1 | Try the manifests on a local cluster (Docker Desktop's Kubernetes option, k3d or kind) with locally built images | `kubectl apply -k` gives running pods, the login works through the ingress, a kitchen screen gets a live order, `rollout undo` works. Done once on 2026-10-29, see section 8 (NetworkPolicies were enforced there) |
 | 2 | Install single-node k3s on a server, cert-manager, the Secret, deploy staging | https works, a new image tag rolls out with no failed request in a script that polls `/api/v1/status` every 200 ms during the update |
 | 3 | Production namespace with a pinned sha, rollback and restore rehearsed; CI deploys staging on every green push, production by a manual promote | one full release and one rollback done without help |
 | 4 | Only if needed: share the in-memory state (section 3) and raise the backend to two replicas | the same script during a pod kill shows no lost orders |
@@ -64,5 +64,17 @@ resource limits; NetworkPolicies allow only ingress -> frontend/backend, fronten
 Whether every manifest field is accepted by the API server (only rendering with `kubectl kustomize` is checked), the Traefik Middleware and cert-manager objects, the Postgres
 init script behaviour on a volume, probe timings of the JVM plus Flyway, NetworkPolicy enforcement by the chosen network plugin, and the real memory footprint.
 
-## 8. Decisions AJ owes (none tonight)
+## 8. First local trial, 2026-10-29 (step 1 of section 6)
+Cluster: Docker Desktop's built-in Kubernetes (kind, v1.36.1, one node, kindnet). Overlay: `deploy/k8s/overlays/local` (local images, no Ingress). Images built from the branch and loaded into the node.
+What was measured, not assumed:
+- The real API server accepted every object of the base (a stronger check than rendering).
+- Pods came up: database, backend, frontend. Through `kubectl port-forward` the frontend page loaded, `/api` reached the backend, `database: UP`, signup, `/me` and a login worked, and a request without a token got 401.
+- **Rolling restart of the backend while polling `/api/v1/status` every 200 ms: 268 of 268 requests were 200.** One run, one replica, no real load; it is not a claim about production.
+- `rollout undo` returned to the previous revision and the pod became Ready.
+- Killing the database pod: it was back in about 18 s, the 10 Gi volume stayed bound and a login worked afterwards. The API answered nothing for about 10 s meanwhile (a single database pod is a single point of failure, as written in section 5).
+- **NetworkPolicies are enforced by this cluster's kindnet** (this corrects the note in step 1): a pod from another namespace and the frontend pod could not reach the backend or the database respectively, and the frontend reached the backend.
+- **A real bug found:** on a cold start the backend ran Flyway before the database answered, exited, and was restarted twice. Fixed with a `wait-for-db` init container (`pg_isready`; it needs `-U` because uid 10001 has no user name in the image, found by testing). After the fix, killing the database and backend together gave a backend with 0 restarts.
+Not covered: the Ingress and TLS (no Traefik or cert-manager here), the Traefik Middleware, the backup CronJob, the production overlay, graceful shutdown (`server.shutdown` is still not set), more than one backend replica, and any load.
+
+## 9. Decisions AJ owes (none tonight)
 Whether Kubernetes is a goal in itself (learning, portfolio) or only a means; which server it would run on; when step 0 happens. The plan above does not depend on the answers until step 2.
