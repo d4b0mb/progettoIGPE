@@ -1,0 +1,10 @@
+# JSON Patch (RFC 6902) applied to the Ingress. Replace the placeholder with your real domain.
+- op: replace
+  path: /spec/rules/0/host
+  value: ristomanager.example.com
+- op: replace
+  path: /spec/tls/0/hosts/0
+  value: ristomanager.example.com
+- op: replace
+  path: /spec/tls/0/secretName
+  value: ristomanager-production-tls

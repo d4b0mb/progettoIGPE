@@ -1,0 +1,37 @@
+# Staging: a rehearsal copy of production. Follows the branch (cloud-latest).
+#   kubectl kustomize deploy/k8s/overlays/staging
+#   kubectl apply -k deploy/k8s/overlays/staging        (after creating the namespace and the Secret)
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: ristomanager-staging
+
+resources:
+  - ../../base
+
+images:
+  - name: ghcr.io/d4b0mb/ristomanager-backend
+    newTag: cloud-latest
+  - name: ghcr.io/d4b0mb/ristomanager-frontend
+    newTag: cloud-latest
+
+# Staging runs one frontend pod (the base has two).
+replicas:
+  - name: frontend
+    count: 1
+
+patches:
+  # Host name and certificate secret.
+  - path: ingress-patch.yaml
+    target:
+      group: networking.k8s.io
+      version: v1
+      kind: Ingress
+      name: ristomanager
+  # The moving tag cloud-latest must be pulled again on every pod start.
+  - path: pull-always-patch.yaml
+  # A PodDisruptionBudget with one pod would block node drains: staging has none.
+  - path: remove-frontend-pdb.yaml
+  # Private images (packages not public): create the "ghcr-pull" secret (see the README), then
+  # remove the "#" in front of the next line.
+  # - path: image-pull-secret-patch.yaml

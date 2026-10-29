@@ -1,0 +1,123 @@
+# The Spring Boot API.
+#
+# WHY EXACTLY ONE REPLICA (do not raise "replicas" or add an autoscaler):
+# some state lives in the memory of the single backend process (docs/adr/0005-server-sent-events-for-kitchen.md):
+#   - the live kitchen stream (SSE): an order sent through instance A would never reach a kitchen
+#     screen connected to instance B;
+#   - assistant proposals waiting for confirmation;
+#   - rate limits and throttles (each instance would count separately).
+# With two instances these features break quietly. Before it can be two, that state must move to a
+# shared place (for example PostgreSQL LISTEN/NOTIFY or Redis). See docs/KUBERNETES_PLAN.md.
+#
+# Rolling update with one replica: maxSurge 1 / maxUnavailable 0 starts the new pod, waits until it
+# is Ready, then stops the old one. For a short moment two instances exist; the kitchen stream of
+# the old one is closed and the clients reconnect on their own.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+  labels:
+    app.kubernetes.io/name: backend
+    app.kubernetes.io/part-of: ristomanager
+    app.kubernetes.io/component: backend
+spec:
+  replicas: 1
+  minReadySeconds: 10
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: backend
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: backend
+        app.kubernetes.io/part-of: ristomanager
+        app.kubernetes.io/component: backend
+    spec:
+      automountServiceAccountToken: false
+      terminationGracePeriodSeconds: 45
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 999
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: backend
+          image: ghcr.io/d4b0mb/ristomanager-backend:cloud-latest
+          ports:
+            - name: http
+              containerPort: 8080
+          envFrom:
+            - configMapRef:
+                name: backend-config
+          env:
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: ristomanager-secrets
+                  key: APP_DB_PASSWORD
+            - name: FLYWAY_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: ristomanager-secrets
+                  key: POSTGRES_PASSWORD
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: ristomanager-secrets
+                  key: JWT_SECRET
+          # Generous: the JVM starts and Flyway applies migrations before the app is up
+          # (up to 30 x 5 s = 150 s). Liveness and readiness only begin after this succeeds.
+          startupProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: http
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 30
+          readinessProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              port: http
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: http
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+          lifecycle:
+            preStop:
+              # Gives the Service and the ingress time to stop sending new requests to this pod
+              # before the JVM receives SIGTERM.
+              exec:
+                command: ["sleep", "10"]
+          # The JVM uses 75% of the memory limit (-XX:MaxRAMPercentage=75 in the image), so raising
+          # the limit raises the heap.
+          resources:
+            requests:
+              cpu: 300m
+              memory: 512Mi
+            limits:
+              memory: 1Gi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+            seccompProfile:
+              type: RuntimeDefault
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir: {}

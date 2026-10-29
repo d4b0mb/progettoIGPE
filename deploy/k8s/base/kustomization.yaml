@@ -1,0 +1,32 @@
+# The base: everything RistoManager needs in one namespace. It has no namespace of its own;
+# the overlays (staging, production) choose it. It contains NO Secret: see
+# deploy/k8s/optional/secrets.example.md.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - config.yaml
+  - db-service.yaml
+  - db-statefulset.yaml
+  - backend-service.yaml
+  - backend-deployment.yaml
+  - frontend-service.yaml
+  - frontend-deployment.yaml
+  - ingress.yaml
+  - networkpolicies.yaml
+
+configMapGenerator:
+  # The init script that creates the restricted database role. It is a copy of
+  # infra/postgres/01-app-role.sh (kustomize cannot read outside this folder).
+  # Check with: sh deploy/k8s/check-init-script.sh
+  - name: db-init
+    files:
+      - 01-app-role.sh=db-init/01-app-role.sh
+    options:
+      # Fixed name on purpose: the script only runs on an empty database, so changing it
+      # must not restart the database pod.
+      disableNameSuffixHash: true
+      labels:
+        app.kubernetes.io/name: db
+        app.kubernetes.io/part-of: ristomanager
+        app.kubernetes.io/component: database

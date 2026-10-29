@@ -1,0 +1,23 @@
+# "cloud-latest" is a moving tag, but Kubernetes only re-downloads automatically for the tag
+# "latest". Without this, a restart would reuse the old image already on the node.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+spec:
+  template:
+    spec:
+      containers:
+        - name: backend
+          imagePullPolicy: Always
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+spec:
+  template:
+    spec:
+      containers:
+        - name: frontend
+          imagePullPolicy: Always

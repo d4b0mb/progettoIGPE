@@ -1,0 +1,48 @@
+# OPTIONAL, applied once per cluster (not per namespace), AFTER cert-manager is installed:
+#   1. replace you@example.com with a real e-mail address (Let's Encrypt writes to it about expiry);
+#   2. kubectl apply -f deploy/k8s/optional/cert-manager-clusterissuer.yaml
+#
+# HTTP-01 challenge: Let's Encrypt fetches a file over plain HTTP on port 80, served through
+# Traefik. The domain must already point at the cluster and port 80 must be reachable.
+#
+# The Ingress asks for "letsencrypt-prod". While testing, point the annotation
+# cert-manager.io/cluster-issuer at "letsencrypt-staging" first: Let's Encrypt limits how many
+# real certificates you may request, and the staging one has far looser limits (its certificates
+# are not trusted by browsers).
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt-prod
+  labels:
+    app.kubernetes.io/name: letsencrypt-prod
+    app.kubernetes.io/part-of: ristomanager
+    app.kubernetes.io/component: certificates
+spec:
+  acme:
+    server: https://acme-v02.api.letsencrypt.org/directory
+    email: you@example.com
+    privateKeySecretRef:
+      name: letsencrypt-prod-account-key
+    solvers:
+      - http01:
+          ingress:
+            ingressClassName: traefik
+---
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt-staging
+  labels:
+    app.kubernetes.io/name: letsencrypt-staging
+    app.kubernetes.io/part-of: ristomanager
+    app.kubernetes.io/component: certificates
+spec:
+  acme:
+    server: https://acme-staging-v02.api.letsencrypt.org/directory
+    email: you@example.com
+    privateKeySecretRef:
+      name: letsencrypt-staging-account-key
+    solvers:
+      - http01:
+          ingress:
+            ingressClassName: traefik

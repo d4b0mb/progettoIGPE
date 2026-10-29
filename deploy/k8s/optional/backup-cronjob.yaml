@@ -1,0 +1,124 @@
+# OPTIONAL, test a restore before relying on it.
+# NOT referenced by any overlay. Written but never run on a cluster.
+#
+# Every night at 03:00 (the cluster's time zone, usually UTC) it dumps the database with pg_dump
+# into a dedicated volume and keeps the last 14 files. Same idea as deploy/backup.sh.
+#
+# Apply it in the namespace of the deployment you want to protect:
+#   kubectl -n ristomanager-production apply -f deploy/k8s/optional/backup-cronjob.yaml
+#
+# IMPORTANT:
+#  - A backup on the same server as the database is not a backup. Copy the files off the
+#    machine regularly (for example with kubectl cp, or by mounting the volume elsewhere).
+#  - Restore it once into a scratch database to prove it works:
+#      gunzip -c ristomanager-YYYYMMDD-HHMMSS.sql.gz | psql -U ristomanager -d scratch
+#  - It needs the Secret "ristomanager-secrets" (key POSTGRES_PASSWORD) in the same namespace.
+#  - The pods are labelled app.kubernetes.io/name: db-backup, which the NetworkPolicy
+#    "allow-backend-and-backup-to-db" already allows to reach the database.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: db-backups
+  labels:
+    app.kubernetes.io/name: db-backup
+    app.kubernetes.io/part-of: ristomanager
+    app.kubernetes.io/component: backup
+spec:
+  accessModes: ["ReadWriteOnce"]
+  # No storageClassName: the cluster default is used (k3s: local-path).
+  resources:
+    requests:
+      storage: 5Gi
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: db-backup
+  labels:
+    app.kubernetes.io/name: db-backup
+    app.kubernetes.io/part-of: ristomanager
+    app.kubernetes.io/component: backup
+spec:
+  schedule: "0 3 * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 1
+      activeDeadlineSeconds: 1800
+      template:
+        metadata:
+          labels:
+            app.kubernetes.io/name: db-backup
+            app.kubernetes.io/part-of: ristomanager
+            app.kubernetes.io/component: backup
+        spec:
+          restartPolicy: Never
+          automountServiceAccountToken: false
+          securityContext:
+            # The postgres image's own user, so the files are not owned by root.
+            runAsNonRoot: true
+            runAsUser: 999
+            runAsGroup: 999
+            fsGroup: 999
+            seccompProfile:
+              type: RuntimeDefault
+          containers:
+            - name: pg-dump
+              image: postgres:17
+              env:
+                - name: PGHOST
+                  value: db
+                - name: PGUSER
+                  value: ristomanager
+                - name: PGDATABASE
+                  value: ristomanager
+                - name: PGPASSWORD
+                  valueFrom:
+                    secretKeyRef:
+                      name: ristomanager-secrets
+                      key: POSTGRES_PASSWORD
+              command:
+                - /bin/sh
+                - -c
+                - |
+                  set -eu
+                  FILE="/backups/ristomanager-$(date +%Y%m%d-%H%M%S).sql.gz"
+                  # "pipefail" is not in plain sh: dump to a file first so a failure is seen.
+                  pg_dump --no-owner > "$FILE.sql"
+                  gzip -c "$FILE.sql" > "$FILE"
+                  rm -f "$FILE.sql"
+                  # A truncated dump is worse than none: refuse to keep a suspiciously small one.
+                  if [ "$(wc -c < "$FILE")" -le 1000 ]; then
+                    rm -f "$FILE"
+                    echo "backup looks empty, removed" >&2
+                    exit 1
+                  fi
+                  # Keep the last 14.
+                  ls -1t /backups/ristomanager-*.sql.gz | tail -n +15 | xargs -r rm -f
+                  echo "wrote $FILE"
+              resources:
+                requests:
+                  cpu: 50m
+                  memory: 64Mi
+                limits:
+                  memory: 256Mi
+              securityContext:
+                allowPrivilegeEscalation: false
+                readOnlyRootFilesystem: true
+                capabilities:
+                  drop: ["ALL"]
+                seccompProfile:
+                  type: RuntimeDefault
+              volumeMounts:
+                - name: backups
+                  mountPath: /backups
+                - name: tmp
+                  mountPath: /tmp
+          volumes:
+            - name: backups
+              persistentVolumeClaim:
+                claimName: db-backups
+            - name: tmp
+              emptyDir: {}

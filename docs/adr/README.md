@@ -19,3 +19,4 @@ decision changes, a new record supersedes the old one.
 | [0011](0011-servings.md) | Servings: the kitchen gets an order one serving at a time | Accepted |
 | [0012](0012-assistant-proposes-people-confirm.md) | The assistant proposes, a person confirms | Accepted |
 | [0013](0013-voice-and-channels-are-adapters.md) | Voice and message channels are adapters around one assistant | Proposed |
+| [0014](0014-kubernetes-entry-criteria.md) | Kubernetes: entry criteria, and the backend stays one replica | Proposed |

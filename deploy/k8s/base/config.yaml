@@ -1,0 +1,25 @@
+# Non-secret settings of the backend (the secret ones come from the Secret "ristomanager-secrets").
+# Same values as the environment block of deploy/docker-compose.prod.yml.
+# A change here does NOT restart the backend by itself: run
+#   kubectl -n <namespace> rollout restart deployment/backend
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: backend-config
+  labels:
+    app.kubernetes.io/name: backend
+    app.kubernetes.io/part-of: ristomanager
+    app.kubernetes.io/component: backend
+data:
+  # "db" is the headless Service in front of the database StatefulSet (same namespace).
+  DB_URL: "jdbc:postgresql://db:5432/ristomanager"
+  # The API connects as the restricted role so row-level security applies to it.
+  DB_USER: "ristomanager_app"
+  # Migrations (Flyway) run at start as the owner role.
+  FLYWAY_USER: "ristomanager"
+  # The site is served over HTTPS, so the refresh cookie is marked Secure.
+  COOKIE_SECURE: "true"
+  # The assistant and voice need local model servers that are not part of this deployment.
+  AI_ENABLED: "false"
+  VOICE_ENABLED: "false"
+  RETENTION_ENABLED: "true"

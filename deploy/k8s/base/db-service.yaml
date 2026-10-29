@@ -1,0 +1,18 @@
+# Headless Service (clusterIP: None) for the database StatefulSet. Other pods reach the
+# database at the name "db" (port 5432), exactly like in Docker Compose.
+apiVersion: v1
+kind: Service
+metadata:
+  name: db
+  labels:
+    app.kubernetes.io/name: db
+    app.kubernetes.io/part-of: ristomanager
+    app.kubernetes.io/component: database
+spec:
+  clusterIP: None
+  selector:
+    app.kubernetes.io/name: db
+  ports:
+    - name: postgres
+      port: 5432
+      targetPort: postgres

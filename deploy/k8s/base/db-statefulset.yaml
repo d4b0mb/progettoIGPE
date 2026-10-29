@@ -1,0 +1,121 @@
+# PostgreSQL 17, one replica, data on a PersistentVolumeClaim.
+# Same settings as the "db" service of deploy/docker-compose.prod.yml.
+#
+# The init script (the restricted role "ristomanager_app") runs ONCE, when the data volume is
+# empty. Changing POSTGRES_PASSWORD or APP_DB_PASSWORD in the Secret later does NOT change the
+# passwords inside an existing database.
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: db
+  labels:
+    app.kubernetes.io/name: db
+    app.kubernetes.io/part-of: ristomanager
+    app.kubernetes.io/component: database
+spec:
+  serviceName: db
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: db
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: db
+        app.kubernetes.io/part-of: ristomanager
+        app.kubernetes.io/component: database
+    spec:
+      automountServiceAccountToken: false
+      terminationGracePeriodSeconds: 60
+      securityContext:
+        # The postgres image runs as user 999. Starting directly as 999 (not as root, which the
+        # image would then drop to 999) lets every capability be dropped.
+        runAsNonRoot: true
+        runAsUser: 999
+        runAsGroup: 999
+        fsGroup: 999
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: postgres
+          image: postgres:17
+          ports:
+            - name: postgres
+              containerPort: 5432
+          env:
+            - name: POSTGRES_DB
+              value: ristomanager
+            - name: POSTGRES_USER
+              value: ristomanager
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: ristomanager-secrets
+                  key: POSTGRES_PASSWORD
+            - name: APP_DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: ristomanager-secrets
+                  key: APP_DB_PASSWORD
+            # A new volume has a "lost+found" folder at its top; PostgreSQL refuses to start in a
+            # folder that is not empty, so the data goes in a subfolder.
+            - name: PGDATA
+              value: /var/lib/postgresql/data/pgdata
+          startupProbe:
+            exec:
+              command: ["pg_isready", "-U", "ristomanager", "-d", "ristomanager"]
+            periodSeconds: 5
+            timeoutSeconds: 5
+            failureThreshold: 30
+          readinessProbe:
+            exec:
+              command: ["pg_isready", "-U", "ristomanager", "-d", "ristomanager"]
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          livenessProbe:
+            exec:
+              command: ["pg_isready", "-U", "ristomanager", "-d", "ristomanager"]
+            periodSeconds: 20
+            timeoutSeconds: 5
+            failureThreshold: 6
+          resources:
+            requests:
+              cpu: 200m
+              memory: 256Mi
+            limits:
+              memory: 1Gi
+          securityContext:
+            allowPrivilegeEscalation: false
+            # Not read-only: PostgreSQL writes in several places outside the data folder.
+            readOnlyRootFilesystem: false
+            capabilities:
+              drop: ["ALL"]
+            seccompProfile:
+              type: RuntimeDefault
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/postgresql/data
+            - name: init
+              mountPath: /docker-entrypoint-initdb.d
+              readOnly: true
+      volumes:
+        - name: init
+          configMap:
+            name: db-init
+            # 493 is decimal for octal 0755 (rwxr-xr-x): the entrypoint only executes scripts that
+            # are executable, otherwise it would source them with the wrong shell.
+            defaultMode: 493
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+        labels:
+          app.kubernetes.io/name: db
+          app.kubernetes.io/part-of: ristomanager
+          app.kubernetes.io/component: database
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        # No storageClassName: the cluster default is used (k3s: local-path).
+        resources:
+          requests:
+            storage: 10Gi

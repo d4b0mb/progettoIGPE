@@ -97,4 +97,7 @@ docs/            ADRs (why), HANDOFF.md (state of the project), DEPLOY.md, phase
 Because a restaurant cannot be down during service, and updates must not interrupt
 it. Kubernetes gives zero-downtime rolling updates and a setup that grows to more
 servers without being rebuilt. It arrives only in Phase 3, after the product works
-on plain Docker Compose. See [ADR 0006](docs/adr/0006-deployment-path.md).
+on plain Docker Compose. Honest note: the backend keeps some state in memory, so it runs as one
+copy for now and "zero downtime" is a goal to measure, not a claim. See
+[ADR 0006](docs/adr/0006-deployment-path.md), [ADR 0014](docs/adr/0014-kubernetes-entry-criteria.md) and
+[the plan](docs/KUBERNETES_PLAN.md).

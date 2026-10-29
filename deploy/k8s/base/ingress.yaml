@@ -1,0 +1,47 @@
+# The only door from the internet. Replaces the Caddy container of deploy/docker-compose.prod.yml:
+#   /api/*  -> backend:8080 (including the live kitchen stream)
+#   /       -> frontend:3000
+# The host and the TLS secret name are placeholders; each overlay sets the real ones.
+#
+# The live kitchen stream (Server-Sent Events): Traefik does not buffer responses by default, so
+# events arrive the moment they are sent. The backend closes a stream after ten minutes and the
+# clients reconnect on their own (docs/adr/0005-server-sent-events-for-kitchen.md).
+#
+# Security headers (as in deploy/Caddyfile) are an optional Traefik Middleware:
+# see deploy/k8s/optional/traefik-middleware.yaml and the README.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ristomanager
+  labels:
+    app.kubernetes.io/name: ingress
+    app.kubernetes.io/part-of: ristomanager
+    app.kubernetes.io/component: ingress
+  annotations:
+    # cert-manager asks Let's Encrypt for a certificate and stores it in the secret named under
+    # "tls" below. The issuer is in deploy/k8s/optional/cert-manager-clusterissuer.yaml.
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+spec:
+  ingressClassName: traefik
+  tls:
+    - hosts:
+        - ristomanager.example.com
+      secretName: ristomanager-tls
+  rules:
+    - host: ristomanager.example.com
+      http:
+        paths:
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: backend
+                port:
+                  number: 8080
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: frontend
+                port:
+                  number: 3000

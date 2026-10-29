@@ -1,0 +1,19 @@
+# MUST be named "backend": the frontend image has the /api forwarding rule baked in at build
+# time to http://backend:8080 (see frontend/Dockerfile, BACKEND_URL). Keep it in the same
+# namespace as the frontend.
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend
+  labels:
+    app.kubernetes.io/name: backend
+    app.kubernetes.io/part-of: ristomanager
+    app.kubernetes.io/component: backend
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: backend
+  ports:
+    - name: http
+      port: 8080
+      targetPort: http

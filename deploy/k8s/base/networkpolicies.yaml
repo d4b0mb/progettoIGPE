@@ -1,0 +1,111 @@
+# Who may talk to whom (ingress = incoming traffic only).
+#
+#   internet -> Traefik (kube-system) -> frontend:3000 and backend:8080
+#   frontend -> backend:8080
+#   backend  -> db:5432            (and the optional backup job -> db:5432)
+#   anything else is refused.
+#
+# Egress (outgoing traffic) is NOT restricted yet: pods can still reach the internet and
+# the cluster DNS freely. That is a known gap (see the README, "What is missing").
+#
+# NetworkPolicies are only enforced if the cluster's network plugin supports them. k3s does
+# (built-in controller). Docker Desktop and kind by default do not: there these objects are
+# accepted but have no effect.
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-ingress
+  labels:
+    app.kubernetes.io/name: default-deny-ingress
+    app.kubernetes.io/part-of: ristomanager
+    app.kubernetes.io/component: network-policy
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-ingress-controller-to-frontend
+  labels:
+    app.kubernetes.io/name: allow-ingress-controller-to-frontend
+    app.kubernetes.io/part-of: ristomanager
+    app.kubernetes.io/component: network-policy
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: frontend
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        # One item with both selectors = the pod must match both (Traefik, in kube-system).
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: traefik
+      ports:
+        - protocol: TCP
+          port: 3000
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-ingress-controller-and-frontend-to-backend
+  labels:
+    app.kubernetes.io/name: allow-ingress-controller-and-frontend-to-backend
+    app.kubernetes.io/part-of: ristomanager
+    app.kubernetes.io/component: network-policy
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: backend
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        # Traefik: the /api path goes straight to the backend.
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: traefik
+        # The frontend server: it forwards /api to the backend too.
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: frontend
+      ports:
+        - protocol: TCP
+          port: 8080
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-backend-and-backup-to-db
+  labels:
+    app.kubernetes.io/name: allow-backend-and-backup-to-db
+    app.kubernetes.io/part-of: ristomanager
+    app.kubernetes.io/component: network-policy
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: db
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: backend
+        # The optional nightly backup job (deploy/k8s/optional/backup-cronjob.yaml).
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: db-backup
+      ports:
+        - protocol: TCP
+          port: 5432

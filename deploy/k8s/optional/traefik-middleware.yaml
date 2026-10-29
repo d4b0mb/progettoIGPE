@@ -1,0 +1,31 @@
+# OPTIONAL. The same security headers as deploy/Caddyfile, as a Traefik Middleware
+# (a custom resource that k3s's Traefik understands).
+#
+# It is NOT part of the overlays because the Ingress must name it with the namespace in front.
+# To use it (example for staging):
+#   kubectl -n ristomanager-staging apply -f deploy/k8s/optional/traefik-middleware.yaml
+# then add this annotation to the Ingress (for example with a patch in the overlay):
+#   traefik.ingress.kubernetes.io/router.middlewares: ristomanager-staging-security-headers@kubernetescrd
+# (the format is <namespace>-<middleware name>@kubernetescrd; for production use
+# ristomanager-production-security-headers@kubernetescrd).
+#
+# apiVersion traefik.io/v1alpha1 is the one used by Traefik v3 (current k3s). Older Traefik v2
+# used traefik.containo.us/v1alpha1.
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: security-headers
+  labels:
+    app.kubernetes.io/name: security-headers
+    app.kubernetes.io/part-of: ristomanager
+    app.kubernetes.io/component: ingress
+spec:
+  headers:
+    # Strict-Transport-Security: max-age=31536000
+    stsSeconds: 31536000
+    # X-Content-Type-Options: nosniff
+    contentTypeNosniff: true
+    # Referrer-Policy: strict-origin-when-cross-origin
+    referrerPolicy: "strict-origin-when-cross-origin"
+    # X-Frame-Options: DENY
+    frameDeny: true
