@@ -1,6 +1,12 @@
 # The agent that faces both ways: staff and customers
 
-Status: plan, 2026-10-27. Nothing here is built except the staff side (the assistant, ADR 0012) and the first voice skeleton.
+## Status
+Step 2 (principal and guest tool set) is implemented in the assistant core; no channel is attached. `Principal` (staff or guest) now
+binds every assistant conversation; a guest gets only `menu_lookup` and `ask_human` (chosen by code, re-checked at execution), its own
+prompt, its own rate limit (`app.ai.guest-limits`) and audit entries labelled `guest:<channel>` without the sender's identity. There is
+no endpoint, no adapter and no inbox yet (steps 3 to 6 below).
+
+Original plan status: plan, 2026-10-27. Nothing here is built except the staff side (the assistant, ADR 0012) and the first voice skeleton.
 AJ's end goal: an AI that talks to customers on behalf of the restaurant, first on WhatsApp and Telegram, later on the phone,
 and that is the same agent the staff talk to. It must save work on the floor and never create any.
 

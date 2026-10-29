@@ -175,15 +175,19 @@ class AssistantServiceTest {
 
     static class RecordingAudit implements AssistantAudit {
         final List<String> entries = new ArrayList<>();
+        /** The actor label of every entry, in the same order as {@link #entries}. */
+        final List<String> labels = new ArrayList<>();
 
         @Override
-        public void toolCalled(String tool, String outcome) {
+        public void toolCalled(Principal who, String tool, String outcome) {
             entries.add("TOOL " + tool + " " + outcome);
+            labels.add(who.auditLabel());
         }
 
         @Override
-        public void proposed(String kind) {
+        public void proposed(Principal who, String kind) {
             entries.add("PROPOSE " + kind);
+            labels.add(who.auditLabel());
         }
 
         @Override
@@ -918,6 +922,7 @@ class AssistantServiceTest {
         chat(Role.OWNER, "note di rossi");
 
         assertThat(audit.entries).containsExactly("TOOL find_reservations ok");
+        assertThat(audit.labels).containsExactly("staff:OWNER");
         assertThat(String.join("|", audit.entries)).doesNotContain("Rossi").doesNotContain("noci").doesNotContain("rossi");
     }
 }

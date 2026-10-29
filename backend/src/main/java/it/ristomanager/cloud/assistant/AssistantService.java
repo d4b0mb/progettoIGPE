@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.regex.Pattern;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
 /**
@@ -66,6 +67,23 @@ public class AssistantService {
                     + "|(?:is|are)\\s+(?:now\\s+)?(?:booked|cancell?ed))(?![\\p{L}\\p{N}])",
             Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CASE);
 
+    static final String TEAM_WILL_CONFIRM_REPLY = "Non posso confermare una prenotazione o un tavolo: sarà il team a confermare. "
+            + "/ I can't confirm a booking or a table myself: the team will confirm.";
+
+    /**
+     * Guest replies only: the answer promises or confirms a booking or a table. The staff DONE_CLAIM wording plus the other
+     * ways a model says it ("prenotazione confermata", "table is booked", "reserved for you", "ti prenoto", "you're booked").
+     */
+    static final Pattern GUEST_PROMISE = Pattern.compile(
+            "(?:" + DONE_CLAIM.pattern() + ")"
+                    + "|(?<![\\p{L}\\p{N}])(?:prenotazione\\s+confermata|ho\\s+riservato|ti\\s+(?:ho\\s+)?(?:prenotato|riservato)"
+                    + "|ti\\s+(?:prenoto|riservo)|(?:tavolo|posto)\\s+(?:è|e')\\s+(?:riservato|prenotato|confermato)"
+                    + "|(?:table|booking|reservation|spot)\\s+(?:is|has\\s+been|was)\\s+(?:confirmed|reserved|booked)"
+                    + "|reserved\\s+for\\s+you|booked\\s+for\\s+you"
+                    + "|you(?:'re|\\s+are)\\s+(?:all\\s+set|booked|confirmed)"
+                    + "|(?:i'?ll|i\\s+will)\\s+(?:book|reserve))(?![\\p{L}\\p{N}])",
+            Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CASE);
+
     /** The answer says a proposal was prepared (true only when this request really created one). */
     static final Pattern PREPARED_CLAIM = Pattern.compile(
             "(?<![\\p{L}\\p{N}])(?:ho\\s+preparato|i(?:'ve|\\s+have)?\\s+prepared)(?![\\p{L}\\p{N}])",
@@ -97,21 +115,32 @@ public class AssistantService {
     private final LlmClient llm;
     private final AssistantData data;
     private final AiGate gate;
+    private final AiGate guestGate;
     private final AssistantTools tools;
     private final AssistantAudit audit;
     private final Clock clock;
 
     @Autowired
-    public AssistantService(LlmClient llm, AssistantData data, AiGate gate, ProposalStore proposals, AssistantAudit audit) {
-        this(llm, data, gate, proposals, audit, Clock.systemUTC());
+    public AssistantService(LlmClient llm, AssistantData data, AiGate gate, @Qualifier("guestGate") AiGate guestGate,
+                            ProposalStore proposals, AssistantAudit audit, GuestHandoff handoff) {
+        this(llm, data, gate, guestGate, proposals, audit, handoff, Clock.systemUTC());
     }
 
+    /** For tests: the staff-only wiring, with a default guest gate (1 at a time, 6 a minute) and a no-op hand-off. */
     AssistantService(LlmClient llm, AssistantData data, AiGate gate, ProposalStore proposals, AssistantAudit audit,
                      Clock clock) {
+        this(llm, data, gate, new AiGate(new AiLimits(1, 6), clock, Duration.ofMillis(50)), proposals, audit,
+                (guest, reason) -> {
+                }, clock);
+    }
+
+    AssistantService(LlmClient llm, AssistantData data, AiGate gate, AiGate guestGate, ProposalStore proposals,
+                     AssistantAudit audit, GuestHandoff handoff, Clock clock) {
         this.llm = llm;
         this.data = data;
         this.gate = gate;
-        this.tools = new AssistantTools(data, proposals);
+        this.guestGate = guestGate;
+        this.tools = new AssistantTools(data, proposals, handoff);
         this.audit = audit;
         this.clock = clock;
     }
@@ -120,25 +149,33 @@ public class AssistantService {
     private record Outcome(String text, boolean tooManySteps, boolean menuUsed, int toolsUsed) {
     }
 
+    /** Staff entry point for callers that hold a {@link CurrentUser}: the same as chatting as {@code Principal.staff(...)}. */
     public AssistantReply chat(CurrentUser user, AssistantRequest request) {
+        return chat(Principal.staff(user.restaurantId(), user.userId(), user.role()), request);
+    }
+
+    public AssistantReply chat(Principal who, AssistantRequest request) {
         String message = clean(request.message());
         if (message.isEmpty()) {
             throw ApiException.invalid("message", "Write a message");
         }
         List<ChatMessage> history = sanitise(request.history());
-        ZoneId zone = data.timezone(user.restaurantId());
+        ZoneId zone = data.timezone(who.restaurantId());
 
+        String system = who.isGuest() ? AssistantPrompt.guestSystem() : AssistantPrompt.system(clock.instant().atZone(zone));
         List<ChatMessage> messages = new ArrayList<>();
-        messages.add(ChatMessage.system(AssistantPrompt.system(clock.instant().atZone(zone))));
+        messages.add(ChatMessage.system(system));
         messages.addAll(history);
         messages.add(ChatMessage.user(message));
 
-        ChatOptions options = new ChatOptions(null, null, MODEL_TIMEOUT, tools.definitions(user.role()));
-        Context ctx = new Context(user.restaurantId(), user.userId(), user.role(), zone, new ArrayList<>());
+        ChatOptions options = new ChatOptions(null, null, MODEL_TIMEOUT, tools.definitions(who));
+        Context ctx = new Context(who, zone, new ArrayList<>());
 
+        // Guests are counted in a gate of their own: a flood of customer messages never uses the staff budget.
+        AiGate door = who.isGuest() ? guestGate : gate;
         Outcome outcome;
         try {
-            outcome = gate.run(user.userId(), () -> converse(ctx, messages, options));
+            outcome = door.run(who.gateKey(), () -> converse(ctx, messages, options));
         } catch (AiException e) {
             throw AiErrors.toApi(e);
         }
@@ -166,9 +203,10 @@ public class AssistantService {
                 int proposalsBefore = ctx.proposals().size();
                 Result result = tools.execute(ctx, toolCall);
                 toolsUsed++;
-                audit.toolCalled(AssistantTools.isKnown(toolCall.name()) ? toolCall.name() : "unknown", result.outcome());
+                audit.toolCalled(ctx.principal(), AssistantTools.isKnown(toolCall.name()) ? toolCall.name() : "unknown",
+                        result.outcome());
                 for (int i = proposalsBefore; i < ctx.proposals().size(); i++) {
-                    audit.proposed(ctx.proposals().get(i).kind().name());
+                    audit.proposed(ctx.principal(), ctx.proposals().get(i).kind().name());
                 }
                 if (AssistantTools.MENU_LOOKUP.equals(toolCall.name())) {
                     menuUsed = true;
@@ -215,6 +253,10 @@ public class AssistantService {
             if (CERTIFIES.matcher(unquoted).find() || bareAnswerToAllergyQuestion) {
                 text = SAFETY_REPLACEMENT;
                 notices.add(AssistantTypes.NOTICE_SAFETY_CLAIM_REMOVED);
+            } else if (ctx.principal().isGuest() && GUEST_PROMISE.matcher(unquoted).find()) {
+                // A guest was promised a booking or a table: only the team can do that, so say exactly that instead.
+                text = TEAM_WILL_CONFIRM_REPLY;
+                notices.add(AssistantTypes.NOTICE_TEAM_WILL_CONFIRM);
             } else if (ctx.proposals().isEmpty() && (DONE_CLAIM.matcher(unquoted).find() || PREPARED_CLAIM.matcher(unquoted).find())) {
                 // The model announced an action that never happened (nothing was proposed): say so instead of misleading.
                 text = NOTHING_CHANGED_REPLY;

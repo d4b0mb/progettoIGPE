@@ -45,8 +45,9 @@ import tools.jackson.databind.node.ObjectNode;
  *   <li>The two propose_ tools write nothing to the reservations. They only add a proposal to the {@link ProposalStore};
  *       a person pressing Confirm in a separate request is what executes it.</li>
  * </ul>
- * Which tools a role may use is decided twice: {@link #definitions} decides what the model is shown, and
- * {@link #execute} re-checks before touching any data, so a call the model was never offered is refused.
+ * Which tools a principal may use is decided twice: {@link #definitions} decides what the model is shown, and
+ * {@link #execute} re-checks before touching any data, so a call the model was never offered is refused. Staff get the
+ * tools of their role; a guest (a stranger on a message channel) gets only menu_lookup and ask_human, whatever it writes.
  */
 final class AssistantTools {
 
@@ -57,8 +58,11 @@ final class AssistantTools {
     static final String MENU_LOOKUP = "menu_lookup";
     static final String PROPOSE_CREATE = "propose_create_reservation";
     static final String PROPOSE_CANCEL = "propose_cancel_reservation";
+    /** Guest only: asks the team to follow up. */
+    static final String ASK_HUMAN = "ask_human";
 
     static final int NAME_MAX = 80;
+    private static final int REASON_MAX = 200;
     private static final int MAX_FREE_TABLES = 30;
     static final int NOTES_MAX = 160;
     private static final int NOTES_INPUT_MAX = 300;
@@ -70,19 +74,43 @@ final class AssistantTools {
     private static final JsonMapper MAPPER = JsonMapper.builder().build();
 
     private static final List<String> ALL_TOOLS = List.of(
+            FIND_RESERVATIONS, FLOOR_STATUS, FREE_TABLES, KITCHEN_QUEUE, MENU_LOOKUP, PROPOSE_CREATE, PROPOSE_CANCEL, ASK_HUMAN);
+
+    /** The staff tools: every tool except the guest-only one. */
+    private static final List<String> STAFF_TOOLS = List.of(
             FIND_RESERVATIONS, FLOOR_STATUS, FREE_TABLES, KITCHEN_QUEUE, MENU_LOOKUP, PROPOSE_CREATE, PROPOSE_CANCEL);
+
+    /**
+     * What a guest (a stranger on a message channel) may use: the menu and a way to reach the team. Nothing about
+     * reservations, the floor or the kitchen, and no proposals. Fixed in code; the model and the guest's text cannot change it.
+     */
+    private static final Set<String> GUEST_TOOLS = Set.of(MENU_LOOKUP, ASK_HUMAN);
 
     /** Matches what the REST endpoints allow: floor and reservation reads for owner, manager and waiter; writes for owner and manager. */
     private static final Map<Role, Set<String>> ALLOWED = Map.of(
-            Role.OWNER, Set.copyOf(ALL_TOOLS),
-            Role.MANAGER, Set.copyOf(ALL_TOOLS),
+            Role.OWNER, Set.copyOf(STAFF_TOOLS),
+            Role.MANAGER, Set.copyOf(STAFF_TOOLS),
             Role.WAITER, Set.of(FIND_RESERVATIONS, FLOOR_STATUS, FREE_TABLES, KITCHEN_QUEUE, MENU_LOOKUP),
             Role.KITCHEN, Set.of(KITCHEN_QUEUE, MENU_LOOKUP));
 
     private static final Map<String, ToolDefinition> DEFINITIONS = buildDefinitions();
 
     /** Who is asking, and where to put the proposals made during this one request. */
-    record Context(UUID restaurantId, UUID userId, Role role, ZoneId zone, List<Proposal> proposals) {
+    record Context(Principal principal, ZoneId zone, List<Proposal> proposals) {
+
+        UUID restaurantId() {
+            return principal.restaurantId();
+        }
+
+        /** Staff only: a guest has no user id (this fails for a guest, which no guest tool needs). */
+        UUID userId() {
+            return principal.userId();
+        }
+
+        /** Staff only. */
+        Role role() {
+            return principal.role();
+        }
     }
 
     /** What goes back to the model (compact JSON text) and a one-word outcome for the activity log. */
@@ -91,17 +119,27 @@ final class AssistantTools {
 
     private final AssistantData data;
     private final ProposalStore proposalStore;
+    private final GuestHandoff handoff;
 
-    AssistantTools(AssistantData data, ProposalStore proposalStore) {
+    AssistantTools(AssistantData data, ProposalStore proposalStore, GuestHandoff handoff) {
         this.data = data;
         this.proposalStore = proposalStore;
+        this.handoff = handoff;
     }
 
     // ---- what the model is shown
 
-    /** The tools this role may use, in a fixed order. */
-    List<ToolDefinition> definitions(Role role) {
-        Set<String> allowed = ALLOWED.getOrDefault(role, Set.of());
+    /** The tool names a principal may use. Chosen by code from the kind of principal (and the role for staff). */
+    static Set<String> allowedFor(Principal principal) {
+        if (principal.isGuest()) {
+            return GUEST_TOOLS;
+        }
+        return ALLOWED.getOrDefault(principal.role(), Set.of());
+    }
+
+    /** The tools this principal may use, in a fixed order. */
+    List<ToolDefinition> definitions(Principal principal) {
+        Set<String> allowed = allowedFor(principal);
         return ALL_TOOLS.stream().filter(allowed::contains).map(DEFINITIONS::get).toList();
     }
 
@@ -136,6 +174,10 @@ final class AssistantTools {
         map.put(MENU_LOOKUP, tool(MENU_LOOKUP,
                 "Look up a menu item or search the menu: price and declared allergens.",
                 props("query", string("Dish name or search words")), "query"));
+        map.put(ASK_HUMAN, tool(ASK_HUMAN,
+                "Tell the restaurant's team that this person needs a human (a booking, an allergy question, a complaint, "
+                        + "anything you cannot answer from the menu). Use it whenever you are unsure.",
+                props("reason", string("Optional: a short reason in a few words"))));
         map.put(PROPOSE_CREATE, tool(PROPOSE_CREATE,
                 "Prepare a booking for the person to confirm. Does NOT create it.",
                 props("guest_name", string("Guest surname or name"),
@@ -181,7 +223,8 @@ final class AssistantTools {
         if (!isKnown(name)) {
             return error("unknown tool", "unknown_tool");
         }
-        if (!ALLOWED.getOrDefault(ctx.role(), Set.of()).contains(name)) {
+        // The second check: whatever the model was shown, only the principal's own tools run.
+        if (!allowedFor(ctx.principal()).contains(name)) {
             return error("not allowed", "not_allowed");
         }
         JsonNode args = call.arguments();
@@ -194,6 +237,7 @@ final class AssistantTools {
                 case MENU_LOOKUP -> menuLookup(ctx, args);
                 case PROPOSE_CREATE -> proposeCreate(ctx, args);
                 case PROPOSE_CANCEL -> proposeCancel(ctx, args);
+                case ASK_HUMAN -> askHuman(ctx, args);
                 default -> error("unknown tool", "unknown_tool");
             };
         } catch (BadArgument e) {
@@ -284,6 +328,19 @@ final class AssistantTools {
             }
         });
         out.put("note", "Declared data only. Never say a dish is safe for an allergy; tell the person to confirm with the kitchen.");
+        return ok(out);
+    }
+
+    /**
+     * Guest only. Records nothing itself: it calls the {@link GuestHandoff} hook (a no-op until a later step attaches the
+     * staff inbox) and tells the model the team was told. The reason is guest-influenced text: cleaned, cut, and only passed on.
+     */
+    private Result askHuman(Context ctx, JsonNode args) {
+        String reason = optionalText(args, "reason", REASON_MAX, true);
+        handoff.requested(ctx.principal(), reason);
+        ObjectNode out = MAPPER.createObjectNode();
+        out.put("ok", true);
+        out.put("message", "The team has been told and will follow up");
         return ok(out);
     }
 

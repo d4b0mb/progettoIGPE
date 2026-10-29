@@ -48,7 +48,8 @@ class AssistantController {
 
     @PostMapping(value = "/chat", consumes = MediaType.APPLICATION_JSON_VALUE)
     AssistantReply chat(@AuthenticationPrincipal Jwt jwt, @Valid @RequestBody AssistantRequest request) {
-        return assistant.chat(CurrentUser.from(jwt), request);
+        CurrentUser me = CurrentUser.from(jwt);
+        return assistant.chat(Principal.staff(me.restaurantId(), me.userId(), me.role()), request);
     }
 
     /**

@@ -20,6 +20,8 @@ public final class AssistantTypes {
     public static final String NOTICE_TOO_MANY_STEPS = "TOO_MANY_STEPS";
     /** The answer claimed an action that no proposal backs, so it was replaced: nothing was changed. */
     public static final String NOTICE_NOTHING_CHANGED = "NOTHING_CHANGED";
+    /** A guest-facing answer promised a booking or a table; the server replaced it with "the team will confirm". */
+    public static final String NOTICE_TEAM_WILL_CONFIRM = "TEAM_WILL_CONFIRM";
 
     /**
      * One message from the person, with the earlier turns of the conversation. Only "user" and "assistant" turns are
