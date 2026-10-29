@@ -19,9 +19,11 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const t = useTranslations("common");
 
+  // A session the server ended gets a fixed reason code, so the sign-in page can explain why.
+  const expired = state.status === "anonymous" && state.reason === "expired";
   useEffect(() => {
-    if (state.status === "anonymous") router.replace("/login");
-  }, [state.status, router]);
+    if (state.status === "anonymous") router.replace(expired ? "/login?reason=expired" : "/login");
+  }, [state.status, expired, router]);
 
   if (state.status !== "authenticated") {
     return (

@@ -1,5 +1,6 @@
 import createClient from "openapi-fetch";
 import type { paths } from "./schema";
+import { announceSessionEnded } from "./sessionEvents";
 import { token } from "./token";
 
 const AUTH_PATHS = ["/api/v1/auth/"];
@@ -35,9 +36,15 @@ async function withLock<T>(task: () => Promise<T>): Promise<T> {
 }
 
 async function doRefresh(): Promise<boolean> {
+  // Only someone who holds a token was signed in. A visitor's first-load attempt, a refresh after
+  // the session already ended, or the login page's own attempt has no token, so it stays silent.
+  // Clearing the token below is also what keeps a burst of failing requests down to one event:
+  // later refreshes of the same burst find no token.
+  const wasSignedIn = token.get() !== null;
   const res = await fetch("/api/v1/auth/refresh", { method: "POST", credentials: "same-origin" });
   if (!res.ok) {
     token.set(null);
+    if (wasSignedIn) announceSessionEnded();
     return false;
   }
   const body = (await res.json()) as { accessToken: string };
@@ -47,7 +54,8 @@ async function doRefresh(): Promise<boolean> {
 
 /**
  * fetch with the login token attached. If the server says the token has expired,
- * refresh once and repeat the request; if that fails the caller sees the 401.
+ * refresh once and repeat the request; if that fails the caller sees the 401, and the
+ * session provider is told (see sessionEvents.ts) that the person is signed out.
  */
 export async function authedFetch(request: Request): Promise<Response> {
   const retry = request.clone();

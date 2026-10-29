@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { api } from "@/api/client";
 import { refreshSession } from "@/api/client";
 import { unwrap } from "@/api/call";
+import { onSessionEnded } from "@/api/sessionEvents";
 import { token } from "@/api/token";
 import { SseParser } from "@/lib/sse";
 import { applyTicket, byQueueOrder, type Ticket, type TicketStatus } from "./tickets";
@@ -86,8 +87,14 @@ export function useTicketStream() {
       }
     }
 
+    // When the session ends (the refresh failed) no reconnect can succeed: stop the loop and close the connection.
+    const stopWhenSessionEnds = onSessionEnded(() => controller.abort());
+
     void run();
-    return () => controller.abort();
+    return () => {
+      stopWhenSessionEnds();
+      controller.abort();
+    };
   }, []);
 
   const setStatus = useCallback(async (ticket: Ticket, status: TicketStatus) => {

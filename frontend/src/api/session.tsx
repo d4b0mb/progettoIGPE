@@ -4,6 +4,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState, t
 import type { components } from "./schema";
 import { api, refreshSession } from "./client";
 import { toApiError } from "./errors";
+import { onSessionEnded } from "./sessionEvents";
 import { token } from "./token";
 
 export type User = components["schemas"]["UserView"];
@@ -11,7 +12,8 @@ type TokenResponse = components["schemas"]["TokenResponse"];
 
 type SessionState =
   | { status: "loading" }
-  | { status: "anonymous" }
+  /** `reason: "expired"` means the person was signed in and the server ended the session (as opposed to a visitor or a sign-out). */
+  | { status: "anonymous"; reason?: "expired" }
   | { status: "authenticated"; user: User };
 
 interface SessionApi {
@@ -51,6 +53,18 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       cancelled = true;
     };
   }, []);
+
+  // The one place that reacts to a session the server ended (refresh failed for a signed-in
+  // person): they become anonymous, which unmounts everything of theirs, and the layouts send
+  // them to the sign-in page with the reason. The state check makes repeats harmless.
+  useEffect(
+    () =>
+      onSessionEnded(() => {
+        token.set(null);
+        setState((current) => (current.status === "authenticated" ? { status: "anonymous", reason: "expired" } : current));
+      }),
+    [],
+  );
 
   const signIn = useCallback(
     async (email: string, password: string) => {

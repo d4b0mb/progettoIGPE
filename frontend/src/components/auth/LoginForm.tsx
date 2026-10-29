@@ -9,7 +9,8 @@ import { Button } from "@/components/ui/Button";
 import { Field } from "@/components/ui/Field";
 import { describeAuthError, type FormProblem } from "./errors";
 
-export function LoginForm() {
+/** `sessionEnded` explains why the person is here: they were signed in and the server ended their session. */
+export function LoginForm({ sessionEnded = false }: { sessionEnded?: boolean }) {
   const t = useTranslations("auth");
   const tc = useTranslations("common");
   const { signIn } = useSession();
@@ -37,6 +38,11 @@ export function LoginForm() {
         <h1 className="text-2xl font-extrabold tracking-tight">{t("signIn")}</h1>
         <p className="text-sm text-muted">{t("signInSubtitle")}</p>
       </div>
+      {sessionEnded ? (
+        <p role="status" className="rounded-lg bg-warn-soft px-3 py-2 text-sm font-semibold text-warn-ink">
+          {t("sessionEnded")}
+        </p>
+      ) : null}
       <Field label={t("email")} name="email" type="email" autoComplete="username" required error={problem?.fields.email} />
       <Field label={t("password")} name="password" type="password" autoComplete="current-password" required error={problem?.fields.password} />
       {problem?.message ? (

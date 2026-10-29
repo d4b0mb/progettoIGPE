@@ -56,6 +56,17 @@ describe("LoginForm", () => {
     expect(await screen.findByRole("alert")).toHaveTextContent("Something went wrong");
   });
 
+  it("explains why the person is here when their session ended", () => {
+    renderWithIntl(<LoginForm sessionEnded />);
+    expect(screen.getByRole("status")).toHaveTextContent("Your session ended. Please sign in again.");
+  });
+
+  it("shows no session message to an ordinary visitor", () => {
+    renderWithIntl(<LoginForm />);
+    expect(screen.queryByText("Your session ended. Please sign in again.")).not.toBeInTheDocument();
+    expect(screen.queryByRole("status")).not.toBeInTheDocument();
+  });
+
   it("links to restaurant sign-up", () => {
     renderWithIntl(<LoginForm />);
     expect(screen.getByRole("link", { name: "Create an account" })).toHaveAttribute("href", "/signup");

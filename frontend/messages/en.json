@@ -57,7 +57,8 @@
     "heroFooter": "Each restaurant sees only its own data. Access is checked on the server for every request.",
     "invalidCredentials": "Invalid email or password",
     "emailTaken": "An account with this email already exists",
-    "forgotPassword": "Forgot your password?"
+    "forgotPassword": "Forgot your password?",
+    "sessionEnded": "Your session ended. Please sign in again."
   },
   "staff": {
     "title": "Staff",
